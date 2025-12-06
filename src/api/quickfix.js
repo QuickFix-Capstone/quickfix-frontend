@@ -7,9 +7,16 @@ export async function getAllOfferings() {
     return res.json();
 }
 
+// export async function getOfferingsByProvider(providerId) {
+//     const res = await fetch(`${API_BASE}/service-offerings?provider_id=${providerId}`);
+//     return res.json();
+// }
+
 export async function getOfferingsByProvider(providerId) {
-    const res = await fetch(`${API_BASE}/service-offerings?provider_id=${providerId}`);
-    return res.json();
+    const url = `${API_BASE}/service-offerings?provider_id=${providerId}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    return data.offerings; // return array ONLY
 }
 
 export async function createServiceOffering(data) {

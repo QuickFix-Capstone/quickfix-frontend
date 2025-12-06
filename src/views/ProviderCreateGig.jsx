@@ -29,10 +29,13 @@ export default function ProviderCreateGig() {
     try {
       const res = await createServiceOffering(form);
       setMessage("Service offering created successfully!");
+      alert("Service offering created successfully! 🎉");
     } catch (err) {
       setMessage("Error: Could not create service offering.");
+      alert("Error: Could not create service offering.🥲");
     } finally {
       setLoading(false);
+
     }
   };
 
