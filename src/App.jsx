@@ -136,41 +136,43 @@ export default function App() {
     }
   }, []);
 
-  const handleLogin = (email, password, role) => {
+  const handleLogin = async (email, password, role) => {
     try {
-      const user = loginUser(email, password, role);
+      const user = await loginUser(email, password, role);
       setCurrentUserState(user);
       setLoginError("");
       setView(role === "provider" ? "provider" : "home");
     } catch (err) {
       setLoginError(err.message || "Login failed.");
+      throw err; // Re-throw so the UI knows it failed
     }
   };
 
-  const handleRegister = (payload) => {
+  const handleRegister = async (payload) => {
     try {
-      const user = registerUser(payload);
+      const user = await registerUser(payload);
       setCurrentUserState(user);
       setRegisterError("");
       setView(user.role === "provider" ? "provider" : "home");
     } catch (err) {
       setRegisterError(err.message || "Registration failed.");
+      throw err;
     }
   };
 
-  const handleLogout = () => {
-    logoutUser();
+  const handleLogout = async () => {
+    await logoutUser();
     setCurrentUserState(null);
     setView("login");
   };
 
-  const handleRequestReset = (email) => {
+  const handleRequestReset = async (email) => {
     setResetError("");
     setResetInfo("");
-    const ok = requestPasswordReset(email);
+    const ok = await requestPasswordReset(email);
     if (!ok) {
       setResetError("No account found with that email.");
-      return;
+      return; // Return early, don't throw
     }
     setResetInfo(
       "If this email exists, a reset link was sent. For this demo, you can now set a new password."
@@ -178,9 +180,9 @@ export default function App() {
     setView("resetConfirm");
   };
 
-  const handleConfirmReset = (newPassword) => {
+  const handleConfirmReset = async (newPassword) => {
     try {
-      const updated = resetPassword(newPassword);
+      const updated = await resetPassword(newPassword);
       setResetConfirmInfo("Password updated. You can now log in.");
       setResetError("");
       // Optionally log the user in automatically
@@ -188,6 +190,7 @@ export default function App() {
       setView("login");
     } catch (err) {
       setResetError(err.message || "Could not reset password.");
+      throw err;
     }
   };
 
