@@ -1,8 +1,8 @@
-export default function Tag({ children, className = "" }) {
+export default function Tag({ children, className = "", ...props }) {
   return (
     <span
-      className={`inline-flex items-center gap-2 rounded-full bg-neutral-100 
-                  px-3 py-1 text-sm ${className}`}
+      className={`px-3 py-1 rounded-full bg-neutral-200 text-sm cursor-pointer ${className}`}
+      {...props}   // <-- THIS is what makes the click work!
     >
       {children}
     </span>
