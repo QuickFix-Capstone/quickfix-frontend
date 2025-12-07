@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { AuthProvider } from "react-oidc-context"
+import { BrowserRouter } from "react-router-dom"
 import './index.css'
 import App from './App.jsx'
 
@@ -10,12 +11,18 @@ const cognitoAuthConfig = {
   redirect_uri: "http://localhost:5173/auth/callback",
   response_type: "code",
   scope: "phone openid email",
+
+  onSigninCallback: () => {
+    window.location.href = "/customer/entry";
+  },
 };
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <AuthProvider {...cognitoAuthConfig}>
-      <App />
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
     </AuthProvider>
   </StrictMode>,
 )

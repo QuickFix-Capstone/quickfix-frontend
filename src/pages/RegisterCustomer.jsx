@@ -1,141 +1,336 @@
-import React from "react";
+// src/pages/RegisterCustomer.jsx
+import React, { useState } from "react";
+import { useAuth } from "react-oidc-context";
+import { useNavigate } from "react-router-dom";
+
 import Card from "../components/UI/Card";
 import Button from "../components/UI/Button";
-import { User } from "lucide-react";
-import { useAuth } from "react-oidc-context";
+import { User, Mail, Phone, MapPin } from "lucide-react";
 
-export default function RegisterCustomer({ onBackToLogin }) {
+// 👉 Adjust this if your API URL changes
+const API_BASE = "https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com";
+
+export default function RegisterCustomer({
+  // These props are still passed from App, but we no longer use onRegister
+  error: externalError,
+  onBackToLogin,
+}) {
   const auth = useAuth();
+  const navigate = useNavigate();
 
-  const handleGoogleLogin = () => {
-    auth.signinRedirect({ extraQueryParams: { identity_provider: "Google" } });
+  // 🔑 Form state (camelCase)
+  const [form, setForm] = useState({
+    firstName: "",
+    lastName: "",
+    phone: "",
+    addressLine1: "",
+    addressLine2: "",
+    city: "",
+    province: "",
+    postalCode: "",
+  });
+
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  // ─────────────────────────────────────────────
+  // 0. Guard: user must be logged in via Cognito
+  // ─────────────────────────────────────────────
+  if (!auth.isAuthenticated || !auth.user) {
+    return (
+      <div className="flex min-height-[70vh] items-center justify-center">
+        <div className="text-center space-y-3">
+          <p className="text-sm text-neutral-500">
+            Please sign in first to complete your QuickFix profile.
+          </p>
+          {onBackToLogin && (
+            <Button
+              type="button"
+              onClick={onBackToLogin}
+              className="px-4 py-2 text-sm"
+            >
+              Go to Login
+            </Button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Basic info from Cognito token
+  const email = auth.user.profile.email;
+  const cognitoSub = auth.user.profile.sub;
+  const displayName =
+    auth.user.profile.name || auth.user.profile.given_name || email;
+
+  // ─────────────────────────────────────────────
+  // 1. Handlers
+  // ─────────────────────────────────────────────
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleAppleLogin = () => {
-    auth.signinRedirect({ extraQueryParams: { identity_provider: "SignInWithApple" } });
+  const validate = () => {
+    if (
+      !form.firstName.trim() ||
+      !form.lastName.trim() ||
+      !form.addressLine1.trim() ||
+      !form.city.trim() ||
+      !form.province.trim() ||
+      !form.postalCode.trim()
+    ) {
+      setError("Missing required fields");
+      return false;
+    }
+    return true;
   };
 
-  const handleMicrosoftLogin = () => {
-    auth.signinRedirect({ extraQueryParams: { identity_provider: "Microsoft" } });
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+
+    if (!validate()) return;
+
+    setSubmitting(true);
+    try {
+      const idToken = auth.user.id_token || auth.user.access_token;
+
+      // Combine address lines for backend "address" column
+      const fullAddress = form.addressLine2
+        ? `${form.addressLine1}, ${form.addressLine2}`
+        : form.addressLine1;
+
+      // 🔁 Map camelCase → backend snake_case
+      const payload = {
+        first_name: form.firstName,
+        last_name: form.lastName,
+        phone: form.phone,
+        address: fullAddress,
+        city: form.city,
+        state: form.province,
+        postal_code: form.postalCode,
+        // email + cognito_sub will usually be taken from JWT in backend,
+        // but adding them doesn't hurt if your Lambda expects them.
+        email,
+        cognito_sub: cognitoSub,
+      };
+
+      const res = await fetch(`${API_BASE}/customer`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (res.status === 201 || res.status === 200) {
+        // ✅ Profile created → go to home (or dashboard)
+        navigate("/", { replace: true });
+      } else {
+        const body = await res.json().catch(() => ({}));
+        setError(body.message || `Unexpected status: ${res.status}`);
+      }
+    } catch (err) {
+      console.error("RegisterCustomer: error creating profile", err);
+      setError(err.message || "Network error");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const handleEmailLogin = () => {
-    auth.signinRedirect();
-  };
-
+  // ─────────────────────────────────────────────
+  // 2. UI
+  // ─────────────────────────────────────────────
   return (
-    <div className="flex min-h-[80vh] items-center justify-center p-4">
+    <div className="flex min-h-[85vh] items-start justify-center p-4 md:p-8">
+      {/* background gradient */}
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-neutral-100 via-white to-white" />
 
-      <Card className="w-full max-w-sm space-y-6 border-neutral-200/60 bg-white/80 p-8 shadow-xl shadow-neutral-200/40 backdrop-blur-xl">
-        <div className="flex flex-col items-center gap-2 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-neutral-100 ring-4 ring-white">
-            <User className="h-6 w-6 text-neutral-600" />
+      <Card className="w-full max-w-3xl border-neutral-200/60 bg-white/80 p-8 shadow-xl shadow-neutral-200/40 backdrop-blur-xl">
+        {/* Header */}
+        <div className="mb-6 flex items-center gap-3">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-neutral-900 ring-4 ring-neutral-100">
+            <User className="h-5 w-5 text-white" />
           </div>
-          <div className="space-y-1">
-            <h1 className="text-2xl font-bold tracking-tight text-neutral-900">
-              Welcome back
+          <div>
+            <h1 className="text-xl font-semibold tracking-tight text-neutral-900">
+              Complete your customer profile
             </h1>
-            <p className="text-sm text-neutral-500">
-              Sign in to your QuickFix account
+            <p className="text-xs text-neutral-500">
+              We’ll use this info for bookings, locations, and communication.
             </p>
           </div>
         </div>
 
-        <div className="space-y-3">
-          <Button
-            type="button"
-            className="group relative w-full justify-center gap-3 border-neutral-200 bg-white font-medium text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900"
-            variant="outline"
-            onClick={handleGoogleLogin}
-          >
-            <svg className="h-5 w-5" aria-hidden="true" viewBox="0 0 24 24">
-              <path
-                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                fill="#4285F4"
-              />
-              <path
-                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                fill="#34A853"
-              />
-              <path
-                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                fill="#FBBC05"
-              />
-              <path
-                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                fill="#EA4335"
-              />
-            </svg>
-            <span className="flex-1 text-center">Continue with Google</span>
-          </Button>
-
-          <Button
-            type="button"
-            className="group relative w-full justify-center gap-3 border-neutral-200 bg-white font-medium text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900"
-            variant="outline"
-            onClick={handleAppleLogin}
-          >
-            <svg className="h-5 w-5 text-neutral-900" aria-hidden="true" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M17.05 20.28c-.98.95-2.05.88-3.08.38-1.07-.52-2.05-.51-3.21 0-1.4.6-2.54.13-3.4-.9C4.8 15.65 5.28 10.3 8.98 10c1.3-.1 2.27.7 2.97.7.75 0 1.94-.74 3.25-.6 2.3.13 3.3 1.23 3.8 1.98-3.3 1.7-2.73 5.4 1 6.8-.75 2.15-2.05 4.3-3.95 4.3zm-1.87-13.6c.9-1.2 1.55-2.7 1.34-4.2C15.14 2 13.56 2.9 12.65 4.14c-.9 1.15-1.57 2.8-1.34 4.3 1.5.16 3 .3 3.87-1.74z" />
-            </svg>
-            <span className="flex-1 text-center">Continue with Apple</span>
-          </Button>
-
-          <Button
-            type="button"
-            className="group relative w-full justify-center gap-3 border-neutral-200 bg-white font-medium text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900"
-            variant="outline"
-            onClick={handleMicrosoftLogin}
-          >
-            <svg className="h-5 w-5" aria-hidden="true" viewBox="0 0 23 23">
-              <path fill="#f3f3f3" d="M0 0h23v23H0z" />
-              <path fill="#f35325" d="M1 1h10v10H1z" />
-              <path fill="#81bc06" d="M12 1h10v10H12z" />
-              <path fill="#05a6f0" d="M1 12h10v10H1z" />
-              <path fill="#ffba08" d="M12 12h10v10H12z" />
-            </svg>
-            <span className="flex-1 text-center">Continue with Microsoft</span>
-          </Button>
+        {/* Email info */}
+        <div className="mb-6 rounded-lg border border-neutral-200 bg-neutral-50 px-4 py-3 text-sm text-neutral-700">
+          <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-neutral-500">
+            <Mail className="h-3 w-3" />
+            <span>Email address</span>
+          </div>
+          <div className="mt-1 text-sm font-semibold">{email}</div>
+          <div className="text-xs text-neutral-500">Linked to your login account.</div>
         </div>
 
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t border-neutral-200" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-white px-2 text-neutral-400">
-              Or continue with
-            </span>
-          </div>
-        </div>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Name + phone */}
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="flex items-center gap-1 text-xs font-medium text-neutral-600">
+                <User className="h-3 w-3" />
+                First Name
+              </label>
+              <input
+                name="firstName"
+                value={form.firstName}
+                onChange={handleChange}
+                className="mt-1 w-full rounded-md border border-neutral-200 px-3 py-2 text-sm focus:border-neutral-400 focus:outline-none focus:ring-1 focus:ring-neutral-300"
+                placeholder="First name"
+                required
+              />
+            </div>
 
-        <div className="flex flex-col gap-2">
-          <Button
-            type="button"
-            className="w-full justify-center bg-neutral-900 text-white shadow-lg hover:bg-neutral-800 hover:shadow-xl"
-            onClick={handleEmailLogin}
-          >
-            Email & Password
-          </Button>
+            <div>
+              <label className="text-xs font-medium text-neutral-600">
+                Last Name
+              </label>
+              <input
+                name="lastName"
+                value={form.lastName}
+                onChange={handleChange}
+                className="mt-1 w-full rounded-md border border-neutral-200 px-3 py-2 text-sm focus:border-neutral-400 focus:outline-none focus:ring-1 focus:ring-neutral-300"
+                placeholder="Last name"
+                required
+              />
+            </div>
+          </div>
 
-          {onBackToLogin && (
-            <Button
-              type="button"
-              variant="link"
-              className="mt-2 w-full text-xs text-neutral-500 hover:text-neutral-900"
-              onClick={onBackToLogin}
-            >
-              Back to previous screen
-            </Button>
+          <div>
+            <label className="flex items-center gap-1 text-xs font-medium text-neutral-600">
+              <Phone className="h-3 w-3" />
+              Phone Number
+            </label>
+            <input
+              name="phone"
+              value={form.phone}
+              onChange={handleChange}
+              className="mt-1 w-full rounded-md border border-neutral-200 px-3 py-2 text-sm focus:border-neutral-400 focus:outline-none focus:ring-1 focus:ring-neutral-300"
+              placeholder="Optional, but recommended"
+            />
+          </div>
+
+          {/* Address */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-1 text-xs font-medium text-neutral-600">
+              <MapPin className="h-3 w-3" />
+              <span>Address</span>
+            </div>
+
+            <div>
+              <label className="text-[11px] font-medium text-neutral-500">
+                Street Address
+              </label>
+              <input
+                name="addressLine1"
+                value={form.addressLine1}
+                onChange={handleChange}
+                className="mt-1 w-full rounded-md border border-neutral-200 px-3 py-2 text-sm focus:border-neutral-400 focus:outline-none focus:ring-1 focus:ring-neutral-300"
+                placeholder="123 Main St"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="text-[11px] font-medium text-neutral-500">
+                Apt / Suite (Optional)
+              </label>
+              <input
+                name="addressLine2"
+                value={form.addressLine2}
+                onChange={handleChange}
+                className="mt-1 w-full rounded-md border border-neutral-200 px-3 py-2 text-sm focus:border-neutral-400 focus:outline-none focus:ring-1 focus:ring-neutral-300"
+                placeholder="Unit 202"
+              />
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-3">
+              <div>
+                <label className="text-[11px] font-medium text-neutral-500">
+                  City
+                </label>
+                <input
+                  name="city"
+                  value={form.city}
+                  onChange={handleChange}
+                  className="mt-1 w-full rounded-md border border-neutral-200 px-3 py-2 text-sm focus:border-neutral-400 focus:outline-none focus:ring-1 focus:ring-neutral-300"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-medium text-neutral-500">
+                  State / Prov
+                </label>
+                <input
+                  name="province"
+                  value={form.province}
+                  onChange={handleChange}
+                  className="mt-1 w-full rounded-md border border-neutral-200 px-3 py-2 text-sm focus:border-neutral-400 focus:outline-none focus:ring-1 focus:ring-neutral-300"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-medium text-neutral-500">
+                  Postal Code
+                </label>
+                <input
+                  name="postalCode"
+                  value={form.postalCode}
+                  onChange={handleChange}
+                  className="mt-1 w-full rounded-md border border-neutral-200 px-3 py-2 text-sm uppercase focus:border-neutral-400 focus:outline-none focus:ring-1 focus:ring-neutral-300"
+                  required
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Error message */}
+          {(error || externalError) && (
+            <div className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-600">
+              {error || externalError}
+            </div>
           )}
-        </div>
-      </Card>
 
-      {/* Footer / Copyright - Optional polish */}
-      <div className="absolute bottom-6 text-xs text-neutral-400">
-        &copy; {new Date().getFullYear()} QuickFix. All rights reserved.
-      </div>
+          {/* Actions */}
+          <div className="mt-4 flex flex-col gap-2">
+            <Button
+              type="submit"
+              disabled={submitting}
+              className="w-full justify-center bg-neutral-900 text-sm font-semibold text-white hover:bg-neutral-800"
+            >
+              {submitting ? "Saving profile…" : "Complete Registration"}
+            </Button>
+
+            {onBackToLogin && (
+              <Button
+                type="button"
+                variant="link"
+                onClick={onBackToLogin}
+                className="text-xs text-neutral-500 hover:text-neutral-900"
+              >
+                Back to login
+              </Button>
+            )}
+          </div>
+
+          <p className="pt-2 text-center text-[10px] text-neutral-400">
+            © {new Date().getFullYear()} QuickFix. Secure &amp; private.
+          </p>
+        </form>
+      </Card>
     </div>
   );
 }

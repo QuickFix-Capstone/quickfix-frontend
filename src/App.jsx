@@ -1,5 +1,8 @@
+
 // src/App.jsx
 import React, { useState, useEffect } from "react";
+import { Routes, Route, useNavigate, useLocation, Navigate } from "react-router-dom";
+import { useAuth } from "react-oidc-context";
 
 import Home from "./views/Home";
 import SearchView from "./views/SearchView";
@@ -18,6 +21,7 @@ import ResetPasswordConfirm from "./pages/ResetPasswordConfirm";
 import Logout from "./pages/Logout";
 
 import GhostButton from "./components/UI/GhostButton";
+import CustomerEntry from "./pages/CustomerEntry";
 import Button from "./components/UI/Button";
 
 import {
@@ -43,55 +47,60 @@ import {
   resetPassword,
 } from "./auth/localAuth";
 
-function TopNav({ view, setView, currentUser, onGoLogin, onGoLogout }) {
+function TopNav({ currentUser, onGoLogout }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const isActive = (path) => location.pathname === path;
+
   return (
     <div className="sticky top-0 z-20 border-b border-neutral-200 bg-white/80 backdrop-blur">
       <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3">
-        <div className="flex items-center gap-2 cursor-pointer" onClick={() => setView("home")}>
+        <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
           <ShieldCheck className="h-6 w-6" />
           <span className="text-lg font-bold">QuickFix</span>
         </div>
         <div className="flex-1" />
         <div className="hidden items-center gap-2 md:flex">
           <GhostButton
-            onClick={() => setView("home")}
-            className={view === "home" ? "bg-neutral-100" : ""}
+            onClick={() => navigate("/")}
+            className={isActive("/") ? "bg-neutral-100" : ""}
           >
             <HomeIcon className="h-4 w-4" /> Home
           </GhostButton>
           <GhostButton
-            onClick={() => setView("search")}
-            className={view === "search" ? "bg-neutral-100" : ""}
+            onClick={() => navigate("/search")}
+            className={isActive("/search") ? "bg-neutral-100" : ""}
           >
             <Search className="h-4 w-4" /> Search
           </GhostButton>
           <GhostButton
-            onClick={() => setView("postJob")}
-            className={view === "postJob" ? "bg-neutral-100" : ""}
+            onClick={() => navigate("/post-job")}
+            className={isActive("/post-job") ? "bg-neutral-100" : ""}
           >
             <PlusCircle className="h-4 w-4" /> Post Job
           </GhostButton>
           <GhostButton
-            onClick={() => setView("messages")}
-            className={view === "messages" ? "bg-neutral-100" : ""}
+            onClick={() => navigate("/messages")}
+            className={isActive("/messages") ? "bg-neutral-100" : ""}
           >
             <MessageSquare className="h-4 w-4" /> Messages
           </GhostButton>
           <GhostButton
-            onClick={() => setView("checkout")}
-            className={view === "checkout" ? "bg-neutral-100" : ""}
+            onClick={() => navigate("/checkout")}
+            className={isActive("/checkout") ? "bg-neutral-100" : ""}
           >
             <CreditCard className="h-4 w-4" /> Checkout
           </GhostButton>
           <GhostButton
-            onClick={() => setView("provider")}
-            className={view === "provider" ? "bg-neutral-100" : ""}
+            onClick={() => navigate("/provider")}
+            className={isActive("/provider") ? "bg-neutral-100" : ""}
           >
             <Briefcase className="h-4 w-4" /> Provider
           </GhostButton>
           <GhostButton
-            onClick={() => setView("admin")}
-            className={view === "admin" ? "bg-neutral-100" : ""}
+            onClick={() => navigate("/admin")}
+            className={isActive("/admin") ? "bg-neutral-100" : ""}
           >
             <Settings className="h-4 w-4" /> Admin
           </GhostButton>
@@ -99,7 +108,7 @@ function TopNav({ view, setView, currentUser, onGoLogin, onGoLogout }) {
           <div className="ml-2 h-8 w-px bg-neutral-200" />
 
           {!currentUser ? (
-            <GhostButton onClick={onGoLogin}>
+            <GhostButton onClick={() => navigate("/login")}>
               <User className="h-4 w-4" /> Login / Profile
             </GhostButton>
           ) : (
@@ -120,8 +129,10 @@ function TopNav({ view, setView, currentUser, onGoLogin, onGoLogout }) {
 }
 
 export default function App() {
-  const [view, setView] = useState("home");
-  const [currentUser, setCurrentUserState] = useState(null);
+  const navigate = useNavigate();
+  const auth = useAuth();
+
+  const [localUser, setLocalUser] = useState(null);
 
   const [loginError, setLoginError] = useState("");
   const [registerError, setRegisterError] = useState("");
@@ -129,31 +140,60 @@ export default function App() {
   const [resetInfo, setResetInfo] = useState("");
   const [resetConfirmInfo, setResetConfirmInfo] = useState("");
 
+  // Sync local auth (legacy)
   useEffect(() => {
     const user = getCurrentUser();
+    console.log("App mounted. Local user:", user);
     if (user) {
-      setCurrentUserState(user);
+      setLocalUser(user);
     }
   }, []);
+
+  // Combine OIDC user and Local user
+  console.log("Auth state:", { isLoading: auth.isLoading, user: auth.user, error: auth.error });
+
+  // OIDC user structure is different, we map it to match existing app expectations
+  const oidcUser = auth.user ? {
+    name: auth.user.profile.name || auth.user.profile.email,
+    email: auth.user.profile.email,
+    role: "customer", // Assume customer for Cognito users for now
+  } : null;
+
+  const currentUser = oidcUser || localUser;
+
+  if (auth.isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-white text-lg">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-neutral-200 border-t-black"></div>
+          <p>Loading authentication...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (auth.error) {
+    return <div>Auth Error: {auth.error.message}</div>;
+  }
 
   const handleLogin = async (email, password, role) => {
     try {
       const user = await loginUser(email, password, role);
-      setCurrentUserState(user);
+      setLocalUser(user);
       setLoginError("");
-      setView(role === "provider" ? "provider" : "home");
+      navigate(role === "provider" ? "/provider" : "/");
     } catch (err) {
       setLoginError(err.message || "Login failed.");
-      throw err; // Re-throw so the UI knows it failed
+      throw err;
     }
   };
 
   const handleRegister = async (payload) => {
     try {
       const user = await registerUser(payload);
-      setCurrentUserState(user);
+      setLocalUser(user);
       setRegisterError("");
-      setView(user.role === "provider" ? "provider" : "home");
+      navigate(user.role === "provider" ? "/provider" : "/");
     } catch (err) {
       setRegisterError(err.message || "Registration failed.");
       throw err;
@@ -161,9 +201,12 @@ export default function App() {
   };
 
   const handleLogout = async () => {
+    if (auth.user) {
+      await auth.removeUser();
+    }
     await logoutUser();
-    setCurrentUserState(null);
-    setView("login");
+    setLocalUser(null);
+    navigate("/login");
   };
 
   const handleRequestReset = async (email) => {
@@ -172,12 +215,12 @@ export default function App() {
     const ok = await requestPasswordReset(email);
     if (!ok) {
       setResetError("No account found with that email.");
-      return; // Return early, don't throw
+      return;
     }
     setResetInfo(
       "If this email exists, a reset link was sent. For this demo, you can now set a new password."
     );
-    setView("resetConfirm");
+    navigate("/reset-confirm");
   };
 
   const handleConfirmReset = async (newPassword) => {
@@ -185,114 +228,94 @@ export default function App() {
       const updated = await resetPassword(newPassword);
       setResetConfirmInfo("Password updated. You can now log in.");
       setResetError("");
-      // Optionally log the user in automatically
-      setCurrentUserState(updated);
-      setView("login");
+      setLocalUser(updated);
+      navigate("/login");
     } catch (err) {
       setResetError(err.message || "Could not reset password.");
       throw err;
     }
   };
 
-  const renderView = () => {
-    switch (view) {
-      case "login":
-        return (
-          <Login
-            onLogin={handleLogin}
-            error={loginError}
-            onGoRegisterCustomer={() => {
-              setRegisterError("");
-              setView("registerCustomer");
-            }}
-            onGoRegisterProvider={() => {
-              setRegisterError("");
-              setView("registerProvider");
-            }}
-            onGoResetPassword={() => {
-              setResetError("");
-              setResetInfo("");
-              setView("resetPassword");
-            }}
-          />
-        );
-      case "registerCustomer":
-        return (
-          <RegisterCustomer
-            onRegister={handleRegister}
-            error={registerError}
-            onBackToLogin={() => setView("login")}
-          />
-        );
-      case "registerProvider":
-        return (
-          <RegisterProvider
-            onRegister={handleRegister}
-            error={registerError}
-            onBackToLogin={() => setView("login")}
-          />
-        );
-      case "resetPassword":
-        return (
-          <ResetPassword
-            onRequestReset={handleRequestReset}
-            info={resetInfo}
-            error={resetError}
-            onBack={() => setView("login")}
-          />
-        );
-      case "resetConfirm":
-        return (
-          <ResetPasswordConfirm
-            onResetPassword={handleConfirmReset}
-            error={resetError}
-            info={resetConfirmInfo}
-            onBackToLogin={() => setView("login")}
-          />
-        );
-      case "logout":
-        return (
-          <Logout
-            onConfirm={handleLogout}
-            onCancel={() => setView("home")}
-          />
-        );
-      case "search":
-        return <SearchView />;
-      case "postJob":
-        return <PostJobWizard />;
-      case "messages":
-        return <Messages />;
-      case "checkout":
-        return <Checkout />;
-      case "provider":
-        return (
+  return (
+    <div className="min-h-screen bg-neutral-100 text-neutral-900">
+      <TopNav
+        currentUser={currentUser}
+        onGoLogout={handleLogout}
+      />
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/search" element={<SearchView />} />
+        <Route path="/post-job" element={<PostJobWizard />} />
+        <Route path="/messages" element={<Messages />} />
+        <Route path="/checkout" element={<Checkout />} />
+        <Route path="/provider" element={
           <div>
             <ProviderDashboard />
             <ProviderCreateGig />
           </div>
-        );
-      case "admin":
-        return <AdminConsole />;
-      case "home":
-      default:
-        return <Home />;
-    }
-  };
+        } />
+        <Route path="/admin" element={<AdminConsole />} />
 
-  return (
-    <div className="min-h-screen bg-neutral-100 text-neutral-900">
-      <TopNav
-        view={view}
-        setView={setView}
-        currentUser={currentUser}
-        onGoLogin={() => setView("login")}
-        onGoLogout={() => setView("logout")}
-      />
-      {renderView()}
+        {/* Auth Routes */}
+        <Route path="/login" element={
+          <Login
+            onLogin={handleLogin}
+            error={loginError}
+            // Passing these just in case, though Login uses navigate() now
+            onGoRegisterCustomer={() => navigate("/customer/login")}
+            onGoRegisterProvider={() => navigate("/provider/login")}
+            onGoResetPassword={() => navigate("/reset-password")}
+          />
+        } />
+        <Route path="/customer/login" element={
+          <RegisterCustomer
+            onRegister={handleRegister}
+            error={registerError}
+            onBackToLogin={() => navigate("/login")}
+          />
+        } />
+        <Route path="/customer/entry" element={<CustomerEntry />} />
+        <Route path="/customer/register" element={
+          <RegisterCustomer
+            onRegister={handleRegister}
+            error={registerError}
+            onBackToLogin={() => navigate("/login")}
+          />
+        } />
+        <Route path="/provider/login" element={
+          <RegisterProvider
+            onRegister={handleRegister}
+            error={registerError}
+            onBackToLogin={() => navigate("/login")}
+          />
+        } />
+        <Route path="/reset-password" element={
+          <ResetPassword
+            onRequestReset={handleRequestReset}
+            info={resetInfo}
+            error={resetError}
+            onBack={() => navigate("/login")}
+          />
+        } />
+        <Route path="/reset-confirm" element={
+          <ResetPasswordConfirm
+            onResetPassword={handleConfirmReset}
+            error={resetError}
+            info={resetConfirmInfo}
+            onBackToLogin={() => navigate("/login")}
+          />
+        } />
+        <Route path="/logout" element={
+          <Logout
+            onConfirm={handleLogout}
+            onCancel={() => navigate("/")}
+          />
+        } />
+      </Routes>
       <footer className="mx-auto mt-10 max-w-7xl px-4 pb-16 text-center text-sm text-neutral-500">
         Built for QuickFix Capstone • Fiverr-style UX skeleton • React + Tailwind
       </footer>
     </div>
   );
 }
+
