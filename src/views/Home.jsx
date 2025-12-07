@@ -1,3 +1,4 @@
+import { useState } from "react";
 import Card from "../components/UI/Card";
 import Button from "../components/UI/Button";
 import Input from "../components/UI/Input";
@@ -6,7 +7,21 @@ import Rating from "../components/UI/Rating";
 import { ChevronRight } from "lucide-react";
 import gigs from "./gigs-data";
 
-export default function Home({ searchTerm, setSearchTerm, onSearchClick, onViewGig }) {
+export default function Home({
+  searchTerm: propSearchTerm,
+  setSearchTerm: propSetSearchTerm,
+  onSearchClick,
+  onViewGig
+}) {
+  const [localSearchTerm, setLocalSearchTerm] = useState("");
+
+  const searchTerm = propSearchTerm !== undefined ? propSearchTerm : localSearchTerm;
+  const setSearchTerm = propSetSearchTerm || setLocalSearchTerm;
+
+  const handleSearch = () => {
+    if (onSearchClick) onSearchClick(searchTerm);
+  };
+
   const categories = ["Plumbing", "Electrical", "HVAC", "Handyman", "Appliance Repair", "Painting"];
 
   return (
@@ -26,7 +41,7 @@ export default function Home({ searchTerm, setSearchTerm, onSearchClick, onViewG
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
-              <Button onClick={onSearchClick}>Search</Button>
+              <Button onClick={handleSearch}>Search</Button>
             </div>
           </div>
 
@@ -68,7 +83,7 @@ export default function Home({ searchTerm, setSearchTerm, onSearchClick, onViewG
                     From <span className="font-semibold">${g.price}</span>
                   </p>
 
-                  <Button onClick={() => onViewGig(g)}>
+                  <Button onClick={() => onViewGig && onViewGig(g)}>
                     View / Book <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>
