@@ -1,17 +1,29 @@
+import React from "react";
 import Card from "../components/UI/Card";
 import Button from "../components/UI/Button";
 import Input from "../components/UI/Input";
 import Tag from "../components/UI/Tag";
 import Rating from "../components/UI/Rating";
 import { ChevronRight } from "lucide-react";
-import gigs from "./gigs-data";
+import gigs from "./gigs-data.js"; // ✅ FIXED import extension
 
-export default function Home({ searchTerm, setSearchTerm, onSearchClick, onViewGig }) {
-  const categories = ["Plumbing", "Electrical", "HVAC", "Handyman", "Appliance Repair", "Painting"];
+export default function Home({
+  searchTerm = "",
+  setSearchTerm = () => {},
+  onSearchClick = () => {},
+  onViewGig = () => {},
+}) {
+  const categories = [
+    "Plumbing",
+    "Electrical",
+    "HVAC",
+    "Handyman",
+    "Appliance Repair",
+    "Painting",
+  ];
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6">
-
       <Card className="bg-gradient-to-br from-neutral-50 to-white p-6">
         <div className="flex flex-col items-start gap-4 md:flex-row md:items-center">
           <div className="flex-1">
@@ -22,7 +34,7 @@ export default function Home({ searchTerm, setSearchTerm, onSearchClick, onViewG
 
             <div className="mt-4 flex items-center gap-2">
               <Input
-                placeholder="What do you need? e.g., install faucet"
+                placeholder="What do you need? (e.g., faucet install)"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -32,11 +44,13 @@ export default function Home({ searchTerm, setSearchTerm, onSearchClick, onViewG
 
           <img
             src="https://picsum.photos/seed/home/640/360"
+            alt="Home hero"
             className="h-40 w-full rounded-2xl object-cover md:w-80"
           />
         </div>
       </Card>
 
+      {/* Categories Section */}
       <div className="mt-8">
         <h2 className="mb-3 text-lg font-semibold">Popular categories</h2>
         <div className="flex flex-wrap gap-2">
@@ -46,14 +60,18 @@ export default function Home({ searchTerm, setSearchTerm, onSearchClick, onViewG
         </div>
       </div>
 
+      {/* Featured Gigs Section */}
       <div className="mt-8">
-        <h2 className="mb-3 text-lg font-semibold">Featured gigs</h2>
+        <h2 className="mb-3 text-lg font-semibold">Featured Services</h2>
 
         <div className="grid gap-4 md:grid-cols-3">
           {gigs.map((g) => (
-            <Card key={g.id} className="overflow-hidden cursor-pointer">
-              <img src={g.img} className="h-40 w-full object-cover" />
-
+            <Card
+              key={g.id}
+              className="overflow-hidden cursor-pointer hover:shadow-lg transition"
+              onClick={() => onViewGig(g)}
+            >
+              <img src={g.img} alt={g.title} className="h-40 w-full object-cover" />
               <div className="p-4 space-y-2">
                 <div className="flex justify-between">
                   <div>
@@ -68,8 +86,8 @@ export default function Home({ searchTerm, setSearchTerm, onSearchClick, onViewG
                     From <span className="font-semibold">${g.price}</span>
                   </p>
 
-                  <Button onClick={() => onViewGig(g)}>
-                    View / Book <ChevronRight className="h-4 w-4" />
+                  <Button onClick={(e) => { e.stopPropagation(); onViewGig(g); }}>
+                    View <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
@@ -77,7 +95,6 @@ export default function Home({ searchTerm, setSearchTerm, onSearchClick, onViewG
           ))}
         </div>
       </div>
-
     </div>
   );
 }

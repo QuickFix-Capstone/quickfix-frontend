@@ -1,122 +1,67 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { registerUser } from "../auth/localAuth";
 import Card from "../components/UI/Card";
 import Input from "../components/UI/Input";
-import TextArea from "../components/UI/TextArea";
 import Button from "../components/UI/Button";
-import { Briefcase, Mail, Lock, BadgeCheck } from "lucide-react";
 
-export default function RegisterProvider({ onRegister, error, onBackToLogin }) {
+export default function RegisterProvider() {
+  const navigate = useNavigate();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [serviceType, setServiceType] = useState("");
-  const [licenseInfo, setLicenseInfo] = useState("");
+  const [license, setLicense] = useState("");
   const [serviceArea, setServiceArea] = useState("");
+  const [error, setError] = useState("");
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    onRegister({
-      name: name.trim(),
-      email: email.trim(),
-      password,
-      role: "provider",
-      extra: { serviceType, licenseInfo, serviceArea },
-    });
+  const handleSubmit = () => {
+    try {
+      registerUser({
+        name,
+        email,
+        password,
+        role: "provider",
+        extra: { serviceType, license, serviceArea }
+      });
+      navigate("/profile");
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   return (
-    <div className="mx-auto flex min-h-[70vh] max-w-md items-center justify-center px-4">
-      <Card className="w-full p-6 space-y-4">
-        <div className="flex items-center gap-2">
-          <Briefcase className="h-6 w-6" />
-          <h1 className="text-xl font-semibold">Service Provider Registration</h1>
-        </div>
+    <div className="max-w-md mx-auto py-10">
+      <Card className="p-6 space-y-4">
+        <h2 className="text-lg font-semibold">Service Provider Registration</h2>
 
-        <form className="space-y-3" onSubmit={handleSubmit}>
-          <div className="space-y-1 text-sm">
-            <label className="font-medium">Full name / Business name</label>
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-            />
-          </div>
+        <Input placeholder="Full name / Business name"
+          value={name} onChange={(e) => setName(e.target.value)} />
 
-          <div className="space-y-1 text-sm">
-            <label className="font-medium">Email</label>
-            <div className="flex items-center gap-2">
-              <Mail className="h-4 w-4 text-neutral-400" />
-              <Input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-          </div>
+        <Input placeholder="Email"
+          value={email} onChange={(e) => setEmail(e.target.value)} />
 
-          <div className="space-y-1 text-sm">
-            <label className="font-medium">Password</label>
-            <div className="flex items-center gap-2">
-              <Lock className="h-4 w-4 text-neutral-400" />
-              <Input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
-          </div>
+        <Input type="password" placeholder="Password"
+          value={password} onChange={(e) => setPassword(e.target.value)} />
 
-          <div className="space-y-1 text-sm">
-            <label className="font-medium">Service Type</label>
-            <Input
-              placeholder="Plumbing, Electrical, HVAC..."
-              value={serviceType}
-              onChange={(e) => setServiceType(e.target.value)}
-              required
-            />
-          </div>
+        <Input placeholder="Service Type (Plumbing, HVAC…)"
+          value={serviceType} onChange={(e) => setServiceType(e.target.value)} />
 
-          <div className="space-y-1 text-sm">
-            <label className="font-medium">License / Certification</label>
-            <div className="flex items-center gap-2">
-              <BadgeCheck className="h-4 w-4 text-neutral-400" />
-              <Input
-                placeholder="License number or description"
-                value={licenseInfo}
-                onChange={(e) => setLicenseInfo(e.target.value)}
-              />
-            </div>
-          </div>
+        <Input placeholder="License / Certification"
+          value={license} onChange={(e) => setLicense(e.target.value)} />
 
-          <div className="space-y-1 text-sm">
-            <label className="font-medium">Service area</label>
-            <TextArea
-              placeholder="e.g., Downtown Toronto, Mississauga within 15km"
-              value={serviceArea}
-              onChange={(e) => setServiceArea(e.target.value)}
-            />
-          </div>
+        <textarea
+          className="w-full p-2 border rounded-lg text-sm"
+          placeholder="Service Area"
+          value={serviceArea}
+          onChange={(e) => setServiceArea(e.target.value)}
+        />
 
-          {error && (
-            <div className="rounded-xl bg-red-50 px-3 py-2 text-xs text-red-600">
-              {error}
-            </div>
-          )}
+        {error && <p className="text-sm text-red-600">{error}</p>}
 
-          <Button className="w-full mt-2" type="submit">
-            Create Provider Account
-          </Button>
-        </form>
+        <Button onClick={handleSubmit}>Register & Get Verified</Button>
 
-        <button
-          type="button"
-          className="mt-2 text-xs text-neutral-600 underline underline-offset-2"
-          onClick={onBackToLogin}
-        >
-          Back to login
-        </button>
+        <Link to="/login" className="text-sm underline">Back to login</Link>
       </Card>
     </div>
   );
