@@ -22,6 +22,7 @@ import Logout from "./pages/Logout";
 
 import GhostButton from "./components/UI/GhostButton";
 import CustomerEntry from "./pages/CustomerEntry";
+import ServiceProviderEntry from "./pages/ServiceProviderEntry";
 import Button from "./components/UI/Button";
 
 import {
@@ -277,6 +278,14 @@ export default function App() {
         <Route path="/customer/entry" element={<CustomerEntry />} />
         <Route path="/customer/register" element={
           <RegisterCustomer
+            onRegister={handleRegister}
+            error={registerError}
+            onBackToLogin={() => navigate("/login")}
+          />
+        } />
+        <Route path="/provider/entry" element={<ServiceProviderEntry />} />
+        <Route path="/provider/register" element={
+          <RegisterProvider
             onRegister={handleRegister}
             error={registerError}
             onBackToLogin={() => navigate("/login")}
