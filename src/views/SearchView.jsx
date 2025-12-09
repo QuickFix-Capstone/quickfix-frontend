@@ -3,7 +3,6 @@ import Button from "../components/UI/Button";
 import Input from "../components/UI/Input";
 import Tag from "../components/UI/Tag";
 import Rating from "../components/UI/Rating";
-import gigs from "./gigs-data";
 
 export default function SearchView({ searchTerm, setSearchTerm, onBookGig }) {
   const categories = ["Plumbing", "Electrical", "HVAC", "Handyman", "Appliance Repair", "Painting"];

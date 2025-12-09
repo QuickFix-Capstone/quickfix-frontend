@@ -1,206 +1,85 @@
-// src/App.jsx
-import React, { useState, useEffect } from "react";
-import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, Navigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Routes, Route, useNavigate } from "react-router-dom";
 import { useAuth } from "react-oidc-context";
 
+// Layout
+import TopNav from "./components/layout/TopNav";
+
+// Views
 import Home from "./views/Home";
 import SearchView from "./views/SearchView";
-import PostJobWizard from "./views/PostJobWizard";
-import Messages from "./views/Messages";
-import Checkout from "./views/Checkout";
-import ProviderDashboard from "./views/ProviderDashboard";
 import ProviderCreateGig from "./views/ProviderCreateGig";
 import ProviderProfile from "./views/ProviderProfile";
-import AdminConsole from "./views/AdminConsole";
 
+// Pages
 import Login from "./pages/Login";
 import RegisterCustomer from "./pages/RegisterCustomer";
 import RegisterProvider from "./pages/RegisterProvider";
 import ResetPassword from "./pages/ResetPassword";
 import ResetPasswordConfirm from "./pages/ResetPasswordConfirm";
 import Logout from "./pages/Logout";
-
-import GhostButton from "./components/UI/GhostButton";
 import CustomerEntry from "./pages/CustomerEntry";
 import ServiceProviderEntry from "./pages/ServiceProviderEntry";
-import Button from "./components/UI/Button";
 
-import {
-  ShieldCheck,
-  HomeIcon,
-  Search,
-  PlusCircle,
-  MessageSquare,
-  CreditCard,
-  Briefcase,
-  Settings,
-  User,
-  LogOut,
-} from "lucide-react";
-
+// Local Auth
 import {
   loginUser,
   registerUser,
   getCurrentUser,
   logoutUser,
   requestPasswordReset,
-  getResetEmail,
-  resetPassword,
+  resetPassword
 } from "./auth/localAuth";
-
-function TopNav({ currentUser, onGoLogout }) {
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  const isActive = (path) => location.pathname === path;
-
-  return (
-    <div className="sticky top-0 z-20 border-b border-neutral-200 bg-white/80 backdrop-blur">
-      <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3">
-        <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
-          <ShieldCheck className="h-6 w-6" />
-          <span className="text-lg font-bold">QuickFix</span>
-        </div>
-        <div className="flex-1" />
-        <div className="hidden items-center gap-2 md:flex">
-          <GhostButton
-            onClick={() => navigate("/")}
-            className={isActive("/") ? "bg-neutral-100" : ""}
-          >
-            <HomeIcon className="h-4 w-4" /> Home
-          </GhostButton>
-          <GhostButton
-            onClick={() => navigate("/search")}
-            className={isActive("/search") ? "bg-neutral-100" : ""}
-          >
-            <Search className="h-4 w-4" /> Search
-          </GhostButton>
-          <GhostButton
-            onClick={() => navigate("/post-job")}
-            className={isActive("/post-job") ? "bg-neutral-100" : ""}
-          >
-            <PlusCircle className="h-4 w-4" /> Post Job
-          </GhostButton>
-          <GhostButton
-            onClick={() => navigate("/messages")}
-            className={isActive("/messages") ? "bg-neutral-100" : ""}
-          >
-            <MessageSquare className="h-4 w-4" /> Messages
-          </GhostButton>
-          <GhostButton
-            onClick={() => navigate("/checkout")}
-            className={isActive("/checkout") ? "bg-neutral-100" : ""}
-          >
-            <CreditCard className="h-4 w-4" /> Checkout
-          </GhostButton>
-          <GhostButton
-            onClick={() => navigate("/provider")}
-            className={isActive("/provider") ? "bg-neutral-100" : ""}
-          >
-            <Briefcase className="h-4 w-4" /> Provider
-          </GhostButton>
-          <GhostButton
-            onClick={() => navigate("/admin")}
-            className={isActive("/admin") ? "bg-neutral-100" : ""}
-          >
-            <Settings className="h-4 w-4" /> Admin
-          </GhostButton>
-
-          <div className="ml-2 h-8 w-px bg-neutral-200" />
-
-          {!currentUser ? (
-            <GhostButton onClick={() => navigate("/login")}>
-              <User className="h-4 w-4" /> Login / Profile
-            </GhostButton>
-          ) : (
-            <>
-              <span className="text-xs text-neutral-600">
-                {currentUser.role === "provider" ? "Provider" : "Customer"}:{" "}
-                <strong>{currentUser.name || currentUser.email}</strong>
-              </span>
-              <GhostButton onClick={onGoLogout}>
-                <LogOut className="h-4 w-4" /> Logout
-              </GhostButton>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 export default function App() {
   const navigate = useNavigate();
   const auth = useAuth();
 
   const [localUser, setLocalUser] = useState(null);
-
   const [loginError, setLoginError] = useState("");
   const [registerError, setRegisterError] = useState("");
   const [resetError, setResetError] = useState("");
   const [resetInfo, setResetInfo] = useState("");
   const [resetConfirmInfo, setResetConfirmInfo] = useState("");
 
-  // Sync local auth (legacy)
+  // Load local auth user once
   useEffect(() => {
     const user = getCurrentUser();
-    console.log("App mounted. Local user:", user);
-    if (user) {
-      setLocalUser(user);
-    }
+    if (user) setLocalUser(user);
   }, []);
 
-  // Combine OIDC user and Local user
-  console.log("Auth state:", { isLoading: auth.isLoading, user: auth.user, error: auth.error });
-
-  // OIDC user structure is different, we map it to match existing app expectations
-  const oidcUser = auth.user ? {
-    name: auth.user.profile.name || auth.user.profile.email,
-    email: auth.user.profile.email,
-    role: "customer", // Assume customer for Cognito users for now
-  } : null;
+  const oidcUser = auth.user
+    ? {
+      name: auth.user.profile.name || auth.user.profile.email,
+      email: auth.user.profile.email,
+      role: "customer"
+    }
+    : null;
 
   const currentUser = oidcUser || localUser;
 
-  // We should render the router here if it's not wrapped in index.js, but the conflict shows App uses Routes directly in the incoming branch, 
-  // BUT the HEAD branch wrapped it in <Router>. 
-  // Looking at the incoming branch imports: `import { Routes, Route, useNavigate, useLocation, Navigate } from "react-router-dom";`
-  // It suggests App is INSIDE a Router (probably in main.jsx).
-  // However, HEAD wraps it in <Router>.
-  // I will assume for now I should NOT wrap it in <Router> if the incoming branch structure implies it's handled upstream, OR I should check main.jsx.
-  // Actually, the incoming code USES `useNavigate` at the top level of `App`. This means `App` MUST be inside a `Router`. 
-  // In HEAD, `App` renders `<Router>`.
-  // This is a conflict in architecture.
-  // If I use the incoming code, I must ensure the app is wrapped in Router in main.jsx.
-  // If I use HEAD code, App wraps itself.
-
-  // Since I am adopting the incoming branch's superior structure/features, I will assume the incoming branch has updated main.jsx.
-  // I will stick to the incoming branch's pattern (no <Router> in return).
-
+  // AUTH STATES
   if (auth.isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-white text-lg">
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-neutral-200 border-t-black"></div>
-          <p>Loading authentication...</p>
-        </div>
+      <div className="flex items-center justify-center min-h-screen">
+        Loading authentication...
       </div>
     );
   }
 
   if (auth.error) {
-    return <div>Auth Error: {auth.error.message}</div>;
+    return <div>Error: {auth.error.message}</div>;
   }
 
+  // HANDLERS ----------
   const handleLogin = async (email, password, role) => {
     try {
       const user = await loginUser(email, password, role);
       setLocalUser(user);
       setLoginError("");
-      navigate(role === "provider" ? "/provider" : "/");
+      navigate(role === "provider" ? "/provider/create-gig" : "/");
     } catch (err) {
-      setLoginError(err.message || "Login failed.");
-      throw err;
+      setLoginError(err.message);
     }
   };
 
@@ -208,142 +87,92 @@ export default function App() {
     try {
       const user = await registerUser(payload);
       setLocalUser(user);
-      setRegisterError("");
-      navigate(user.role === "provider" ? "/provider" : "/");
+      navigate(user.role === "provider" ? "/provider/create-gig" : "/");
     } catch (err) {
-      setRegisterError(err.message || "Registration failed.");
-      throw err;
+      setRegisterError(err.message);
     }
   };
 
   const handleLogout = async () => {
-    if (auth.user) {
-      await auth.removeUser();
-    }
+    if (auth.user) await auth.removeUser();
     await logoutUser();
     setLocalUser(null);
     navigate("/login");
   };
 
   const handleRequestReset = async (email) => {
-    setResetError("");
-    setResetInfo("");
     const ok = await requestPasswordReset(email);
     if (!ok) {
-      setResetError("No account found with that email.");
+      setResetError("Email not found");
       return;
     }
-    setResetInfo(
-      "If this email exists, a reset link was sent. For this demo, you can now set a new password."
-    );
+    setResetInfo("Reset email sent. Continue below.");
     navigate("/reset-confirm");
   };
 
   const handleConfirmReset = async (newPassword) => {
     try {
       const updated = await resetPassword(newPassword);
-      setResetConfirmInfo("Password updated. You can now log in.");
-      setResetError("");
       setLocalUser(updated);
       navigate("/login");
     } catch (err) {
-      setResetError(err.message || "Could not reset password.");
-      throw err;
+      setResetError(err.message);
     }
   };
 
+  // ROUTES ----------
   return (
-    <div className="min-h-screen bg-neutral-100 text-neutral-900">
-      <TopNav
-        currentUser={currentUser}
-        onGoLogout={handleLogout}
-      />
+    <div className="min-h-screen bg-neutral-100">
+      <TopNav currentUser={currentUser} onLogout={handleLogout} />
+
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/search" element={<SearchView />} />
-        <Route path="/post-job" element={<PostJobWizard />} />
-        <Route path="/messages" element={<Messages />} />
-        <Route path="/checkout" element={<Checkout />} />
-        <Route path="/provider" element={
-          <div>
-            <ProviderDashboard />
-            <ProviderCreateGig />
-          </div>
-        } />
-        {/* Added route from HEAD */}
-        <Route path="/provider/service-offerings"
-          element={<ProviderProfile />} />
 
-        <Route path="/admin" element={<AdminConsole />} />
+        {/* Provider */}
+        <Route path="/provider/create-gig" element={<ProviderCreateGig />} />
+        <Route path="/provider/service-offerings/:providerId" element={<ProviderProfile />} />
 
-        {/* Auth Routes */}
+        {/* Auth */}
         <Route path="/login" element={
-          <Login
-            onLogin={handleLogin}
-            error={loginError}
-            // Passing these just in case, though Login uses navigate() now
-            onGoRegisterCustomer={() => navigate("/customer/login")}
-            onGoRegisterProvider={() => navigate("/provider/login")}
-            onGoResetPassword={() => navigate("/reset-password")}
-          />
+          <Login onLogin={handleLogin} error={loginError} />
         } />
-        <Route path="/customer/login" element={
-          <RegisterCustomer
-            onRegister={handleRegister}
-            error={registerError}
-            onBackToLogin={() => navigate("/login")}
-          />
-        } />
-        <Route path="/customer/entry" element={<CustomerEntry />} />
+
         <Route path="/customer/register" element={
-          <RegisterCustomer
-            onRegister={handleRegister}
-            error={registerError}
-            onBackToLogin={() => navigate("/login")}
-          />
+          <RegisterCustomer onRegister={handleRegister} error={registerError} />
         } />
-        <Route path="/provider/entry" element={<ServiceProviderEntry />} />
+
         <Route path="/provider/register" element={
-          <RegisterProvider
-            onRegister={handleRegister}
-            error={registerError}
-            onBackToLogin={() => navigate("/login")}
-          />
+          <RegisterProvider onRegister={handleRegister} error={registerError} />
         } />
-        <Route path="/provider/login" element={
-          <RegisterProvider
-            onRegister={handleRegister}
-            error={registerError}
-            onBackToLogin={() => navigate("/login")}
-          />
-        } />
+
+        <Route path="/customer/entry" element={<CustomerEntry />} />
+        <Route path="/provider/entry" element={<ServiceProviderEntry />} />
+
         <Route path="/reset-password" element={
           <ResetPassword
             onRequestReset={handleRequestReset}
-            info={resetInfo}
             error={resetError}
-            onBack={() => navigate("/login")}
+            info={resetInfo}
           />
         } />
+
         <Route path="/reset-confirm" element={
           <ResetPasswordConfirm
             onResetPassword={handleConfirmReset}
             error={resetError}
             info={resetConfirmInfo}
-            onBackToLogin={() => navigate("/login")}
           />
         } />
+
         <Route path="/logout" element={
-          <Logout
-            onConfirm={handleLogout}
-            onCancel={() => navigate("/")}
-          />
+          <Logout onConfirm={handleLogout} onCancel={() => navigate("/")} />
         } />
       </Routes>
-      <footer className="mx-auto mt-10 max-w-7xl px-4 pb-16 text-center text-sm text-neutral-500">
-        Built for QuickFix Capstone • Fiverr-style UX skeleton • React + Tailwind
+
+      <footer className="text-center py-8 text-neutral-400">
+        Built for QuickFix Capstone • Fiverr-style UI • React + Tailwind
       </footer>
     </div>
   );
 }
-
