@@ -1,123 +1,112 @@
-const gigs = [
-  // Plumbing
+const gigsData = [
   {
     id: 1,
-    title: "Leak Fix & Pipe Repair",
-    provider: "FlowRight Plumbing",
-    price: 95,
-    rating: 4.8,
-    reviews: 124,
-    img: "https://images.unsplash.com/photo-1580568853197-9920a9f96d3b",
+    title: "Emergency Leak Fix",
+    provider: "ProLine Plumbing",
+    price: 120,
+    rating: 4.9,
+    reviews: 210,
+    image: "https://t-iss.com/wp-content/uploads/2023/01/PRT4-500x333.png"
   },
   {
     id: 2,
-    title: "Faucet Installation",
-    provider: "AquaPro Services",
-    price: 80,
-    rating: 4.7,
-    reviews: 98,
-    img: "https://images.unsplash.com/photo-1615874959474-d609969a8e4f",
+    title: "Kitchen Faucet Installation",
+    provider: "UrbanFlow Plumbers",
+    price: 90,
+    rating: 4.8,
+    reviews: 167,
+    image: "https://www.wrenchitup.ca/services/plumbing-service-installation-and-repairs/faucet-services/kitchen-faucet-installation-and-repair/"
   },
-
-  // Electrical
   {
     id: 3,
-    title: "Ceiling Fan Install",
-    provider: "Bright Spark Electric",
-    price: 120,
+    title: "Ceiling Fan Install & Wiring",
+    provider: "BrightVolt Electric",
+    price: 140,
     rating: 4.9,
-    reviews: 141,
-    img: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b",
+    reviews: 188,
+    image: "https://images.unsplash.com/photo-1597002974492-98bb5b002d8c?auto=format&fit=crop&w=600&q=60"
   },
   {
     id: 4,
-    title: "Light Fixture Replace",
-    provider: "SafeWire Experts",
-    price: 110,
-    rating: 4.8,
-    reviews: 87,
-    img: "https://images.unsplash.com/photo-1579758629938-03607ccdbaba",
+    title: "Smart Thermostat Setup",
+    provider: "CoolAir HVAC",
+    price: 150,
+    rating: 4.7,
+    reviews: 96,
+    image: "https://images.unsplash.com/photo-1561156371-25d8e2d0ef76?auto=format&fit=crop&w=600&q=60"
   },
-
-  // HVAC
   {
     id: 5,
-    title: "AC Maintenance & Cleaning",
-    provider: "CoolAir Systems",
-    price: 150,
+    title: "Appliance Installation",
+    provider: "HomeTech Experts",
+    price: 85,
     rating: 4.6,
-    reviews: 65,
-    img: "https://images.unsplash.com/photo-1581092333712-9444e87cb5cf",
+    reviews: 102,
+    image: "https://images.unsplash.com/photo-1581574207783-6cdb00ad994f?auto=format&fit=crop&w=600&q=60"
   },
   {
     id: 6,
-    title: "Furnace Tune-Up",
-    provider: "HeatRight Technologies",
-    price: 180,
-    rating: 4.7,
-    reviews: 74,
-    img: "https://images.unsplash.com/photo-1600369673735-e6a4a7e7e013",
+    title: "Furniture Assembly",
+    provider: "Handy Bros",
+    price: 65,
+    rating: 4.8,
+    reviews: 143,
+    image: "https://images.unsplash.com/photo-1519710164239-da123dc03ef4?auto=format&fit=crop&w=600&q=60"
   },
-
-  // Handyman
   {
     id: 7,
-    title: "Furniture Assembly",
-    provider: "Mr. FixIt Handyman",
-    price: 70,
+    title: "Interior Wall Painting",
+    provider: "PerfectCoat Painting",
+    price: 230,
     rating: 4.9,
-    reviews: 152,
-    img: "https://images.unsplash.com/photo-1503387762-3a7fdb0fd30f",
+    reviews: 120,
+    image: "https://images.unsplash.com/photo-1507666664345-cd81e4e67a12?auto=format&fit=crop&w=600&q=60"
   },
   {
     id: 8,
-    title: "Door Lock Replacement",
-    provider: "ProSecure Repairs",
-    price: 85,
-    rating: 4.6,
-    reviews: 91,
-    img: "https://images.unsplash.com/photo-1616712132716-a412c023465b",
+    title: "Bedroom Deep Cleaning",
+    provider: "Sparkle Home Service",
+    price: 100,
+    rating: 4.7,
+    reviews: 189,
+    image: "https://images.unsplash.com/photo-1585421514282-efb74c2b054b?auto=format&fit=crop&w=600&q=60"
   },
-
-  // Appliance Repair
   {
     id: 9,
-    title: "Washing Machine Repair",
-    provider: "Appliance Garage",
-    price: 200,
-    rating: 4.7,
-    reviews: 64,
-    img: "https://images.unsplash.com/photo-1586201375754-142f7fd04c46",
+    title: "AC Maintenance + Filter Replace",
+    provider: "AirCare Professionals",
+    price: 110,
+    rating: 4.6,
+    reviews: 78,
+    image: "https://images.unsplash.com/photo-1581092160562-04057d39a3d2?auto=format&fit=crop&w=600&q=60"
   },
   {
     id: 10,
-    title: "Refrigerator Not Cooling",
-    provider: "ChillFix Pros",
-    price: 220,
+    title: "Fireplace Inspection",
+    provider: "HeatPro Solutions",
+    price: 130,
     rating: 4.8,
-    reviews: 80,
-    img: "https://images.unsplash.com/photo-1527735095044-8d97ea87c7e7",
+    reviews: 55,
+    image: "https://images.unsplash.com/photo-1597072689222-bc4a7b8a538c?auto=format&fit=crop&w=600&q=60"
   },
-
-  // Painting
   {
     id: 11,
-    title: "Bedroom Repainting",
-    provider: "ColorNation Painters",
-    price: 250,
-    rating: 4.9,
-    reviews: 118,
-    img: "https://images.unsplash.com/photo-1562259949-1d233f89a786",
+    title: "Washer/Dryer Repair",
+    provider: "Appliance Rescue",
+    price: 125,
+    rating: 4.7,
+    reviews: 101,
+    image: "https://images.unsplash.com/photo-1616628182508-35218396d79e?auto=format&fit=crop&w=600&q=60"
   },
   {
     id: 12,
-    title: "Wall Patch & Paint",
-    provider: "SmoothWall Fixers",
-    price: 90,
-    rating: 4.5,
-    reviews: 53,
-    img: "https://images.unsplash.com/photo-1508873535684-277a3cbcc4e6",
-  },
+    title: "Backyard Deck Power Washing",
+    provider: "CleanPro Exterior",
+    price: 150,
+    rating: 4.8,
+    reviews: 92,
+    image: "https://images.unsplash.com/photo-1580250642511-74d8c905e98d?auto=format&fit=crop&w=600&q=60"
+  }
 ];
 
-export default gigs;
+export default gigsData;

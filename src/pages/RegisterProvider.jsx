@@ -1,67 +1,62 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { registerUser } from "../auth/localAuth";
 import Card from "../components/UI/Card";
-import Input from "../components/UI/Input";
 import Button from "../components/UI/Button";
+import Input from "../components/UI/Input";
 
 export default function RegisterProvider() {
   const navigate = useNavigate();
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [serviceType, setServiceType] = useState("");
-  const [license, setLicense] = useState("");
-  const [serviceArea, setServiceArea] = useState("");
-  const [error, setError] = useState("");
+  const [msg, setMsg] = useState("");
+  const [form, setForm] = useState({
+    name: "", email: "", phone: "", password: "",
+    service_type: "", license_info: "", service_area: ""
+  });
 
-  const handleSubmit = () => {
-    try {
-      registerUser({
-        name,
-        email,
-        password,
-        role: "provider",
-        extra: { serviceType, license, serviceArea }
-      });
-      navigate("/profile");
-    } catch (err) {
-      setError(err.message);
+  const handleChange = (e) =>
+    setForm({ ...form, [e.target.name]: e.target.value });
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    const res = await fetch("http://localhost:5000/register/provider", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(form),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      setMsg(data.error);
+      return;
     }
+
+    setMsg("🎉 Provider registered! Redirecting...");
+    setTimeout(() => navigate("/login"), 1500);
   };
 
   return (
-    <div className="max-w-md mx-auto py-10">
-      <Card className="p-6 space-y-4">
-        <h2 className="text-lg font-semibold">Service Provider Registration</h2>
+    <div className="flex justify-center mt-10">
+      <Card className="w-full max-w-md space-y-4">
+        <h2 className="text-xl font-bold text-sky-700">
+          Create Provider Account
+        </h2>
+        {msg && <p className="text-green-600 text-sm">{msg}</p>}
 
-        <Input placeholder="Full name / Business name"
-          value={name} onChange={(e) => setName(e.target.value)} />
+        <form className="space-y-3" onSubmit={handleSubmit}>
+          <Input name="name" placeholder="Business or Full Name" required onChange={handleChange} />
+          <Input name="email" type="email" placeholder="Email" required onChange={handleChange} />
+          <Input name="phone" placeholder="Phone" required onChange={handleChange} />
+          <Input name="password" type="password" placeholder="Password" required onChange={handleChange} />
+          <Input name="service_type" placeholder="Service Type" required onChange={handleChange} />
+          <Input name="license_info" placeholder="License Info" onChange={handleChange} />
+          <Input name="service_area" placeholder="Service Area (City / KM)" required onChange={handleChange} />
 
-        <Input placeholder="Email"
-          value={email} onChange={(e) => setEmail(e.target.value)} />
+          <Button type="submit" className="w-full">Register & Verify</Button>
+        </form>
 
-        <Input type="password" placeholder="Password"
-          value={password} onChange={(e) => setPassword(e.target.value)} />
-
-        <Input placeholder="Service Type (Plumbing, HVAC…)"
-          value={serviceType} onChange={(e) => setServiceType(e.target.value)} />
-
-        <Input placeholder="License / Certification"
-          value={license} onChange={(e) => setLicense(e.target.value)} />
-
-        <textarea
-          className="w-full p-2 border rounded-lg text-sm"
-          placeholder="Service Area"
-          value={serviceArea}
-          onChange={(e) => setServiceArea(e.target.value)}
-        />
-
-        {error && <p className="text-sm text-red-600">{error}</p>}
-
-        <Button onClick={handleSubmit}>Register & Get Verified</Button>
-
-        <Link to="/login" className="text-sm underline">Back to login</Link>
+        <p className="text-sm text-center">
+          Already registered? <Link to="/login" className="text-sky-600">Login</Link>
+        </p>
       </Card>
     </div>
   );

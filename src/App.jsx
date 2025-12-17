@@ -9,8 +9,8 @@ import Login from "./pages/Login.jsx";
 import RegisterCustomer from "./pages/RegisterCustomer.jsx";
 import RegisterProvider from "./pages/RegisterProvider.jsx";
 import Profile from "./pages/Profile.jsx";
-import ResetPassword from "./pages/ResetPassword.jsx";
-import ResetPasswordConfirm from "./pages/ResetPasswordConfirm.jsx";
+import ResetPasswordRequest from "./pages/ResetPasswordRequest";
+import ResetPasswordConfirm from "./pages/ResetPasswordConfirm";
 
 import { getCurrentUser, logoutUser } from "./auth/localAuth.js";
 
@@ -40,8 +40,8 @@ export default function App() {
         <Route path="/login" element={<Login onLogin={(u) => setAuthUser(u)} />} />
         <Route path="/register" element={<RegisterCustomer />} />
         <Route path="/register/provider" element={<RegisterProvider />} />
-        <Route path="/reset" element={<ResetPassword />} />
-        <Route path="/reset/confirm" element={<ResetPasswordConfirm />} />
+        <Route path="/reset-password" element={<ResetPasswordRequest />} />
+        <Route path="/reset-password/:token" element={<ResetPasswordConfirm />} />  
 
         {/* Protected Routes */}
         <Route
