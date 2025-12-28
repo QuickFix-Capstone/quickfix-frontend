@@ -549,7 +549,14 @@ import RegisterProvider from "./pages/RegisterProvider";
 import ResetPassword from "./pages/ResetPassword";
 import ResetPasswordConfirm from "./pages/ResetPasswordConfirm";
 import Logout from "./pages/Logout";
+<<<<<<< HEAD
 import AuthCallback from "./pages/AuthCallback";
+=======
+import CustomerEntry from "./pages/CustomerEntry";
+import ServiceProviderEntry from "./pages/ServiceProviderEntry";
+import Payment from "./pages/Payment";
+import Receipt from "./pages/Receipt";
+>>>>>>> 957d3d0 (Prepare frontend for testing payment)
 
 // ================= LOCAL AUTH =================
 import {
@@ -680,6 +687,7 @@ export default function App() {
         <Route path="/" element={<Home currentUser={currentUser} />} />
         <Route path="/search" element={<SearchView />} />
 
+<<<<<<< HEAD
         {/* ---------- AUTH ---------- */}
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route
@@ -711,6 +719,28 @@ export default function App() {
             />
           }
         />
+=======
+        {/* Payment */}
+        <Route path="/payment" element={<Payment />} />
+        <Route path="/receipt/:id" element={<Receipt />} />
+
+        {/* Provider */}
+        <Route path="/provider/create-gig" element={<ProviderCreateGig />} />
+        <Route path="/provider/service-offerings/:providerId" element={<ProviderProfile />} />
+
+        {/* Auth */}
+        <Route path="/login" element={
+          <Login onLogin={handleLogin} error={loginError} />
+        } />
+
+        <Route path="/customer/register" element={
+          <RegisterCustomer onRegister={handleRegister} error={registerError} />
+        } />
+
+        <Route path="/provider/register" element={
+          <RegisterProvider onRegister={handleRegister} error={registerError} />
+        } />
+>>>>>>> 957d3d0 (Prepare frontend for testing payment)
 
         {/* ---------- CUSTOMER ---------- */}
         <Route path="/customer/login" element={<CustomerLogin />} />
