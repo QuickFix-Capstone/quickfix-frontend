@@ -20,6 +20,8 @@ import ResetPasswordConfirm from "./pages/ResetPasswordConfirm";
 import Logout from "./pages/Logout";
 import CustomerEntry from "./pages/CustomerEntry";
 import ServiceProviderEntry from "./pages/ServiceProviderEntry";
+import Payment from "./pages/Payment";
+import Receipt from "./pages/Receipt";
 
 // Local Auth
 import {
@@ -128,6 +130,10 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/search" element={<SearchView />} />
+
+        {/* Payment */}
+        <Route path="/payment" element={<Payment />} />
+        <Route path="/receipt/:id" element={<Receipt />} />
 
         {/* Provider */}
         <Route path="/provider/create-gig" element={<ProviderCreateGig />} />
