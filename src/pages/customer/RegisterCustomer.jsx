@@ -1,10 +1,10 @@
-// src/pages/RegisterCustomer.jsx
+// src/pages/customer/RegisterCustomer.jsx
 import React, { useState } from "react";
 import { useAuth } from "react-oidc-context";
 import { useNavigate } from "react-router-dom";
 
-import Card from "../components/UI/Card";
-import Button from "../components/UI/Button";
+import Card from "../../components/UI/Card";
+import Button from "../../components/UI/Button";
 import { User, Mail, Phone, MapPin } from "lucide-react";
 
 // 👉 Adjust this if your API URL changes

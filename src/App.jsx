@@ -14,14 +14,16 @@ import ProviderCreateGig from "./views/ProviderCreateGig";
 import AdminConsole from "./views/AdminConsole";
 
 import Login from "./pages/Login";
-import RegisterCustomer from "./pages/RegisterCustomer";
+import CustomerLogin from "./pages/customer/CustomerLogin";
+
+import RegisterCustomer from "./pages/customer/RegisterCustomer";
 import RegisterProvider from "./pages/RegisterProvider";
 import ResetPassword from "./pages/ResetPassword";
 import ResetPasswordConfirm from "./pages/ResetPasswordConfirm";
 import Logout from "./pages/Logout";
 
 import GhostButton from "./components/UI/GhostButton";
-import CustomerEntry from "./pages/CustomerEntry";
+import CustomerEntry from "./pages/customer/CustomerEntry";
 import ServiceProviderEntry from "./pages/ServiceProviderEntry";
 import Button from "./components/UI/Button";
 
@@ -268,13 +270,8 @@ export default function App() {
             onGoResetPassword={() => navigate("/reset-password")}
           />
         } />
-        <Route path="/customer/login" element={
-          <RegisterCustomer
-            onRegister={handleRegister}
-            error={registerError}
-            onBackToLogin={() => navigate("/login")}
-          />
-        } />
+        <Route path="/customer/login" element={<CustomerLogin />} />
+
         <Route path="/customer/entry" element={<CustomerEntry />} />
         <Route path="/customer/register" element={
           <RegisterCustomer
