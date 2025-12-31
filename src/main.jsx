@@ -8,7 +8,7 @@ import App from './App.jsx'
 const cognitoAuthConfig = {
   authority: "https://cognito-idp.us-east-2.amazonaws.com/us-east-2_45z5OMePi",
   client_id: "p2u5qdegml3hp60n6ohu52n2b",
-  redirect_uri: "http://localhost:5173/auth/callback",
+  redirect_uri: `${window.location.origin}/auth/callback`,  // Dynamic port
   response_type: "code",
   scope: "phone openid email",
 
