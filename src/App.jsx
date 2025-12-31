@@ -15,7 +15,7 @@ import AdminConsole from "./views/AdminConsole";
 
 import Login from "./pages/Login";
 import CustomerLogin from "./pages/customer/CustomerLogin";
-
+import CustomerDashboard from "./pages/customer/Dashboard";
 import RegisterCustomer from "./pages/customer/RegisterCustomer";
 import RegisterProvider from "./pages/RegisterProvider";
 import ResetPassword from "./pages/ResetPassword";
@@ -271,6 +271,7 @@ export default function App() {
           />
         } />
         <Route path="/customer/login" element={<CustomerLogin />} />
+        <Route path="/customer/dashboard" element={<CustomerDashboard />} />
 
         <Route path="/customer/entry" element={<CustomerEntry />} />
         <Route path="/customer/register" element={
