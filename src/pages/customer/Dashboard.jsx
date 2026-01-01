@@ -48,8 +48,10 @@ export default function CustomerDashboard() {
         fetchProfile();
     }, [auth.isAuthenticated, auth.user, navigate]);
 
-    const handleLogout = () => {
-        auth.signoutRedirect();
+    const handleLogout = async () => {
+        // Clear the auth session locally and navigate to home
+        await auth.removeUser();
+        navigate("/");
     };
 
     if (loading) {
