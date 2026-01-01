@@ -21,6 +21,7 @@ import RegisterProvider from "./pages/RegisterProvider";
 import ResetPassword from "./pages/ResetPassword";
 import ResetPasswordConfirm from "./pages/ResetPasswordConfirm";
 import Logout from "./pages/Logout";
+import AuthCallback from "./pages/AuthCallback";
 
 import GhostButton from "./components/UI/GhostButton";
 import CustomerEntry from "./pages/customer/CustomerEntry";
@@ -260,6 +261,7 @@ export default function App() {
         <Route path="/admin" element={<AdminConsole />} />
 
         {/* Auth Routes */}
+        <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/login" element={
           <Login
             onLogin={handleLogin}

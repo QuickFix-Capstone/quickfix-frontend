@@ -64,7 +64,7 @@ export default function CustomerLogin() {
     const redirectToCognitoLogin = (userEmail) => {
         const domain = "https://quickfix.auth.us-east-2.amazoncognito.com";
         const clientId = "p2u5qdegml3hp60n6ohu52n2b";
-        const redirectUri = "http://localhost:5173";
+        const redirectUri = `${window.location.origin}/auth/callback`;  // ✅ Must match main.jsx
         const scope = "openid email profile";
 
         window.location.href =
@@ -81,7 +81,7 @@ export default function CustomerLogin() {
     const redirectToCognitoSignup = (userEmail) => {
         const domain = "https://quickfix.auth.us-east-2.amazoncognito.com";
         const clientId = "p2u5qdegml3hp60n6ohu52n2b";
-        const redirectUri = "http://localhost:5173";
+        const redirectUri = `${window.location.origin}/auth/callback`;  // ✅ Must match main.jsx
         const scope = "openid email profile";
 
         window.location.href =
