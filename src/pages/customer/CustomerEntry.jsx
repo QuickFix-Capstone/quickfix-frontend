@@ -10,14 +10,29 @@ export default function CustomerEntry() {
     console.log("ACCESS TOKEN:", auth.user?.access_token);
 
     useEffect(() => {
+        // 🔍 DEBUG: Log authentication state
+        console.log("=== CustomerEntry useEffect ===");
+        console.log("auth.isLoading:", auth.isLoading);
+        console.log("auth.isAuthenticated:", auth.isAuthenticated);
+        console.log("auth.user:", auth.user);
+        console.log("auth.error:", auth.error);
+        console.log("================================");
+
         // Wait until OIDC finished loading
-        if (auth.isLoading) return;
+        if (auth.isLoading) {
+            console.log("⏳ Still loading auth state...");
+            return;
+        }
 
         // If somehow not logged in, go back to login
         if (!auth.isAuthenticated) {
+            console.log("❌ Not authenticated - redirecting to /login");
+            console.log("auth.user is:", auth.user);
             navigate("/login");
             return;
         }
+
+        console.log("✅ Authenticated! Proceeding to check profile...");
 
         const checkProfile = async () => {
             try {
