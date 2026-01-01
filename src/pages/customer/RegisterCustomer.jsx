@@ -1,5 +1,5 @@
 // src/pages/customer/RegisterCustomer.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "react-oidc-context";
 import { useNavigate } from "react-router-dom";
 
@@ -32,6 +32,19 @@ export default function RegisterCustomer({
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  // 🐛 Debug: Log auth state on mount
+  useEffect(() => {
+    console.log("[RegisterCustomer] Component mounted");
+    console.log("[RegisterCustomer] Auth state:", {
+      isAuthenticated: auth.isAuthenticated,
+      hasUser: !!auth.user,
+      email: auth.user?.profile?.email,
+      cognitoSub: auth.user?.profile?.sub,
+      hasIdToken: !!auth.user?.id_token,
+      hasAccessToken: !!auth.user?.access_token,
+    });
+  }, [auth]);
 
   // ─────────────────────────────────────────────
   // 0. Guard: user must be logged in via Cognito
@@ -72,6 +85,7 @@ export default function RegisterCustomer({
   };
 
   const validate = () => {
+    console.log("[RegisterCustomer] Validating form:", form);
     if (
       !form.firstName.trim() ||
       !form.lastName.trim() ||
@@ -80,14 +94,17 @@ export default function RegisterCustomer({
       !form.province.trim() ||
       !form.postalCode.trim()
     ) {
+      console.log("[RegisterCustomer] ❌ Validation failed: Missing required fields");
       setError("Missing required fields");
       return false;
     }
+    console.log("[RegisterCustomer] ✅ Validation passed");
     return true;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log("[RegisterCustomer] 📝 Form submitted");
     setError("");
 
     if (!validate()) return;
@@ -95,6 +112,12 @@ export default function RegisterCustomer({
     setSubmitting(true);
     try {
       const idToken = auth.user.id_token || auth.user.access_token;
+      console.log("[RegisterCustomer] 🔑 Token extracted:", {
+        hasIdToken: !!auth.user.id_token,
+        hasAccessToken: !!auth.user.access_token,
+        usingToken: idToken ? "id_token" : "access_token",
+        tokenPreview: idToken ? `${idToken.substring(0, 20)}...` : "none",
+      });
 
       // Combine address lines for backend "address" column
       const fullAddress = form.addressLine2
@@ -116,6 +139,9 @@ export default function RegisterCustomer({
         cognito_sub: cognitoSub,
       };
 
+      console.log("[RegisterCustomer] 📦 API Payload:", payload);
+      console.log("[RegisterCustomer] 🌐 API Endpoint:", `${API_BASE}/customer`);
+
       const res = await fetch(`${API_BASE}/customer`, {
         method: "POST",
         headers: {
@@ -125,17 +151,36 @@ export default function RegisterCustomer({
         body: JSON.stringify(payload),
       });
 
+      console.log("[RegisterCustomer] 📡 API Response:", {
+        status: res.status,
+        statusText: res.statusText,
+        ok: res.ok,
+      });
+
       if (res.status === 201 || res.status === 200) {
-        // ✅ Profile created → go to home (or dashboard)
-        navigate("/", { replace: true });
+        const responseBody = await res.json().catch(() => ({}));
+        console.log("[RegisterCustomer] ✅ Success! Response body:", responseBody);
+        console.log("[RegisterCustomer] 🚀 Navigating to /customer/dashboard");
+        // ✅ Profile created → go to customer dashboard
+        navigate("/customer/dashboard", { replace: true });
       } else {
         const body = await res.json().catch(() => ({}));
+        console.log("[RegisterCustomer] ❌ API Error:", {
+          status: res.status,
+          body,
+        });
         setError(body.message || `Unexpected status: ${res.status}`);
       }
     } catch (err) {
-      console.error("RegisterCustomer: error creating profile", err);
+      console.error("[RegisterCustomer] 💥 Exception caught:", err);
+      console.error("[RegisterCustomer] Error details:", {
+        message: err.message,
+        stack: err.stack,
+        name: err.name,
+      });
       setError(err.message || "Network error");
     } finally {
+      console.log("[RegisterCustomer] 🏁 Submission complete, resetting submitting state");
       setSubmitting(false);
     }
   };
