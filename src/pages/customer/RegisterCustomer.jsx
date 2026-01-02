@@ -31,7 +31,9 @@ export default function RegisterCustomer({
   });
 
   const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [isEditMode, setIsEditMode] = useState(false);
 
   // 🐛 Debug: Log auth state on mount
   useEffect(() => {
