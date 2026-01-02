@@ -152,8 +152,8 @@ export default function ServiceList() {
                                 key={category.value}
                                 onClick={() => setSelectedCategory(category.value)}
                                 className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors ${selectedCategory === category.value
-                                        ? "bg-neutral-900 text-white"
-                                        : "bg-white text-neutral-700 hover:bg-neutral-100"
+                                    ? "bg-neutral-900 text-white"
+                                    : "bg-white text-neutral-700 hover:bg-neutral-100"
                                     }`}
                             >
                                 {category.label}
@@ -233,8 +233,7 @@ export default function ServiceList() {
 
                                     <Button
                                         onClick={() => {
-                                            // TODO: Implement booking flow
-                                            alert(`Booking ${service.title} - Coming soon!`);
+                                            navigate("/customer/book", { state: { service } });
                                         }}
                                         className="w-full bg-neutral-900 hover:bg-neutral-800"
                                     >
