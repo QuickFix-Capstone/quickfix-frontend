@@ -17,6 +17,7 @@ import Login from "./pages/Login";
 import CustomerLogin from "./pages/customer/CustomerLogin";
 import CustomerDashboard from "./pages/customer/Dashboard";
 import RegisterCustomer from "./pages/customer/RegisterCustomer";
+import EditProfile from "./pages/customer/EditProfile";
 import RegisterProvider from "./pages/RegisterProvider";
 import ResetPassword from "./pages/ResetPassword";
 import ResetPasswordConfirm from "./pages/ResetPasswordConfirm";
@@ -274,6 +275,7 @@ export default function App() {
         } />
         <Route path="/customer/login" element={<CustomerLogin />} />
         <Route path="/customer/dashboard" element={<CustomerDashboard />} />
+        <Route path="/customer/edit" element={<EditProfile />} />
 
         <Route path="/customer/entry" element={<CustomerEntry />} />
         <Route path="/customer/register" element={
