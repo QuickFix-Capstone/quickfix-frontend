@@ -318,7 +318,7 @@ export default function CustomerDashboard() {
                             Find and book trusted service providers
                         </p>
                         <Button
-                            onClick={() => navigate("/customer/book")}
+                            onClick={() => navigate("/customer/services")}
                             className="w-full bg-neutral-900 hover:bg-neutral-800"
                         >
                             Get Started
