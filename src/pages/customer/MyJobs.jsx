@@ -22,6 +22,8 @@ export default function MyJobs() {
         setLoading(true);
         try {
             const token = auth.user?.id_token || auth.user?.access_token;
+            console.log("Token being used:", token ? "Token exists" : "No token");
+            console.log("Token length:", token?.length);
 
             const res = await fetch(
                 `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/customer/jobs?limit=${limit}&offset=${offset}`,
@@ -29,16 +31,22 @@ export default function MyJobs() {
                     method: "GET",
                     headers: {
                         Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
                     },
                 }
             );
 
+            console.log("Response status:", res.status);
+
             if (res.ok) {
                 const data = await res.json();
                 console.log("Jobs fetched:", data);
+                console.log("Jobs array:", data.jobs);
+                console.log("Jobs array length:", data.jobs?.length);
                 setJobs(data.jobs || []);
             } else {
-                console.error("Failed to fetch jobs");
+                const errorText = await res.text();
+                console.error("Failed to fetch jobs. Status:", res.status, "Error:", errorText);
                 alert("Failed to load your jobs. Please try again.");
             }
         } catch (err) {
@@ -75,6 +83,8 @@ export default function MyJobs() {
             year: "numeric",
         });
     };
+
+    console.log("MyJobs render - loading:", loading, "jobs count:", jobs.length);
 
     if (loading) {
         return (
@@ -170,7 +180,7 @@ export default function MyJobs() {
                                             <div className="flex items-center gap-2 text-sm text-neutral-600">
                                                 <MapPin className="h-4 w-4" />
                                                 <span>
-                                                    {job.location_city}, {job.location_state}
+                                                    {job.location?.city}, {job.location?.state}
                                                 </span>
                                             </div>
                                             <div className="flex items-center gap-2 text-sm text-neutral-600">
@@ -188,8 +198,8 @@ export default function MyJobs() {
                                             <div className="flex items-center gap-2 text-sm">
                                                 <DollarSign className="h-4 w-4 text-green-600" />
                                                 <span className="font-semibold text-neutral-900">
-                                                    ${job.budget_min?.toFixed(2)} - $
-                                                    {job.budget_max?.toFixed(2)}
+                                                    ${job.budget?.min?.toFixed(2)} - $
+                                                    {job.budget?.max?.toFixed(2)}
                                                 </span>
                                             </div>
                                             {job.application_count !== undefined && (
