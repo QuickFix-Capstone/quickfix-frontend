@@ -1,28 +1,40 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import { AuthProvider } from "react-oidc-context"
-import { BrowserRouter } from "react-router-dom"
-import './index.css'
-import App from './App.jsx'
+// import { StrictMode } from 'react'
+// import { createRoot } from 'react-dom/client'
+// import { AuthProvider } from "react-oidc-context"
+// import { BrowserRouter } from "react-router-dom"
+// import './index.css'
+// import App from './App.jsx'
 
-const cognitoAuthConfig = {
-  authority: "https://cognito-idp.us-east-2.amazonaws.com/us-east-2_45z5OMePi",
-  client_id: "p2u5qdegml3hp60n6ohu52n2b",
-  redirect_uri: "http://localhost:5173/auth/callback",
-  response_type: "code",
-  scope: "phone openid email",
+// // const cognitoAuthConfig = {
+// //   authority: "https://cognito-idp.us-east-2.amazonaws.com/us-east-2_45z5OMePi",
+// //   client_id: "p2u5qdegml3hp60n6ohu52n2b",
+// //   redirect_uri: "http://localhost:5173/auth/callback",
+// //   response_type: "code",
+// //   scope: "phone openid email",
 
-  onSigninCallback: () => {
-    window.location.href = "/customer/entry";
-  },
-};
+// //   onSigninCallback: () => {
+// //     window.location.href = "/customer/entry";
+// //   },
+// // };
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <AuthProvider {...cognitoAuthConfig}>
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
-    </AuthProvider>
-  </StrictMode>,
-)
+// createRoot(document.getElementById('root')).render(
+//   <StrictMode>
+//     <AuthProvider {...cognitoAuthConfig}>
+//       <BrowserRouter>
+//         <App />
+//       </BrowserRouter>
+//     </AuthProvider>
+//   </StrictMode>,
+// )
+
+
+import React from "react";
+import ReactDOM from "react-dom/client";
+import App from "./App";
+import "./awsConfig"; // 🔑 Initializes Cognito (Auth only)
+import "./index.css";
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
