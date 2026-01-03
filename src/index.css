@@ -1,1 +1,13 @@
 @import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+.input {
+  @apply w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500;
+}
+
+.btn-primary {
+  @apply w-full bg-green-500 hover:bg-green-600 text-white rounded-md py-2 text-sm font-medium;
+}

@@ -1,1 +1,1 @@
-export const API_BASE = "https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com";
+export const API_BASE = "https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod";
