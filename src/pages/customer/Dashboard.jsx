@@ -4,7 +4,7 @@ import { useAuth } from "react-oidc-context";
 import { useNavigate } from "react-router-dom";
 import Card from "../../components/UI/Card";
 import Button from "../../components/UI/Button";
-import { User, LogOut, Plus, Calendar, Settings, Upload } from "lucide-react";
+import { User, LogOut, Plus, Calendar, Settings, Upload, Briefcase } from "lucide-react";
 
 export default function CustomerDashboard() {
     const auth = useAuth();
@@ -306,7 +306,7 @@ export default function CustomerDashboard() {
                 </Card>
 
                 {/* Quick Actions */}
-                <div className="mb-6 grid gap-4 md:grid-cols-3">
+                <div className="mb-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
                     <Card className="border-neutral-200 bg-white p-6 shadow-lg transition-shadow hover:shadow-xl">
                         <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100">
                             <Plus className="h-6 w-6 text-blue-600" />
@@ -322,6 +322,43 @@ export default function CustomerDashboard() {
                             className="w-full bg-neutral-900 hover:bg-neutral-800"
                         >
                             Get Started
+                        </Button>
+                    </Card>
+
+                    <Card className="border-neutral-200 bg-white p-6 shadow-lg transition-shadow hover:shadow-xl">
+                        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-orange-100">
+                            <Plus className="h-6 w-6 text-orange-600" />
+                        </div>
+                        <h3 className="mb-2 text-lg font-semibold text-neutral-900">
+                            Post a Job
+                        </h3>
+                        <p className="mb-4 text-sm text-neutral-600">
+                            Let service providers apply to your job
+                        </p>
+                        <Button
+                            onClick={() => navigate("/customer/post-job")}
+                            className="w-full bg-orange-600 hover:bg-orange-700"
+                        >
+                            Post Now
+                        </Button>
+                    </Card>
+
+                    <Card className="border-neutral-200 bg-white p-6 shadow-lg transition-shadow hover:shadow-xl">
+                        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-indigo-100">
+                            <Briefcase className="h-6 w-6 text-indigo-600" />
+                        </div>
+                        <h3 className="mb-2 text-lg font-semibold text-neutral-900">
+                            My Jobs
+                        </h3>
+                        <p className="mb-4 text-sm text-neutral-600">
+                            View and manage your posted jobs
+                        </p>
+                        <Button
+                            onClick={() => navigate("/customer/jobs")}
+                            variant="outline"
+                            className="w-full"
+                        >
+                            View Jobs
                         </Button>
                     </Card>
 

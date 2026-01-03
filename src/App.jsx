@@ -21,6 +21,8 @@ import EditProfile from "./pages/customer/EditProfile";
 import ServiceList from "./pages/customer/ServiceList";
 import Bookings from "./pages/customer/Bookings";
 import BookingForm from "./pages/customer/BookingForm";
+import PostJob from "./pages/customer/PostJob";
+import MyJobs from "./pages/customer/MyJobs";
 import RegisterProvider from "./pages/RegisterProvider";
 import ResetPassword from "./pages/ResetPassword";
 import ResetPasswordConfirm from "./pages/ResetPasswordConfirm";
@@ -282,6 +284,8 @@ export default function App() {
         <Route path="/customer/services" element={<ServiceList />} />
         <Route path="/customer/bookings" element={<Bookings />} />
         <Route path="/customer/book" element={<BookingForm />} />
+        <Route path="/customer/post-job" element={<PostJob />} />
+        <Route path="/customer/jobs" element={<MyJobs />} />
 
         <Route path="/customer/entry" element={<CustomerEntry />} />
         <Route path="/customer/register" element={
