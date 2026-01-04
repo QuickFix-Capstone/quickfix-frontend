@@ -69,6 +69,83 @@
 //   return <p>Checking your account…</p>;
 // }
 
+// import { fetchAuthSession } from "aws-amplify/auth";
+// import { useEffect, useState } from "react";
+// import { useNavigate } from "react-router-dom";
+
+// const ME_API =
+//   "https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/service_provider";
+
+// export default function AuthRedirect() {
+//   const navigate = useNavigate();
+//   const [loading, setLoading] = useState(true);
+
+//   useEffect(() => {
+//     let cancelled = false;
+
+//     const routeUser = async () => {
+//       try {
+//         // 🔑 FORCE session hydration (CRITICAL)
+//         const session = await fetchAuthSession({ forceRefresh: true });
+
+//         const idToken = session.tokens?.idToken?.toString();
+
+//         // ❌ Not authenticated
+//         if (!idToken) {
+//           navigate("/login", { replace: true });
+//           return;
+//         }
+
+//         // 🔎 Check onboarding status
+//         const res = await fetch(ME_API, {
+//           method: "GET",
+//           headers: {
+//             Authorization: `Bearer ${idToken}`,
+//           },
+//         });
+
+//         // ❌ Not onboarded → onboarding
+//         if (res.status === 404) {
+//           if (!cancelled) navigate("/onboarding", { replace: true });
+//           return;
+//         }
+
+//         // ❌ Auth failure
+//         if (res.status === 401 || res.status === 403) {
+//           if (!cancelled) navigate("/login", { replace: true });
+//           return;
+//         }
+
+//         // ❌ Unexpected backend error
+//         if (!res.ok) {
+//           console.error("Unexpected auth error:", res.status);
+//           if (!cancelled) navigate("/login", { replace: true });
+//           return;
+//         }
+
+//         // ✅ Onboarded service provider
+//         if (!cancelled)
+//           navigate("/service-provider/dashboard", { replace: true });
+//       } catch (err) {
+//         console.error("Auth redirect failed:", err);
+//         if (!cancelled) navigate("/login", { replace: true });
+//       } finally {
+//         if (!cancelled) setLoading(false);
+//       }
+//     };
+
+//     routeUser();
+
+//     return () => {
+//       cancelled = true;
+//     };
+//   }, [navigate]);
+
+//   return (
+//     <p className="text-center text-sm text-gray-500">Checking your account…</p>
+//   );
+// }
+
 import { fetchAuthSession } from "aws-amplify/auth";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -85,13 +162,13 @@ export default function AuthRedirect() {
 
     const routeUser = async () => {
       try {
-        // 🔑 FORCE session hydration (CRITICAL)
+        // 🔑 Force token hydration
         const session = await fetchAuthSession({ forceRefresh: true });
 
-        const idToken = session.tokens?.idToken?.toString();
+        const accessToken = session.tokens?.accessToken?.toString();
 
         // ❌ Not authenticated
-        if (!idToken) {
+        if (!accessToken) {
           navigate("/login", { replace: true });
           return;
         }
@@ -100,35 +177,31 @@ export default function AuthRedirect() {
         const res = await fetch(ME_API, {
           method: "GET",
           headers: {
-            Authorization: `Bearer ${idToken}`,
+            Authorization: `Bearer ${accessToken}`,
           },
         });
 
-        // ❌ Not onboarded → onboarding
         if (res.status === 404) {
-          if (!cancelled) navigate("/onboarding", { replace: true });
+          navigate("/onboarding", { replace: true });
           return;
         }
 
-        // ❌ Auth failure
         if (res.status === 401 || res.status === 403) {
-          if (!cancelled) navigate("/login", { replace: true });
+          navigate("/login", { replace: true });
           return;
         }
 
-        // ❌ Unexpected backend error
         if (!res.ok) {
           console.error("Unexpected auth error:", res.status);
-          if (!cancelled) navigate("/login", { replace: true });
+          navigate("/login", { replace: true });
           return;
         }
 
-        // ✅ Onboarded service provider
-        if (!cancelled)
-          navigate("/service-provider/dashboard", { replace: true });
+        // ✅ Authenticated & onboarded
+        navigate("/service-provider/dashboard", { replace: true });
       } catch (err) {
         console.error("Auth redirect failed:", err);
-        if (!cancelled) navigate("/login", { replace: true });
+        navigate("/login", { replace: true });
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -141,7 +214,13 @@ export default function AuthRedirect() {
     };
   }, [navigate]);
 
-  return (
-    <p className="text-center text-sm text-gray-500">Checking your account…</p>
-  );
+  if (loading) {
+    return (
+      <p className="text-center text-sm text-gray-500">
+        Checking your account…
+      </p>
+    );
+  }
+
+  return null;
 }

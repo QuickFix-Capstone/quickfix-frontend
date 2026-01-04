@@ -48,6 +48,116 @@
 //   );
 // }
 
+// import { signIn } from "aws-amplify/auth";
+// import { useState } from "react";
+// import { useNavigate } from "react-router-dom";
+// import AuthCard from "../../components/auth/AuthCard";
+// import SocialAuthButtons from "../../components/auth/SocialAuthButtons";
+// import AuthDivider from "../../components/auth/AuthDivider";
+
+// export default function Login() {
+//   const navigate = useNavigate();
+
+//   const [email, setEmail] = useState("");
+//   const [password, setPassword] = useState("");
+//   const [showPassword, setShowPassword] = useState(false);
+//   const [error, setError] = useState("");
+//   const [loading, setLoading] = useState(false);
+
+//   const handleLogin = async () => {
+//     try {
+//       setLoading(true);
+//       setError("");
+//       await signIn({ username: email, password });
+//       navigate("/auth/redirect", { replace: true });
+//     } catch (e) {
+//       setError(e.message || "Failed to sign in");
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   return (
+//     <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8">
+//       <div className="w-full max-w-md">
+//         <AuthCard
+//           title="Sign in to QuickFix"
+//           subtitle="Welcome back — let’s get you working"
+//         >
+//           {/* Social Login */}
+//           <SocialAuthButtons />
+//           <AuthDivider />
+
+//           {/* Email */}
+//           <div className="space-y-1">
+//             <label className="text-sm sm:text-base text-neutral-600">
+//               Email
+//             </label>
+//             <input
+//               className="input h-11 sm:h-12"
+//               type="email"
+//               placeholder="you@example.com"
+//               value={email}
+//               onChange={(e) => setEmail(e.target.value)}
+//             />
+//           </div>
+
+//           {/* Password */}
+//           <div className="space-y-1 mt-4">
+//             <label className="text-sm sm:text-base text-neutral-600">
+//               Password
+//             </label>
+
+//             <div className="relative">
+//               <input
+//                 className="input pr-12 h-11 sm:h-12"
+//                 type={showPassword ? "text" : "password"}
+//                 placeholder="••••••••"
+//                 value={password}
+//                 onChange={(e) => setPassword(e.target.value)}
+//               />
+
+//               <button
+//                 type="button"
+//                 onClick={() => setShowPassword(!showPassword)}
+//                 className="absolute right-3 top-1/2 -translate-y-1/2 text-sm sm:text-base text-neutral-500 hover:text-black"
+//               >
+//                 {showPassword ? "Hide" : "Show"}
+//               </button>
+//             </div>
+//           </div>
+
+//           {/* CTA */}
+//           <button
+//             onClick={handleLogin}
+//             disabled={loading}
+//             className="btn-primary mt-6 w-full h-11 sm:h-12 text-base"
+//           >
+//             {loading ? "Signing in..." : "Continue"}
+//           </button>
+
+//           {/* Error */}
+//           {error && (
+//             <div className="mt-4 rounded-xl bg-red-100 px-4 py-3 text-sm text-red-700">
+//               {error}
+//             </div>
+//           )}
+
+//           {/* Footer */}
+//           <p className="mt-6 text-center text-sm sm:text-base text-neutral-600">
+//             Don’t have an account?{" "}
+//             <a
+//               href="/signup"
+//               className="font-medium text-black hover:underline"
+//             >
+//               Sign up
+//             </a>
+//           </p>
+//         </AuthCard>
+//       </div>
+//     </div>
+//   );
+// }
 
 import { signIn } from "aws-amplify/auth";
 import { useState } from "react";
@@ -66,13 +176,27 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
+    if (!email || !password) {
+      setError("Please enter your email and password");
+      return;
+    }
+
     try {
       setLoading(true);
       setError("");
+
       await signIn({ username: email, password });
+
       navigate("/auth/redirect", { replace: true });
     } catch (e) {
-      setError(e.message || "Failed to sign in");
+      const message =
+        e.name === "NotAuthorizedException"
+          ? "Incorrect email or password"
+          : e.name === "UserNotConfirmedException"
+          ? "Please confirm your email before signing in"
+          : e.message || "Failed to sign in";
+
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -82,19 +206,16 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8">
       <div className="w-full max-w-md">
         <AuthCard
-          title="Sign in to QuickFix"
-          subtitle="Welcome back — let’s get you working"
+          title="Welcome back"
+          subtitle="Sign in to continue to your QuickFix account"
         >
-          {/* Social Login */}
-          <SocialAuthButtons />
-          <AuthDivider />
-
           {/* Email */}
           <div className="space-y-1">
             <label className="text-sm sm:text-base text-neutral-600">
-              Email
+              Email address
             </label>
             <input
+              autoFocus
               className="input h-11 sm:h-12"
               type="email"
               placeholder="you@example.com"
@@ -126,15 +247,27 @@ export default function Login() {
                 {showPassword ? "Hide" : "Show"}
               </button>
             </div>
+
+            {/* Forgot Password */}
+            <p className="mt-2 text-right text-sm">
+              <a
+                href="/forgot-password"
+                className="text-neutral-600 hover:text-black hover:underline"
+              >
+                Forgot password?
+              </a>
+            </p>
           </div>
 
           {/* CTA */}
           <button
             onClick={handleLogin}
             disabled={loading}
-            className="btn-primary mt-6 w-full h-11 sm:h-12 text-base"
+            className={`btn-primary mt-6 w-full h-11 sm:h-12 text-base ${
+              loading ? "opacity-60 cursor-not-allowed" : ""
+            }`}
           >
-            {loading ? "Signing in..." : "Continue"}
+            {loading ? "Signing in..." : "Sign in"}
           </button>
 
           {/* Error */}
@@ -144,14 +277,17 @@ export default function Login() {
             </div>
           )}
 
+          {/* Divider */}
+          <AuthDivider text="or sign in with" />
+
+          {/* Social Login */}
+          <SocialAuthButtons />
+
           {/* Footer */}
-          <p className="mt-6 text-center text-sm sm:text-base text-neutral-600">
-            Don’t have an account?{" "}
-            <a
-              href="/signup"
-              className="font-medium text-black hover:underline"
-            >
-              Sign up
+          <p className="mt-6 text-center text-sm text-neutral-500">
+            New to QuickFix?{" "}
+            <a href="/signup" className="underline hover:text-black">
+              Create an account
             </a>
           </p>
         </AuthCard>
