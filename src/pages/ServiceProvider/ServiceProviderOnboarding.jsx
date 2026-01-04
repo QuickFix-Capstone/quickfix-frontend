@@ -624,6 +624,7 @@ export default function ServiceProviderOnboarding() {
 
       if (
         !form.name ||
+        !form.business_name ||
         !form.address_line ||
         !form.city ||
         !form.province ||

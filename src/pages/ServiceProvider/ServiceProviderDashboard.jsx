@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { fetchAuthSession } from "aws-amplify/auth";
 import OfferingCard from "../../components/UI/OfferingCards";
+import { useNavigate } from "react-router-dom";
 
 export default function ServiceProviderDashboard() {
   const [offerings, setOfferings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchOfferings = async () => {
@@ -63,9 +65,11 @@ export default function ServiceProviderDashboard() {
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold">Your Service Offerings</h1>
-
-        <button className="bg-black text-white px-4 py-2 rounded-md hover:bg-gray-800">
-          + Create New
+        <button
+          className="bg-black text-white px-4 py-2 rounded-md hover:bg-gray-800"
+          onClick={() => navigate("/service-provider/create-service-offering")}
+        >
+          + Create New Service Offering
         </button>
       </div>
 
