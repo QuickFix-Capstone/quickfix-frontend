@@ -14,6 +14,7 @@ import {
     XCircle,
     Clock,
     Briefcase,
+    RotateCcw,
 } from "lucide-react";
 
 export default function JobApplications() {
@@ -86,7 +87,7 @@ export default function JobApplications() {
                         Authorization: `Bearer ${token}`,
                         "Content-Type": "application/json",
                     },
-                    body: JSON.stringify({ status: newStatus }),
+                    body: JSON.stringify({ action: newStatus }),
                 }
             );
 
@@ -102,6 +103,47 @@ export default function JobApplications() {
         } catch (err) {
             console.error("Error updating application:", err);
             alert("Error updating application. Please try again.");
+        } finally {
+            setProcessingId(null);
+        }
+    };
+
+    const handleUnassignJob = async () => {
+        if (
+            !confirm(
+                "Are you sure you want to unassign this job? The job will return to 'open' status and you can consider other applications."
+            )
+        ) {
+            return;
+        }
+
+        setProcessingId("unassign");
+        try {
+            const token = auth.user?.id_token || auth.user?.access_token;
+
+            const res = await fetch(
+                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/job/${job_id}/unassign`,
+                {
+                    method: "PUT",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                }
+            );
+
+            if (res.ok) {
+                alert("Job unassigned successfully! The job is now open and you can choose a different application.");
+                // Navigate back to jobs list page
+                navigate("/customer/jobs");
+            } else {
+                const errorText = await res.text();
+                console.error("Failed to unassign job:", errorText);
+                alert("Failed to unassign job. Please try again.");
+            }
+        } catch (err) {
+            console.error("Error unassigning job:", err);
+            alert("Error unassigning job. Please try again.");
         } finally {
             setProcessingId(null);
         }
@@ -280,7 +322,7 @@ export default function JobApplications() {
                                                 onClick={() =>
                                                     handleUpdateStatus(
                                                         app.application_id,
-                                                        "accepted"
+                                                        "accept"
                                                     )
                                                 }
                                                 disabled={processingId === app.application_id}
@@ -293,7 +335,7 @@ export default function JobApplications() {
                                                 onClick={() =>
                                                     handleUpdateStatus(
                                                         app.application_id,
-                                                        "rejected"
+                                                        "reject"
                                                     )
                                                 }
                                                 disabled={processingId === app.application_id}
@@ -302,6 +344,33 @@ export default function JobApplications() {
                                             >
                                                 <XCircle className="h-4 w-4" />
                                                 Reject
+                                            </Button>
+                                        </div>
+                                    )}
+                                    {app.status === "accepted" && (
+                                        <div className="ml-4 flex flex-col gap-2">
+                                            <Button
+                                                onClick={handleUnassignJob}
+                                                disabled={processingId === "unassign"}
+                                                variant="outline"
+                                                className="gap-2 border-orange-300 text-orange-600 hover:bg-orange-50"
+                                            >
+                                                <RotateCcw className="h-4 w-4" />
+                                                Unassign Job
+                                            </Button>
+                                            <Button
+                                                onClick={() =>
+                                                    handleUpdateStatus(
+                                                        app.application_id,
+                                                        "reject"
+                                                    )
+                                                }
+                                                disabled={processingId === app.application_id}
+                                                variant="outline"
+                                                className="gap-2 border-red-300 text-red-600 hover:bg-red-50"
+                                            >
+                                                <XCircle className="h-4 w-4" />
+                                                Reject Application
                                             </Button>
                                         </div>
                                     )}
