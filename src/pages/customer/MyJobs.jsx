@@ -232,7 +232,7 @@ export default function MyJobs() {
                                                 }
                                                 className="whitespace-nowrap bg-neutral-900 hover:bg-neutral-800"
                                             >
-                                                View Applications
+                                                View Applications ({job.application_count || 0})
                                             </Button>
                                         )}
                                     </div>

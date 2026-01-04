@@ -34,7 +34,7 @@ export default function JobDetails() {
             const token = auth.user?.id_token || auth.user?.access_token;
 
             const res = await fetch(
-                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/customer/jobs/${job_id}`,
+                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/job/${job_id}`,
                 {
                     method: "GET",
                     headers: {
