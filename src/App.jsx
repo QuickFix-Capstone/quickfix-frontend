@@ -37,6 +37,7 @@ import AuthRedirect from "./pages/Auth/AuthRedirect";
 import ServiceProviderHomePage from "./pages/ServiceProvider/ServiceProviderHomePage";
 import ServiceProviderLayout from "./components/layout/ServiceProviderLayout";
 import JobDetailsPage from "./pages/ServiceProvider/JobDetailsPage";
+import ServiceProviderProfile from "./pages/ServiceProvider/ServiceProviderProfile";
 
 export default function App() {
   return (
@@ -48,6 +49,7 @@ export default function App() {
         <Route path="/login" element={<ServiceProviderLogin />} />
         <Route path="/auth/redirect" element={<AuthRedirect />} />
         <Route path="/onboarding" element={<ServiceProviderOnboarding />} />
+        <Route path="/profile" element={<ServiceProviderProfile />} />
 
         {/* ✅ SERVICE PROVIDER AREA */}
         <Route path="/service-provider" element={<ServiceProviderLayout />}>
@@ -56,13 +58,11 @@ export default function App() {
             path="create-service-offering"
             element={<CreateServiceOffering />}
           />
+          <Route path="job/:jobId" element={<JobDetailsPage />} />
+          <Route path="home" element={<ServiceProviderHomePage />} />
           <Route
-            path="/service-provider/job/:jobId"
-            element={<JobDetailsPage />}
-          />
-          <Route
-            path="/service-provider/home"
-            element={<ServiceProviderHomePage />}
+            path="/service-provider/profile"
+            element={<ServiceProviderProfile />}
           />
         </Route>
       </Routes>
