@@ -1,7 +1,11 @@
 // import { useState } from "react";
 // import { useNavigate } from "react-router-dom";
+// import { fetchAuthSession } from "aws-amplify/auth";
 // import { createServiceOffering } from "../../api/serviceOffering";
 // import { ServiceCategory, PricingType } from "../../constants/serviceEnum";
+
+// const UPLOAD_IMAGE_URL =
+//   "https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/upload_image_URL";
 
 // const labelize = (value) =>
 //   value
@@ -18,9 +22,10 @@
 //     category: ServiceCategory.PLUMBING,
 //     pricing_type: PricingType.HOURLY,
 //     price: "",
-//     main_image_url: "",
 //   });
 
+//   const [imageFile, setImageFile] = useState(null);
+//   const [imageUploading, setImageUploading] = useState(false);
 //   const [loading, setLoading] = useState(false);
 //   const [error, setError] = useState("");
 
@@ -28,33 +33,84 @@
 //     setForm({ ...form, [e.target.name]: e.target.value });
 
 //   const handleCancel = () => {
-//     if (onCancel) {
-//       onCancel(); // ✅ dashboard conditional rendering
-//     } else {
-//       navigate("/service-provider/dashboard"); // ✅ route fallback
-//     }
+//     onCancel ? onCancel() : navigate("/service-provider/dashboard");
 //   };
 
+//   // ==========================
+//   // 🖼️ Upload Image Helper
+//   // ==========================
+//   const uploadImage = async (file, title) => {
+//     const session = await fetchAuthSession();
+//     const token = session.tokens.idToken.toString();
+
+//     // 1️⃣ Request presigned URL
+//     const res = await fetch(UPLOAD_IMAGE_URL, {
+//       method: "POST",
+//       headers: {
+//         "Content-Type": "application/json",
+//         Authorization: `Bearer ${token}`,
+//       },
+//       body: JSON.stringify({
+//         title,
+//         content_type: file.type,
+//       }),
+//     });
+
+//     if (!res.ok) {
+//       const err = await res.json();
+//       throw new Error(err.error || "Failed to get upload URL");
+//     }
+
+//     const { uploadUrl, imageUrl } = await res.json();
+
+//     // 2️⃣ Upload image to S3
+//     const uploadRes = await fetch(uploadUrl, {
+//       method: "PUT",
+//       headers: {
+//         "Content-Type": file.type,
+//       },
+//       body: file,
+//     });
+
+//     if (!uploadRes.ok) {
+//       throw new Error("Failed to upload image to S3");
+//     }
+
+//     return imageUrl;
+//   };
+
+//   // ==========================
+//   // 🚀 Submit Handler
+//   // ==========================
 //   const handleSubmit = async (e) => {
 //     e.preventDefault();
+
 //     try {
 //       setLoading(true);
 //       setError("");
 
+//       let imageUrl = null;
+
+//       // 🖼️ Upload image first (optional)
+//       if (imageFile) {
+//         setImageUploading(true);
+//         imageUrl = await uploadImage(imageFile, form.title);
+//         setImageUploading(false);
+//       }
+
+//       // 📦 Create service offering
 //       await createServiceOffering({
 //         ...form,
 //         price: Number(form.price),
+//         main_image_url: imageUrl,
 //       });
 
-//       if (onSuccess) {
-//         onSuccess(); // ✅ tells dashboard to refresh once
-//       } else {
-//         navigate("/service-provider/dashboard");
-//       }
+//       onSuccess ? onSuccess() : navigate("/service-provider/dashboard");
 //     } catch (err) {
 //       setError(err.message || "Failed to create service offering");
 //     } finally {
 //       setLoading(false);
+//       setImageUploading(false);
 //     }
 //   };
 
@@ -164,14 +220,20 @@
 
 //             <div className="space-y-2">
 //               <label className="text-sm text-neutral-600">
-//                 Main Image URL (optional)
+//                 Main Image (optional)
 //               </label>
 //               <input
-//                 name="main_image_url"
-//                 placeholder="https://example.com/service.jpg"
+//                 type="file"
+//                 accept="image/png,image/jpeg,image/webp"
 //                 className="input"
-//                 onChange={handleChange}
+//                 onChange={(e) => setImageFile(e.target.files[0])}
 //               />
+
+//               {imageFile && (
+//                 <p className="text-xs text-neutral-500">
+//                   Selected: {imageFile.name}
+//                 </p>
+//               )}
 //             </div>
 //           </div>
 
@@ -187,10 +249,14 @@
 
 //             <button
 //               type="submit"
-//               disabled={loading}
+//               disabled={loading || imageUploading}
 //               className="btn-primary w-full"
 //             >
-//               {loading ? "Creating..." : "Create Service"}
+//               {imageUploading
+//                 ? "Uploading image..."
+//                 : loading
+//                 ? "Creating..."
+//                 : "Create Service"}
 //             </button>
 //           </div>
 //         </form>
@@ -253,7 +319,7 @@ export default function CreateServiceOffering({ onCancel, onSuccess }) {
       },
       body: JSON.stringify({
         title,
-        content_type: file.type,
+        content_type: file.type, // still OK for validation only
       }),
     });
 
@@ -262,14 +328,12 @@ export default function CreateServiceOffering({ onCancel, onSuccess }) {
       throw new Error(err.error || "Failed to get upload URL");
     }
 
-    const { uploadUrl, imageUrl } = await res.json();
+    // ✅ ONLY expect uploadUrl + s3Key
+    const { uploadUrl, s3Key } = await res.json();
 
-    // 2️⃣ Upload image to S3
+    // 2️⃣ Upload image to S3 (NO HEADERS)
     const uploadRes = await fetch(uploadUrl, {
       method: "PUT",
-      headers: {
-        "Content-Type": file.type,
-      },
       body: file,
     });
 
@@ -277,7 +341,8 @@ export default function CreateServiceOffering({ onCancel, onSuccess }) {
       throw new Error("Failed to upload image to S3");
     }
 
-    return imageUrl;
+    // ✅ RETURN THE KEY (NOT A URL)
+    return s3Key;
   };
 
   // ==========================
@@ -290,12 +355,12 @@ export default function CreateServiceOffering({ onCancel, onSuccess }) {
       setLoading(true);
       setError("");
 
-      let imageUrl = null;
+      let imageKey = null;
 
       // 🖼️ Upload image first (optional)
       if (imageFile) {
         setImageUploading(true);
-        imageUrl = await uploadImage(imageFile, form.title);
+        imageKey = await uploadImage(imageFile, form.title);
         setImageUploading(false);
       }
 
@@ -303,7 +368,7 @@ export default function CreateServiceOffering({ onCancel, onSuccess }) {
       await createServiceOffering({
         ...form,
         price: Number(form.price),
-        main_image_url: imageUrl,
+        main_image_url: imageKey, // ✅ STORE KEY ONLY
       });
 
       onSuccess ? onSuccess() : navigate("/service-provider/dashboard");
