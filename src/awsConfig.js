@@ -59,29 +59,57 @@
 
 
 
-import { Amplify } from "aws-amplify";
-Amplify.configure({
+// import { Amplify } from "aws-amplify";
+// Amplify.configure({
+//   Auth: {
+//     Cognito: {
+//       region: "us-east-2",
+//       userPoolId: "us-east-2_45z5OMePi",
+//       userPoolClientId: "p2u5qdegml3hp60n6ohu52n2b",
+
+//       loginWith: {
+//         oauth: {
+//           domain: "us-east-245z5omepi.auth.us-east-2.amazoncognito.com",
+//           scopes: ["openid", "email", "profile"],
+//           redirectSignIn: [
+//             "http://localhost:5173/auth/redirect",
+//             "https://main.d229odkejwiim.amplifyapp.com/auth/redirect"
+//           ],
+//           redirectSignOut: [
+//             "http://localhost:5173/",
+//             "https://main.d229odkejwiim.amplifyapp.com/"
+//           ],
+//           responseType: "code",
+//         },
+//       },
+//     },
+//   },
+// });
+
+// src/awsConfig.js
+const awsConfig = {
   Auth: {
     Cognito: {
       region: "us-east-2",
       userPoolId: "us-east-2_45z5OMePi",
       userPoolClientId: "p2u5qdegml3hp60n6ohu52n2b",
-
       loginWith: {
         oauth: {
           domain: "us-east-245z5omepi.auth.us-east-2.amazoncognito.com",
           scopes: ["openid", "email", "profile"],
           redirectSignIn: [
             "http://localhost:5173/auth/redirect",
-            "https://main.d229odkejwiim.amplifyapp.com/auth/redirect"
+            "https://main.d229odkejwiim.amplifyapp.com/auth/redirect",
           ],
           redirectSignOut: [
             "http://localhost:5173/",
-            "https://main.d229odkejwiim.amplifyapp.com/"
+            "https://main.d229odkejwiim.amplifyapp.com/",
           ],
           responseType: "code",
         },
       },
     },
   },
-});
+};
+
+export default awsConfig;

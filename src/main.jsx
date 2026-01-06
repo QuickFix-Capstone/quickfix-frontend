@@ -1,10 +1,14 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import { AuthProvider } from "react-oidc-context"
-import { WebStorageStateStore } from 'oidc-client-ts';
-import { BrowserRouter } from "react-router-dom"
-import './index.css'
-import App from './App.jsx'
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import { AuthProvider } from "react-oidc-context";
+import { WebStorageStateStore } from "oidc-client-ts";
+import { BrowserRouter } from "react-router-dom";
+import "./index.css";
+import App from "./App.jsx";
+import awsConfig from "./awsConfig";
+import { Amplify } from "aws-amplify";
+
+Amplify.configure(awsConfig);
 
 const cognitoAuthConfig = {
   authority: "https://cognito-idp.us-east-2.amazonaws.com/us-east-2_45z5OMePi",
@@ -23,12 +27,12 @@ const cognitoAuthConfig = {
   },
 };
 
-createRoot(document.getElementById('root')).render(
+createRoot(document.getElementById("root")).render(
   <StrictMode>
     <AuthProvider {...cognitoAuthConfig}>
       <BrowserRouter>
         <App />
       </BrowserRouter>
     </AuthProvider>
-  </StrictMode>,
-)
+  </StrictMode>
+);
