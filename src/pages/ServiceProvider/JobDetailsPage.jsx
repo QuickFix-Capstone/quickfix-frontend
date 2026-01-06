@@ -20,8 +20,8 @@ export default function ProviderJobDetails() {
   const [price, setPrice] = useState("");
   const [message, setMessage] = useState("");
   const [submitLoading, setSubmitLoading] = useState(false);
-  const [submitError, setSubmitError] = useState("");
-  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [_submitError, setSubmitError] = useState("");
+  const [_submitSuccess, setSubmitSuccess] = useState(false);
 
   // =============================
   // FETCH JOB DETAILS
