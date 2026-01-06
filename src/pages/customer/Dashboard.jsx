@@ -4,7 +4,7 @@ import { useAuth } from "react-oidc-context";
 import { useNavigate } from "react-router-dom";
 import Card from "../../components/UI/Card";
 import Button from "../../components/UI/Button";
-import { User, LogOut, Plus, Calendar, Settings, Upload, Briefcase } from "lucide-react";
+import { User, LogOut, Plus, Calendar, Settings, Upload, Briefcase, MessageSquare, TrendingUp, Clock } from "lucide-react";
 
 export default function CustomerDashboard() {
     const auth = useAuth();
@@ -206,221 +206,188 @@ export default function CustomerDashboard() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-neutral-50 to-neutral-100 p-6">
-            <div className="mx-auto max-w-6xl">
-                {/* Header */}
-                <div className="mb-8 flex items-center justify-between">
-                    <div>
-                        <h1 className="text-3xl font-bold text-neutral-900">
-                            Welcome back, {profile?.first_name || "Customer"}! 👋
-                        </h1>
-                        <p className="mt-1 text-neutral-600">
-                            Manage your service requests and bookings
-                        </p>
-                    </div>
-                    <Button
-                        onClick={handleLogout}
-                        variant="outline"
-                        className="gap-2"
-                    >
-                        <LogOut className="h-4 w-4" />
-                        Logout
-                    </Button>
-                </div>
-
-                {/* Profile Card */}
-                <Card className="mb-6 border-neutral-200 bg-white p-6 shadow-lg">
-                    <div className="flex items-start gap-4">
-                        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-neutral-900 text-white overflow-hidden">
-                            {profile?.avatar_url ? (
-                                <img
-                                    src={profile.avatar_url}
-                                    alt="Avatar"
-                                    className="h-full w-full object-cover"
-                                />
-                            ) : (
-                                <User className="h-8 w-8" />
-                            )}
-                        </div>
-                        <div className="flex-1">
-                            <h2 className="text-xl font-semibold text-neutral-900">
-                                {profile?.first_name} {profile?.last_name}
-                            </h2>
-                            <p className="text-sm text-neutral-600">{profile?.email}</p>
-                            <p className="mt-2 text-sm text-neutral-500">
-                                {profile?.address}, {profile?.city}, {profile?.state} {profile?.postal_code}
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6">
+            <div className="mx-auto max-w-7xl">
+                {/* Enhanced Header */}
+                <div className="mb-8 rounded-2xl bg-gradient-to-r from-blue-600 to-purple-600 p-8 text-white shadow-xl">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h1 className="text-4xl font-bold">
+                                Welcome back, {profile?.first_name || "Customer"}! 👋
+                            </h1>
+                            <p className="mt-2 text-blue-100">
+                                Your personalized service management hub
                             </p>
-                            {profile?.phone && (
-                                <p className="text-sm text-neutral-500">📞 {profile.phone}</p>
-                            )}
-
-                            {/* Avatar Upload Section */}
-                            <div className="mt-4 border-t border-neutral-200 pt-4">
-                                <label className="block text-sm font-medium text-neutral-700 mb-2">
-                                    Change Avatar
-                                </label>
-
-                                {avatarPreview && (
-                                    <div className="mb-3">
-                                        <img
-                                            src={avatarPreview}
-                                            alt="Preview"
-                                            className="h-24 w-24 rounded-full object-cover border-2 border-neutral-300"
-                                        />
-                                    </div>
-                                )}
-
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handleAvatarChange}
-                                    className="block w-full text-sm text-neutral-500
-                                        file:mr-4 file:py-2 file:px-4
-                                        file:rounded-full file:border-0
-                                        file:text-sm file:font-semibold
-                                        file:bg-neutral-900 file:text-white
-                                        hover:file:bg-neutral-800 file:cursor-pointer"
-                                />
-
-                                {avatarFile && (
-                                    <Button
-                                        onClick={uploadAvatar}
-                                        disabled={uploading}
-                                        className="mt-3 gap-2 bg-neutral-900 hover:bg-neutral-800"
-                                    >
-                                        <Upload className="h-4 w-4" />
-                                        {uploading ? 'Uploading...' : 'Upload Avatar'}
-                                    </Button>
-                                )}
-                            </div>
                         </div>
                         <Button
+                            onClick={handleLogout}
                             variant="outline"
-                            className="gap-2"
-                            onClick={() => navigate("/customer/edit")}
+                            className="gap-2 border-white bg-white/10 text-white hover:bg-white/20"
                         >
-                            <Settings className="h-4 w-4" />
-                            Edit Profile
+                            <LogOut className="h-4 w-4" />
+                            Logout
                         </Button>
                     </div>
-                </Card>
+                </div>
 
-                {/* Quick Actions */}
-                <div className="mb-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-                    <Card className="border-neutral-200 bg-white p-6 shadow-lg transition-shadow hover:shadow-xl">
-                        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100">
-                            <Plus className="h-6 w-6 text-blue-600" />
+                {/* Enhanced Quick Actions */}
+                <div className="mb-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    {/* Browse Services Card */}
+                    <Card className="group cursor-pointer overflow-hidden border-0 bg-gradient-to-br from-blue-500 to-blue-600 p-6 text-white shadow-xl transition-all hover:shadow-2xl hover:scale-105">
+                        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
+                            <Plus className="h-7 w-7" />
                         </div>
-                        <h3 className="mb-2 text-lg font-semibold text-neutral-900">
-                            Book a Service
+                        <h3 className="mb-2 text-xl font-bold">
+                            Browse Services
                         </h3>
-                        <p className="mb-4 text-sm text-neutral-600">
-                            Find and book trusted service providers
+                        <p className="mb-4 text-sm text-blue-100">
+                            Discover and book trusted service providers
                         </p>
                         <Button
                             onClick={() => navigate("/customer/services")}
-                            className="w-full bg-neutral-900 hover:bg-neutral-800"
+                            className="w-full bg-white text-blue-600 hover:bg-blue-50"
                         >
-                            Get Started
+                            Explore Now
                         </Button>
                     </Card>
 
-                    <Card className="border-neutral-200 bg-white p-6 shadow-lg transition-shadow hover:shadow-xl">
-                        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-orange-100">
-                            <Plus className="h-6 w-6 text-orange-600" />
+                    {/* Post a Job Card */}
+                    <Card className="group cursor-pointer overflow-hidden border-0 bg-gradient-to-br from-orange-500 to-orange-600 p-6 text-white shadow-xl transition-all hover:shadow-2xl hover:scale-105">
+                        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
+                            <Plus className="h-7 w-7" />
                         </div>
-                        <h3 className="mb-2 text-lg font-semibold text-neutral-900">
+                        <h3 className="mb-2 text-xl font-bold">
                             Post a Job
                         </h3>
-                        <p className="mb-4 text-sm text-neutral-600">
+                        <p className="mb-4 text-sm text-orange-100">
                             Let service providers apply to your job
                         </p>
                         <Button
                             onClick={() => navigate("/customer/post-job")}
-                            className="w-full bg-orange-600 hover:bg-orange-700"
+                            className="w-full bg-white text-orange-600 hover:bg-orange-50"
                         >
-                            Post Now
+                            Create Job
                         </Button>
                     </Card>
 
-                    <Card className="border-neutral-200 bg-white p-6 shadow-lg transition-shadow hover:shadow-xl">
-                        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-indigo-100">
-                            <Briefcase className="h-6 w-6 text-indigo-600" />
+                    {/* My Jobs Card */}
+                    <Card className="group cursor-pointer overflow-hidden border-0 bg-gradient-to-br from-indigo-500 to-indigo-600 p-6 text-white shadow-xl transition-all hover:shadow-2xl hover:scale-105">
+                        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
+                            <Briefcase className="h-7 w-7" />
                         </div>
-                        <h3 className="mb-2 text-lg font-semibold text-neutral-900">
+                        <h3 className="mb-2 text-xl font-bold">
                             My Jobs
                         </h3>
-                        <p className="mb-4 text-sm text-neutral-600">
+                        <p className="mb-4 text-sm text-indigo-100">
                             View and manage your posted jobs
                         </p>
                         <Button
                             onClick={() => navigate("/customer/jobs")}
-                            variant="outline"
-                            className="w-full"
+                            className="w-full bg-white text-indigo-600 hover:bg-indigo-50"
                         >
                             View Jobs
                         </Button>
                     </Card>
 
-                    <Card className="border-neutral-200 bg-white p-6 shadow-lg transition-shadow hover:shadow-xl">
-                        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-green-100">
-                            <Calendar className="h-6 w-6 text-green-600" />
+                    {/* My Bookings Card */}
+                    <Card className="group cursor-pointer overflow-hidden border-0 bg-gradient-to-br from-green-500 to-green-600 p-6 text-white shadow-xl transition-all hover:shadow-2xl hover:scale-105">
+                        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
+                            <Calendar className="h-7 w-7" />
                         </div>
-                        <h3 className="mb-2 text-lg font-semibold text-neutral-900">
+                        <h3 className="mb-2 text-xl font-bold">
                             My Bookings
                         </h3>
-                        <p className="mb-4 text-sm text-neutral-600">
+                        <p className="mb-4 text-sm text-green-100">
                             View your upcoming appointments
                         </p>
                         <Button
                             onClick={() => navigate("/customer/bookings")}
-                            variant="outline"
-                            className="w-full"
+                            className="w-full bg-white text-green-600 hover:bg-green-50"
                         >
                             View All
                         </Button>
                     </Card>
 
-                    <Card className="border-neutral-200 bg-white p-6 shadow-lg transition-shadow hover:shadow-xl">
-                        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-purple-100">
-                            <User className="h-6 w-6 text-purple-600" />
+                    {/* Account Settings Card */}
+                    <Card className="group cursor-pointer overflow-hidden border-0 bg-gradient-to-br from-purple-500 to-purple-600 p-6 text-white shadow-xl transition-all hover:shadow-2xl hover:scale-105">
+                        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
+                            <Settings className="h-7 w-7" />
                         </div>
-                        <h3 className="mb-2 text-lg font-semibold text-neutral-900">
-                            Account Settings
+                        <h3 className="mb-2 text-xl font-bold">
+                            Settings
                         </h3>
-                        <p className="mb-4 text-sm text-neutral-600">
+                        <p className="mb-4 text-sm text-purple-100">
                             Update your profile and preferences
                         </p>
                         <Button
                             onClick={() => navigate("/customer/edit")}
-                            variant="outline"
-                            className="w-full"
+                            className="w-full bg-white text-purple-600 hover:bg-purple-50"
                         >
                             Manage
                         </Button>
                     </Card>
+
+                    {/* Messages Placeholder Card */}
+                    <Card className="group cursor-pointer overflow-hidden border-0 bg-gradient-to-br from-pink-500 to-pink-600 p-6 text-white shadow-xl transition-all hover:shadow-2xl hover:scale-105">
+                        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
+                            <MessageSquare className="h-7 w-7" />
+                        </div>
+                        <h3 className="mb-2 text-xl font-bold">
+                            Messages
+                        </h3>
+                        <p className="mb-4 text-sm text-pink-100">
+                            Chat with service providers
+                        </p>
+                        <Button
+                            onClick={() => alert("Messages feature coming soon!")}
+                            className="w-full bg-white text-pink-600 hover:bg-pink-50"
+                        >
+                            Coming Soon
+                        </Button>
+                    </Card>
                 </div>
 
-                {/* Recent Activity */}
-                <Card className="border-neutral-200 bg-white p-6 shadow-lg">
-                    <h3 className="mb-4 text-xl font-semibold text-neutral-900">
-                        Recent Activity
-                    </h3>
-                    <div className="text-center py-8 text-neutral-500">
-                        <p>No recent activity yet.</p>
-                        <p className="mt-2 text-sm">Book your first service to get started!</p>
-                    </div>
-                </Card>
+                {/* Activity Overview */}
+                <div className="grid gap-6 md:grid-cols-3">
+                    {/* Stats Card 1 */}
+                    <Card className="border-0 bg-white p-6 shadow-lg">
+                        <div className="flex items-center gap-4">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100">
+                                <TrendingUp className="h-6 w-6 text-blue-600" />
+                            </div>
+                            <div>
+                                <p className="text-sm text-neutral-600">Total Bookings</p>
+                                <p className="text-2xl font-bold text-neutral-900">0</p>
+                            </div>
+                        </div>
+                    </Card>
 
-                {/* Debug Info (remove in production) */}
-                <Card className="mt-6 border-yellow-200 bg-yellow-50 p-4">
-                    <h4 className="mb-2 text-sm font-semibold text-yellow-900">
-                        🔍 Debug Info (Development Only)
-                    </h4>
-                    <pre className="overflow-auto text-xs text-yellow-800">
-                        {JSON.stringify(profile, null, 2)}
-                    </pre>
-                </Card>
+                    {/* Stats Card 2 */}
+                    <Card className="border-0 bg-white p-6 shadow-lg">
+                        <div className="flex items-center gap-4">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-orange-100">
+                                <Briefcase className="h-6 w-6 text-orange-600" />
+                            </div>
+                            <div>
+                                <p className="text-sm text-neutral-600">Active Jobs</p>
+                                <p className="text-2xl font-bold text-neutral-900">0</p>
+                            </div>
+                        </div>
+                    </Card>
+
+                    {/* Stats Card 3 */}
+                    <Card className="border-0 bg-white p-6 shadow-lg">
+                        <div className="flex items-center gap-4">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-100">
+                                <Clock className="h-6 w-6 text-green-600" />
+                            </div>
+                            <div>
+                                <p className="text-sm text-neutral-600">Pending</p>
+                                <p className="text-2xl font-bold text-neutral-900">0</p>
+                            </div>
+                        </div>
+                    </Card>
+                </div>
             </div>
         </div>
     );

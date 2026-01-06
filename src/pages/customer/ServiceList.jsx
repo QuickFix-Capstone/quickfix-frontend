@@ -15,6 +15,10 @@ export default function ServiceList() {
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedCategory, setSelectedCategory] = useState("ALL");
 
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const servicesPerPage = 9; // 3 columns x 3 rows
+
     const categories = [
         { value: "ALL", label: "All Services" },
         { value: "PLUMBING", label: "Plumbing" },
@@ -45,6 +49,7 @@ export default function ServiceList() {
 
     useEffect(() => {
         filterServices();
+        setCurrentPage(1); // Reset to page 1 when filters change
     }, [services, searchQuery, selectedCategory]);
 
     const fetchServices = async () => {
@@ -99,6 +104,31 @@ export default function ServiceList() {
                 <span className="text-sm font-medium text-neutral-700">{rating.toFixed(1)}</span>
             </div>
         );
+    };
+
+    // Pagination calculations
+    const indexOfLastService = currentPage * servicesPerPage;
+    const indexOfFirstService = indexOfLastService - servicesPerPage;
+    const currentServices = filteredServices.slice(indexOfFirstService, indexOfLastService);
+    const totalPages = Math.ceil(filteredServices.length / servicesPerPage);
+
+    const goToNextPage = () => {
+        if (currentPage < totalPages) {
+            setCurrentPage(currentPage + 1);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    };
+
+    const goToPreviousPage = () => {
+        if (currentPage > 1) {
+            setCurrentPage(currentPage - 1);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    };
+
+    const goToPage = (pageNumber) => {
+        setCurrentPage(pageNumber);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     if (loading) {
@@ -162,9 +192,16 @@ export default function ServiceList() {
                     </div>
                 </div>
 
-                {/* Results Count */}
-                <div className="mb-4 text-sm text-neutral-600">
-                    Showing {filteredServices.length} service{filteredServices.length !== 1 ? "s" : ""}
+                {/* Results Count and Pagination Info */}
+                <div className="mb-4 flex items-center justify-between">
+                    <div className="text-sm text-neutral-600">
+                        Showing {indexOfFirstService + 1}-{Math.min(indexOfLastService, filteredServices.length)} of {filteredServices.length} service{filteredServices.length !== 1 ? "s" : ""}
+                    </div>
+                    {totalPages > 1 && (
+                        <div className="text-sm text-neutral-600">
+                            Page {currentPage} of {totalPages}
+                        </div>
+                    )}
                 </div>
 
                 {/* Services Grid */}
@@ -183,7 +220,7 @@ export default function ServiceList() {
                     </Card>
                 ) : (
                     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                        {filteredServices.map((service) => (
+                        {currentServices.map((service) => (
                             <Card
                                 key={service.service_offering_id}
                                 className="border-neutral-200 bg-white shadow-lg transition-shadow hover:shadow-xl"
@@ -242,6 +279,62 @@ export default function ServiceList() {
                                 </div>
                             </Card>
                         ))}
+                    </div>
+                )}
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && filteredServices.length > 0 && (
+                    <div className="mt-8 flex items-center justify-center gap-2">
+                        <Button
+                            onClick={goToPreviousPage}
+                            disabled={currentPage === 1}
+                            variant="outline"
+                            className="px-4 py-2"
+                        >
+                            Previous
+                        </Button>
+
+                        <div className="flex gap-1">
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => {
+                                // Show first page, last page, current page, and pages around current
+                                const showPage =
+                                    pageNum === 1 ||
+                                    pageNum === totalPages ||
+                                    (pageNum >= currentPage - 1 && pageNum <= currentPage + 1);
+
+                                const showEllipsis =
+                                    (pageNum === currentPage - 2 && currentPage > 3) ||
+                                    (pageNum === currentPage + 2 && currentPage < totalPages - 2);
+
+                                if (showEllipsis) {
+                                    return <span key={pageNum} className="px-2 py-2 text-neutral-500">...</span>;
+                                }
+
+                                if (!showPage) return null;
+
+                                return (
+                                    <button
+                                        key={pageNum}
+                                        onClick={() => goToPage(pageNum)}
+                                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${currentPage === pageNum
+                                            ? "bg-neutral-900 text-white"
+                                            : "bg-white text-neutral-700 hover:bg-neutral-100 border border-neutral-300"
+                                            }`}
+                                    >
+                                        {pageNum}
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        <Button
+                            onClick={goToNextPage}
+                            disabled={currentPage === totalPages}
+                            variant="outline"
+                            className="px-4 py-2"
+                        >
+                            Next
+                        </Button>
                     </div>
                 )}
             </div>
