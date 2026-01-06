@@ -293,12 +293,8 @@ export default function ServiceList() {
 
   /* ================= AUTH + LOAD ================= */
   useEffect(() => {
-    if (!auth.isAuthenticated) {
-      navigate("/customer/login");
-      return;
-    }
     fetchServices();
-  }, [auth.isAuthenticated, navigate]);
+  }, []);
 
   const fetchServices = async () => {
     try {
@@ -471,9 +467,13 @@ export default function ServiceList() {
 
                   <Button
                     className="mt-4 w-full bg-gradient-to-r from-indigo-500 to-emerald-500 hover:opacity-90"
-                    onClick={() =>
-                      navigate("/customer/book", { state: { service } })
-                    }
+                    onClick={() => {
+                      if (!auth.isAuthenticated) {
+                        navigate("/login");
+                        return;
+                      }
+                      navigate("/customer/book", { state: { service } });
+                    }}
                   >
                     Book Now
                   </Button>
