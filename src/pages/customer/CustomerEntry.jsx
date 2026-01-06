@@ -54,10 +54,10 @@ export default function CustomerEntry() {
                 console.log("Profile check response status:", res.status);
 
                 if (res.status === 200) {
-                    // ✅ Existing customer → go to customer dashboard
+                    // ✅ Existing customer → go to services page
                     const data = await res.json();
                     console.log("Existing customer profile:", data);
-                    navigate("/customer/dashboard");
+                    navigate("/customer/services");
                 } else if (res.status === 404) {
                     // 🆕 First time → go to registration form
                     console.log("New customer - redirecting to registration");

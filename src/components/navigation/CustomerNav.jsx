@@ -7,6 +7,7 @@ import {
     PlusCircle,
     Calendar,
     ShoppingBag,
+    MessageSquare,
     User,
     LogOut,
 } from "lucide-react";
@@ -63,6 +64,13 @@ export default function CustomerNav({ currentUser, onGoLogout }) {
                         className={isActive("/customer/services") ? "bg-neutral-100" : ""}
                     >
                         <ShoppingBag className="h-4 w-4" /> Browse Services
+                    </GhostButton>
+
+                    <GhostButton
+                        onClick={() => alert("Messages feature coming soon!")}
+                        className=""
+                    >
+                        <MessageSquare className="h-4 w-4" /> Messages
                     </GhostButton>
 
                     <div className="ml-2 h-8 w-px bg-neutral-200" />
