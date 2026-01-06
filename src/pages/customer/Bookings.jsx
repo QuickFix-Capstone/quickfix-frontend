@@ -4,20 +4,24 @@ import { useAuth } from "react-oidc-context";
 import { useNavigate } from "react-router-dom";
 import Card from "../../components/UI/Card";
 import Button from "../../components/UI/Button";
-import { ArrowLeft, Calendar, Clock, MapPin, DollarSign, AlertCircle } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, MapPin, DollarSign, AlertCircle, ChevronLeft, ChevronRight, Filter } from "lucide-react";
 
 export default function Bookings() {
     const auth = useAuth();
     const navigate = useNavigate();
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [statusFilter, setStatusFilter] = useState("all");
+    const [limit] = useState(20);
+    const [offset, setOffset] = useState(0);
+    const [pagination, setPagination] = useState({ total: 0, has_more: false });
 
     const statusColors = {
-        PENDING: "bg-yellow-100 text-yellow-800 border-yellow-200",
-        CONFIRMED: "bg-blue-100 text-blue-800 border-blue-200",
-        IN_PROGRESS: "bg-purple-100 text-purple-800 border-purple-200",
-        COMPLETED: "bg-green-100 text-green-800 border-green-200",
-        CANCELLED: "bg-red-100 text-red-800 border-red-200",
+        pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
+        confirmed: "bg-blue-100 text-blue-800 border-blue-200",
+        in_progress: "bg-purple-100 text-purple-800 border-purple-200",
+        completed: "bg-green-100 text-green-800 border-green-200",
+        cancelled: "bg-red-100 text-red-800 border-red-200",
     };
 
     const categoryColors = {
@@ -36,13 +40,25 @@ export default function Bookings() {
         }
 
         fetchBookings();
-    }, [auth.isAuthenticated, navigate]);
+    }, [auth.isAuthenticated, navigate, statusFilter, offset]);
 
     const fetchBookings = async () => {
+        setLoading(true);
         try {
             const token = auth.user?.id_token || auth.user?.access_token;
+
+            // Construct Query Parameters
+            const params = new URLSearchParams();
+            if (statusFilter !== "all") {
+                params.append("status", statusFilter);
+            }
+            params.append("limit", limit);
+            params.append("offset", offset);
+
+            console.log("Fetching bookings with params:", params.toString());
+
             const res = await fetch(
-                "https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/booking",
+                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/customer/bookings?${params.toString()}`,
                 {
                     method: "GET",
                     headers: {
@@ -53,11 +69,17 @@ export default function Bookings() {
 
             if (res.ok) {
                 const data = await res.json();
+                console.log("Bookings API response:", data);
                 // Handle both array and object with bookings property
-                const bookingsList = Array.isArray(data) ? data : (data.bookings || []);
-                setBookings(bookingsList);
+                if (Array.isArray(data)) {
+                    setBookings(data);
+                    setPagination({ total: data.length, has_more: false });
+                } else {
+                    setBookings(data.bookings || []);
+                    setPagination(data.pagination || { total: 0, has_more: false });
+                }
             } else {
-                console.error("Failed to fetch bookings");
+                console.error("Failed to fetch bookings", res.status, res.statusText);
             }
         } catch (err) {
             console.error("Error fetching bookings:", err);
@@ -139,28 +161,60 @@ export default function Bookings() {
                         <ArrowLeft className="h-4 w-4" />
                         Back to Dashboard
                     </Button>
-                    <h1 className="text-3xl font-bold text-neutral-900">My Bookings</h1>
-                    <p className="mt-1 text-neutral-600">
-                        View and manage your service bookings
-                    </p>
+                    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                        <div>
+                            <h1 className="text-3xl font-bold text-neutral-900">My Bookings</h1>
+                            <p className="mt-1 text-neutral-600">
+                                View and manage your service bookings
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Filters */}
+                    <div className="mt-6 flex flex-wrap gap-2">
+                        {["all", "pending", "confirmed", "in_progress", "completed", "cancelled"].map((status) => (
+                            <button
+                                key={status}
+                                onClick={() => {
+                                    setStatusFilter(status);
+                                    setOffset(0); // Reset pagination on filter change
+                                }}
+                                className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${statusFilter === status
+                                    ? "bg-neutral-900 text-white"
+                                    : "bg-white text-neutral-600 hover:bg-neutral-100 border border-neutral-200"
+                                    }`}
+                            >
+                                {status.charAt(0).toUpperCase() + status.slice(1).replace("_", " ")}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 {/* Bookings List */}
-                {bookings.length === 0 ? (
+                {loading ? (
+                    <div className="flex py-12 items-center justify-center">
+                        <div className="text-neutral-500">Loading bookings...</div>
+                    </div>
+                ) : bookings.length === 0 ? (
                     <Card className="border-neutral-200 bg-white p-12 text-center shadow-lg">
                         <AlertCircle className="mx-auto mb-4 h-12 w-12 text-neutral-400" />
                         <p className="mb-2 text-lg font-medium text-neutral-700">
-                            No bookings yet
+                            No {statusFilter !== 'all' ? statusFilter.replace('_', ' ') : ''} bookings found
                         </p>
                         <p className="mb-6 text-neutral-500">
-                            Start by booking a service from our available offerings
+                            {statusFilter !== 'all'
+                                ? "Try selecting a different status filter"
+                                : "Start by booking a service from our available offerings"
+                            }
                         </p>
-                        <Button
-                            onClick={() => navigate("/customer/services")}
-                            className="bg-neutral-900 hover:bg-neutral-800"
-                        >
-                            Browse Services
-                        </Button>
+                        {statusFilter === 'all' && (
+                            <Button
+                                onClick={() => navigate("/customer/services")}
+                                className="bg-neutral-900 hover:bg-neutral-800"
+                            >
+                                Browse Services
+                            </Button>
+                        )}
                     </Card>
                 ) : (
                     <div className="space-y-4">
@@ -190,7 +244,7 @@ export default function Bookings() {
                                                         "bg-neutral-100 text-neutral-800 border-neutral-200"
                                                         }`}
                                                 >
-                                                    {booking.status}
+                                                    {booking.status?.replace("_", " ").toUpperCase()}
                                                 </span>
                                             </div>
                                         </div>
@@ -211,16 +265,16 @@ export default function Bookings() {
                                         <div className="flex items-start gap-2 text-sm text-neutral-600">
                                             <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />
                                             <span>
-                                                {booking.service_address}, {booking.service_city},{" "}
-                                                {booking.service_state} {booking.service_postal_code}
+                                                {booking.location?.address}, {booking.location?.city},{" "}
+                                                {booking.location?.state} {booking.location?.postal_code}
                                             </span>
                                         </div>
 
                                         {/* Provider */}
-                                        {booking.provider_name && (
+                                        {booking.provider?.name && (
                                             <div className="text-sm text-neutral-600">
                                                 <span className="font-medium">Provider:</span>{" "}
-                                                {booking.provider_name}
+                                                {booking.provider.name}
                                             </div>
                                         )}
 
@@ -247,7 +301,7 @@ export default function Bookings() {
 
                                         {/* Actions */}
                                         <div className="flex flex-col gap-2 w-full">
-                                            {booking.status === "PENDING" && (
+                                            {booking.status === "pending" && (
                                                 <Button
                                                     onClick={() => handleCancelBooking(booking.booking_id)}
                                                     variant="outline"
@@ -273,6 +327,33 @@ export default function Bookings() {
                                 </div>
                             </Card>
                         ))}
+                    </div>
+                )}
+
+                {/* Pagination Controls */}
+                {!loading && bookings.length > 0 && (
+                    <div className="mt-8 flex items-center justify-between border-t border-neutral-200 pt-4">
+                        <div className="text-sm text-neutral-500">
+                            Showing {offset + 1} to {Math.min(offset + bookings.length, pagination.total)} of {pagination.total} results
+                        </div>
+                        <div className="flex gap-2">
+                            <Button
+                                onClick={() => setOffset(Math.max(0, offset - limit))}
+                                disabled={offset === 0}
+                                variant="outline"
+                                className="gap-1"
+                            >
+                                <ChevronLeft className="h-4 w-4" /> Previous
+                            </Button>
+                            <Button
+                                onClick={() => setOffset(offset + limit)}
+                                disabled={!pagination.has_more}
+                                variant="outline"
+                                className="gap-1"
+                            >
+                                Next <ChevronRight className="h-4 w-4" />
+                            </Button>
+                        </div>
                     </div>
                 )}
             </div>
