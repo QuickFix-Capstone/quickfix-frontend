@@ -50,6 +50,7 @@ export default function ServiceList() {
     useEffect(() => {
         filterServices();
         setCurrentPage(1); // Reset to page 1 when filters change
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [services, searchQuery, selectedCategory]);
 
     const fetchServices = async () => {

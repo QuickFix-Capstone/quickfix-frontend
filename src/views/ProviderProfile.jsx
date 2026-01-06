@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
     getOfferingsByProvider,
     updateServiceOffering,
@@ -19,7 +19,7 @@ export default function ServiceProviderDashboard() {
         try {
             const data = await getOfferingsByProvider(providerId);
             setOfferings(data);
-        } catch (err) {
+        } catch {
             setMessage("Failed to load offerings.");
         } finally {
             setLoading(false);
@@ -38,7 +38,7 @@ export default function ServiceProviderDashboard() {
             alert("Service updated!");
             setEditId(null);
             fetchOfferings();
-        } catch (err) {
+        } catch {
             setMessage("Error saving changes.");
             alert("Error saving changes.");
         }

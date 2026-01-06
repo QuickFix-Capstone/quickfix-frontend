@@ -26,6 +26,7 @@ export default function JobDetails() {
 
     useEffect(() => {
         fetchJobDetails();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [job_id]);
 
     const fetchJobDetails = async () => {

@@ -28,6 +28,7 @@ export default function JobApplications() {
 
     useEffect(() => {
         fetchApplications();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [job_id]);
 
     const fetchApplications = async () => {

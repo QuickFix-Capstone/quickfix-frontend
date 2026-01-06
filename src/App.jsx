@@ -71,7 +71,6 @@ export default function App() {
   const [registerError, setRegisterError] = useState("");
   const [resetError, setResetError] = useState("");
   const [resetInfo, setResetInfo] = useState("");
-  const [resetConfirmInfo, setResetConfirmInfo] = useState("");
 
   // Load local auth user once
   useEffect(() => {
@@ -217,7 +216,6 @@ export default function App() {
           <ResetPasswordConfirm
             onResetPassword={handleConfirmReset}
             error={resetError}
-            info={resetConfirmInfo}
           />
         } />
 
