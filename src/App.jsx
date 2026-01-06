@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Routes, Route, useNavigate } from "react-router-dom";
+import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "react-oidc-context";
 
 // Layout
@@ -13,13 +13,43 @@ import ProviderProfile from "./views/ProviderProfile";
 
 // Pages
 import Login from "./pages/Login";
-import RegisterCustomer from "./pages/RegisterCustomer";
+import CustomerLogin from "./pages/customer/CustomerLogin";
+import CustomerDashboard from "./pages/customer/Dashboard";
+import RegisterCustomer from "./pages/customer/RegisterCustomer";
+import EditProfile from "./pages/customer/EditProfile";
+import ServiceList from "./pages/customer/ServiceList";
+import Bookings from "./pages/customer/Bookings";
+import BookingForm from "./pages/customer/BookingForm";
+import PostJob from "./pages/customer/PostJob";
+import MyJobs from "./pages/customer/MyJobs";
+import JobDetails from "./pages/customer/JobDetails";
+import EditJob from "./pages/customer/EditJob";
+import JobApplications from "./pages/customer/JobApplications";
 import RegisterProvider from "./pages/RegisterProvider";
 import ResetPassword from "./pages/ResetPassword";
 import ResetPasswordConfirm from "./pages/ResetPasswordConfirm";
 import Logout from "./pages/Logout";
-import CustomerEntry from "./pages/CustomerEntry";
+
+import AuthCallback from "./pages/AuthCallback";
+
+import GhostButton from "./components/UI/GhostButton";
+import CustomerEntry from "./pages/customer/CustomerEntry";
 import ServiceProviderEntry from "./pages/ServiceProviderEntry";
+import CustomerNav from "./components/navigation/CustomerNav";
+import Button from "./components/UI/Button";
+
+import {
+  ShieldCheck,
+  HomeIcon,
+  Search,
+  PlusCircle,
+  MessageSquare,
+  CreditCard,
+  Briefcase,
+  Settings,
+  User,
+  LogOut,
+} from "lucide-react";
 
 // Local Auth
 import {
@@ -33,6 +63,7 @@ import {
 
 export default function App() {
   const navigate = useNavigate();
+  const location = useLocation();
   const auth = useAuth();
 
   const [localUser, setLocalUser] = useState(null);
@@ -120,23 +151,51 @@ export default function App() {
     }
   };
 
-  // ROUTES ----------
-  return (
-    <div className="min-h-screen bg-neutral-100">
-      <TopNav currentUser={currentUser} onLogout={handleLogout} />
+  // Determine if we're on a customer route
+  const isCustomerRoute = location.pathname.startsWith('/customer');
 
+  return (
+    <div className="min-h-screen bg-neutral-100 text-neutral-900">
+      {/* Show CustomerNav only on customer routes, TopNav everywhere else */}
+      {isCustomerRoute ? (
+        <CustomerNav
+          currentUser={currentUser}
+          onGoLogout={handleLogout}
+        />
+      ) : (
+        <TopNav
+          currentUser={currentUser}
+          onLogout={handleLogout}
+        />
+      )}
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={<Home currentUser={currentUser} />} />
         <Route path="/search" element={<SearchView />} />
 
         {/* Provider */}
         <Route path="/provider/create-gig" element={<ProviderCreateGig />} />
         <Route path="/provider/service-offerings/:providerId" element={<ProviderProfile />} />
 
-        {/* Auth */}
+        {/* Auth Routes */}
+        <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/login" element={
           <Login onLogin={handleLogin} error={loginError} />
         } />
+
+        <Route path="/customer/login" element={<CustomerLogin />} />
+        <Route path="/customer/dashboard" element={<CustomerDashboard />} />
+        <Route path="/customer/edit" element={<EditProfile />} />
+        <Route path="/customer/services" element={<ServiceList />} />
+        <Route path="/customer/bookings" element={<Bookings />} />
+        <Route path="/customer/book" element={<BookingForm />} />
+        <Route path="/customer/post-job" element={<PostJob />} />
+        <Route path="/customer/jobs" element={<MyJobs />} />
+        <Route path="/customer/jobs/:job_id" element={<JobDetails />} />
+        <Route path="/customer/jobs/:job_id/edit" element={<EditJob />} />
+        <Route path="/customer/jobs/:job_id/applications" element={<JobApplications />} />
+
+        <Route path="/customer/entry" element={<CustomerEntry />} />
+        <Route path="/provider/entry" element={<ServiceProviderEntry />} />
 
         <Route path="/customer/register" element={
           <RegisterCustomer onRegister={handleRegister} error={registerError} />
@@ -145,9 +204,6 @@ export default function App() {
         <Route path="/provider/register" element={
           <RegisterProvider onRegister={handleRegister} error={registerError} />
         } />
-
-        <Route path="/customer/entry" element={<CustomerEntry />} />
-        <Route path="/provider/entry" element={<ServiceProviderEntry />} />
 
         <Route path="/reset-password" element={
           <ResetPassword
