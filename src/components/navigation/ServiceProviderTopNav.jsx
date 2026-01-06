@@ -28,7 +28,8 @@ export default function TopNav({ currentUser, onLogout }) {
 
   const avatarLetter = displayName[0]?.toUpperCase();
 
-  const NavItem = ({ icon: Icon, label, path }) => (
+  // eslint-disable-next-line no-unused-vars
+  const NavItem = ({ icon: IconComponent, label, path }) => (
     <GhostButton
       onClick={() => {
         navigate(path);
@@ -41,7 +42,7 @@ export default function TopNav({ currentUser, onLogout }) {
             : "hover:bg-neutral-50"
         }`}
     >
-      <Icon className="h-4 w-4" />
+      <IconComponent className="h-4 w-4" />
       {label}
     </GhostButton>
   );

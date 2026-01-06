@@ -1,5 +1,4 @@
 // import { Amplify } from "aws-amplify";
-import { fetchAuthSession } from "aws-amplify/auth";
 
 // Amplify.configure({
 //     Auth: {
