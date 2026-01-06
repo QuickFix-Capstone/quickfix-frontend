@@ -236,9 +236,11 @@ import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "react-oidc-context";
 
 // ================= LAYOUTS =================
-import TopNav from "./components/layout/TopNav";
+// import TopNav from "./components/layout/TopNav";
 import CustomerNav from "./components/navigation/CustomerNav";
+import ServiceProviderNav from "./components/navigation/ServiceProviderTopNav";
 import ServiceProviderLayout from "./components/layout/ServiceProviderLayout";
+import TopNav from "./components/layout/TopNav";
 
 // ================= VIEWS =================
 import Home from "./views/Home";
@@ -380,17 +382,27 @@ export default function App() {
 
   // ================= NAV SELECTION =================
   const isCustomerRoute = location.pathname.startsWith("/customer");
-  const isProviderRoute = location.pathname.startsWith("/provider");
+  const isProviderRoute = location.pathname.startsWith("/service-provider");
 
   return (
     <div className="min-h-screen bg-neutral-100 text-neutral-900">
       {/* ================= NAV ================= */}
-      {!isProviderRoute &&
-        (isCustomerRoute ? (
-          <CustomerNav currentUser={currentUser} onGoLogout={handleLogout} />
-        ) : (
-          <TopNav currentUser={currentUser} onLogout={handleLogout} />
-        ))}
+      {/* {isCustomerRoute ? (
+        <CustomerNav currentUser={currentUser} onGoLogout={handleLogout} />
+      ) : isProviderRoute ? (
+        <ServiceProviderNav
+          currentUser={currentUser}
+          onGoLogout={handleLogout}
+        />
+      ) : (
+        <TopNav currentUser={currentUser} onLogout={handleLogout} />
+      )} */}
+
+      {isCustomerRoute ? (
+        <CustomerLayout currentUser={currentUser} onLogout={handleLogout} />
+      ) : (
+        <TopNav currentUser={currentUser} onLogout={handleLogout} />
+      )}
 
       {/* ================= ROUTES ================= */}
       <Routes>
