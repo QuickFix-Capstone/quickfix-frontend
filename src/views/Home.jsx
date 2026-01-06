@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Card from "../components/UI/Card";
 import Button from "../components/UI/Button";
 import Input from "../components/UI/Input";
@@ -11,15 +12,27 @@ export default function Home({
   searchTerm: propSearchTerm,
   setSearchTerm: propSetSearchTerm,
   onSearchClick,
-  onViewGig
+  onViewGig,
+  currentUser
 }) {
   const [localSearchTerm, setLocalSearchTerm] = useState("");
+  const navigate = useNavigate();
 
   const searchTerm = propSearchTerm !== undefined ? propSearchTerm : localSearchTerm;
   const setSearchTerm = propSetSearchTerm || setLocalSearchTerm;
 
   const handleSearch = () => {
     if (onSearchClick) onSearchClick(searchTerm);
+  };
+
+  const handleViewBook = (gig) => {
+    // If user is not logged in, redirect to login
+    if (!currentUser) {
+      navigate("/login");
+      return;
+    }
+    // Otherwise, proceed with the onViewGig callback
+    if (onViewGig) onViewGig(gig);
   };
 
   const categories = ["Plumbing", "Electrical", "HVAC", "Handyman", "Appliance Repair", "Painting"];
@@ -83,7 +96,7 @@ export default function Home({
                     From <span className="font-semibold">${g.price}</span>
                   </p>
 
-                  <Button onClick={() => onViewGig && onViewGig(g)}>
+                  <Button onClick={() => handleViewBook(g)}>
                     View / Book <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>

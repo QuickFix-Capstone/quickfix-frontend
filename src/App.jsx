@@ -35,6 +35,7 @@ import AuthCallback from "./pages/AuthCallback";
 import GhostButton from "./components/UI/GhostButton";
 import CustomerEntry from "./pages/customer/CustomerEntry";
 import ServiceProviderEntry from "./pages/ServiceProviderEntry";
+import CustomerNav from "./components/navigation/CustomerNav";
 import Button from "./components/UI/Button";
 
 import {
@@ -75,50 +76,6 @@ function TopNav({ currentUser, onGoLogout }) {
         </div>
         <div className="flex-1" />
         <div className="hidden items-center gap-2 md:flex">
-          <GhostButton
-            onClick={() => navigate("/")}
-            className={isActive("/") ? "bg-neutral-100" : ""}
-          >
-            <HomeIcon className="h-4 w-4" /> Home
-          </GhostButton>
-          <GhostButton
-            onClick={() => navigate("/search")}
-            className={isActive("/search") ? "bg-neutral-100" : ""}
-          >
-            <Search className="h-4 w-4" /> Search
-          </GhostButton>
-          <GhostButton
-            onClick={() => navigate("/post-job")}
-            className={isActive("/post-job") ? "bg-neutral-100" : ""}
-          >
-            <PlusCircle className="h-4 w-4" /> Post Job
-          </GhostButton>
-          <GhostButton
-            onClick={() => navigate("/messages")}
-            className={isActive("/messages") ? "bg-neutral-100" : ""}
-          >
-            <MessageSquare className="h-4 w-4" /> Messages
-          </GhostButton>
-          <GhostButton
-            onClick={() => navigate("/checkout")}
-            className={isActive("/checkout") ? "bg-neutral-100" : ""}
-          >
-            <CreditCard className="h-4 w-4" /> Checkout
-          </GhostButton>
-          <GhostButton
-            onClick={() => navigate("/provider")}
-            className={isActive("/provider") ? "bg-neutral-100" : ""}
-          >
-            <Briefcase className="h-4 w-4" /> Provider
-          </GhostButton>
-          <GhostButton
-            onClick={() => navigate("/admin")}
-            className={isActive("/admin") ? "bg-neutral-100" : ""}
-          >
-            <Settings className="h-4 w-4" /> Admin
-          </GhostButton>
-
-          <div className="ml-2 h-8 w-px bg-neutral-200" />
 
           {!currentUser ? (
             <GhostButton onClick={() => navigate("/login")}>
@@ -143,6 +100,7 @@ function TopNav({ currentUser, onGoLogout }) {
 
 export default function App() {
   const navigate = useNavigate();
+  const location = useLocation();
   const auth = useAuth();
 
   const [localUser, setLocalUser] = useState(null);
@@ -249,14 +207,25 @@ export default function App() {
     }
   };
 
+  // Determine if we're on a customer route
+  const isCustomerRoute = location.pathname.startsWith('/customer');
+
   return (
     <div className="min-h-screen bg-neutral-100 text-neutral-900">
-      <TopNav
-        currentUser={currentUser}
-        onGoLogout={handleLogout}
-      />
+      {/* Show CustomerNav only on customer routes, TopNav everywhere else */}
+      {isCustomerRoute ? (
+        <CustomerNav
+          currentUser={currentUser}
+          onGoLogout={handleLogout}
+        />
+      ) : (
+        <TopNav
+          currentUser={currentUser}
+          onGoLogout={handleLogout}
+        />
+      )}
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={<Home currentUser={currentUser} />} />
         <Route path="/search" element={<SearchView />} />
         <Route path="/post-job" element={<PostJobWizard />} />
         <Route path="/messages" element={<Messages />} />
