@@ -665,7 +665,7 @@ export default function ServiceProviderOnboarding() {
         throw new Error(err.error || "Failed to complete onboarding");
       }
 
-      navigate("/provider/dashboard", { replace: true });
+      navigate("/service-provider/dashboard", { replace: true });
     } catch (e) {
       setError(e.message);
     } finally {
