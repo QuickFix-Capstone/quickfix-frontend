@@ -4,7 +4,7 @@ import Input from "../components/UI/Input";
 import Tag from "../components/UI/Tag";
 import Rating from "../components/UI/Rating";
 
-export default function SearchView({ searchTerm, setSearchTerm, onBookGig }) {
+export default function SearchView({ searchTerm, setSearchTerm, onBookGig, gigs = [] }) {
   const categories = ["Plumbing", "Electrical", "HVAC", "Handyman", "Appliance Repair", "Painting"];
 
   const filtered = gigs.filter((g) =>

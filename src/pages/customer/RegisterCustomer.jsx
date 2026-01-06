@@ -31,9 +31,7 @@ export default function RegisterCustomer({
   });
 
   const [submitting, setSubmitting] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [isEditMode, setIsEditMode] = useState(false);
 
   // 🐛 Debug: Log auth state on mount
   useEffect(() => {
@@ -75,8 +73,6 @@ export default function RegisterCustomer({
   // Basic info from Cognito token
   const email = auth.user.profile.email;
   const cognitoSub = auth.user.profile.sub;
-  const displayName =
-    auth.user.profile.name || auth.user.profile.given_name || email;
 
   // ─────────────────────────────────────────────
   // 1. Handlers

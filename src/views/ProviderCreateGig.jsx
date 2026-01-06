@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { createServiceOffering } from "../api/quickfix";
 
 export default function ProviderCreateGig() {
@@ -27,10 +27,10 @@ export default function ProviderCreateGig() {
     setMessage("");
 
     try {
-      const res = await createServiceOffering(form);
+      await createServiceOffering(form);
       setMessage("Service offering created successfully!");
       alert("Service offering created successfully! 🎉");
-    } catch (err) {
+    } catch {
       setMessage("Error: Could not create service offering.");
       alert("Error: Could not create service offering.🥲");
     } finally {

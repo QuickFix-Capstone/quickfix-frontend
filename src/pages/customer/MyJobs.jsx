@@ -16,6 +16,7 @@ export default function MyJobs() {
 
     useEffect(() => {
         fetchJobs();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [offset]);
 
     const fetchJobs = async () => {
