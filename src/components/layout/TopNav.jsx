@@ -21,9 +21,11 @@ export default function TopNav({ currentUser, onLogout }) {
   return (
     <div className="sticky top-0 z-20 border-b border-neutral-200 bg-white/80 backdrop-blur">
       <div className="mx-auto max-w-7xl flex items-center gap-4 px-4 py-3">
-
         {/* Logo */}
-        <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
+        <div
+          className="flex items-center gap-2 cursor-pointer"
+          onClick={() => navigate("/")}
+        >
           <ShieldCheck className="h-6 w-6" />
           <span className="text-lg font-bold">QuickFix</span>
         </div>
@@ -32,29 +34,42 @@ export default function TopNav({ currentUser, onLogout }) {
 
         {/* NAV BUTTONS */}
         <div className="hidden md:flex items-center gap-2">
-
           {/* Home */}
-          <GhostButton onClick={() => navigate("/")} className={isActive("/") ? "bg-neutral-100" : ""}>
+          <GhostButton
+            onClick={() => navigate("/")}
+            className={isActive("/") ? "bg-neutral-100" : ""}
+          >
             <HomeIcon className="h-4 w-4" /> Home
           </GhostButton>
 
           {/* Search */}
-          <GhostButton onClick={() => navigate("/search")} className={isActive("/search") ? "bg-neutral-100" : ""}>
+          <GhostButton
+            onClick={() => navigate("/search")}
+            className={isActive("/search") ? "bg-neutral-100" : ""}
+          >
             <Search className="h-4 w-4" /> Search
           </GhostButton>
 
           {/* POST JOB → YOU WANTED THIS */}
           <GhostButton
-            onClick={() => navigate("/provider/create-gig")}
-            className={isActive("/provider/create-gig") ? "bg-neutral-100" : ""}
+            onClick={() => navigate("/service-provider/create-gig")}
+            className={
+              isActive("/service-provider/create-gig") ? "bg-neutral-100" : ""
+            }
           >
             <PlusCircle className="h-4 w-4" /> Post Job
           </GhostButton>
 
           {/* PROVIDER → YOU WANTED THIS */}
           <GhostButton
-            onClick={() => navigate("/provider/service-offerings/9")}
-            className={location.pathname.startsWith("/provider/service-offerings") ? "bg-neutral-100" : ""}
+            onClick={() => navigate("/service-provider/service-offerings/9")}
+            className={
+              location.pathname.startsWith(
+                "/service-provider/service-offerings"
+              )
+                ? "bg-neutral-100"
+                : ""
+            }
           >
             <Briefcase className="h-4 w-4" /> Provider
           </GhostButton>
@@ -93,7 +108,8 @@ export default function TopNav({ currentUser, onLogout }) {
           ) : (
             <>
               <span className="text-xs text-neutral-600">
-                {currentUser.role}: <strong>{currentUser.name || currentUser.email}</strong>
+                {currentUser.role}:{" "}
+                <strong>{currentUser.name || currentUser.email}</strong>
               </span>
               <GhostButton onClick={onLogout}>
                 <LogOut className="h-4 w-4" /> Logout
