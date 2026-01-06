@@ -57,10 +57,11 @@ export default function Login() {
                 I'm a Service Provider
               </h2>
               <p className="mb-6 text-sm text-neutral-600">
-                Grow your business by connecting with customers who need your services
+                Grow your business by connecting with customers who need your
+                services
               </p>
               <Button
-                onClick={() => navigate("/provider/login")}
+                onClick={() => navigate("/service-provider/login")}
                 className="w-full bg-green-600 hover:bg-green-700"
               >
                 Continue as Provider
