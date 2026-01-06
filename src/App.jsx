@@ -58,8 +58,19 @@ import {
   getCurrentUser,
   logoutUser,
   requestPasswordReset,
-  resetPassword
+  resetPassword,
 } from "./auth/localAuth";
+
+import ServiceProviderSignUp from "./pages/ServiceProvider/ServiceProviderSignUp";
+import ServiceProviderLogin from "./pages/ServiceProvider/ServiceProviderLogin";
+import ServiceProviderOnboarding from "./pages/ServiceProvider/ServiceProviderOnboarding";
+import ServiceProviderDashboard from "./pages/ServiceProvider/ServiceProviderDashboard";
+import CreateServiceOffering from "./pages/ServiceProvider/CreateServiceOffering";
+import AuthRedirect from "./pages/Auth/AuthRedirect";
+import ServiceProviderHomePage from "./pages/ServiceProvider/ServiceProviderHomePage";
+import ServiceProviderLayout from "./components/layout/ServiceProviderLayout";
+import JobDetailsPage from "./pages/ServiceProvider/JobDetailsPage";
+import ServiceProviderProfile from "./pages/ServiceProvider/ServiceProviderProfile";
 
 export default function App() {
   const navigate = useNavigate();
@@ -81,10 +92,10 @@ export default function App() {
 
   const oidcUser = auth.user
     ? {
-      name: auth.user.profile.name || auth.user.profile.email,
-      email: auth.user.profile.email,
-      role: "customer"
-    }
+        name: auth.user.profile.name || auth.user.profile.email,
+        email: auth.user.profile.email,
+        role: "customer",
+      }
     : null;
 
   const currentUser = oidcUser || localUser;
@@ -152,21 +163,15 @@ export default function App() {
   };
 
   // Determine if we're on a customer route
-  const isCustomerRoute = location.pathname.startsWith('/customer');
+  const isCustomerRoute = location.pathname.startsWith("/customer");
 
   return (
     <div className="min-h-screen bg-neutral-100 text-neutral-900">
       {/* Show CustomerNav only on customer routes, TopNav everywhere else */}
       {isCustomerRoute ? (
-        <CustomerNav
-          currentUser={currentUser}
-          onGoLogout={handleLogout}
-        />
+        <CustomerNav currentUser={currentUser} onGoLogout={handleLogout} />
       ) : (
-        <TopNav
-          currentUser={currentUser}
-          onLogout={handleLogout}
-        />
+        <TopNav currentUser={currentUser} onLogout={handleLogout} />
       )}
       <Routes>
         <Route path="/" element={<Home currentUser={currentUser} />} />
@@ -174,13 +179,17 @@ export default function App() {
 
         {/* Provider */}
         <Route path="/provider/create-gig" element={<ProviderCreateGig />} />
-        <Route path="/provider/service-offerings/:providerId" element={<ProviderProfile />} />
+        <Route
+          path="/provider/service-offerings/:providerId"
+          element={<ProviderProfile />}
+        />
 
         {/* Auth Routes */}
         <Route path="/auth/callback" element={<AuthCallback />} />
-        <Route path="/login" element={
-          <Login onLogin={handleLogin} error={loginError} />
-        } />
+        <Route
+          path="/login"
+          element={<Login onLogin={handleLogin} error={loginError} />}
+        />
 
         <Route path="/customer/login" element={<CustomerLogin />} />
         <Route path="/customer/dashboard" element={<CustomerDashboard />} />
@@ -192,38 +201,79 @@ export default function App() {
         <Route path="/customer/jobs" element={<MyJobs />} />
         <Route path="/customer/jobs/:job_id" element={<JobDetails />} />
         <Route path="/customer/jobs/:job_id/edit" element={<EditJob />} />
-        <Route path="/customer/jobs/:job_id/applications" element={<JobApplications />} />
+        <Route
+          path="/customer/jobs/:job_id/applications"
+          element={<JobApplications />}
+        />
 
         <Route path="/customer/entry" element={<CustomerEntry />} />
         <Route path="/provider/entry" element={<ServiceProviderEntry />} />
 
-        <Route path="/customer/register" element={
-          <RegisterCustomer onRegister={handleRegister} error={registerError} />
-        } />
+        <Route
+          path="/customer/register"
+          element={
+            <RegisterCustomer
+              onRegister={handleRegister}
+              error={registerError}
+            />
+          }
+        />
 
-        <Route path="/provider/register" element={
-          <RegisterProvider onRegister={handleRegister} error={registerError} />
-        } />
+        <Route
+          path="/provider/register"
+          element={
+            <RegisterProvider
+              onRegister={handleRegister}
+              error={registerError}
+            />
+          }
+        />
 
-        <Route path="/reset-password" element={
-          <ResetPassword
-            onRequestReset={handleRequestReset}
-            error={resetError}
-            info={resetInfo}
+        <Route
+          path="/reset-password"
+          element={
+            <ResetPassword
+              onRequestReset={handleRequestReset}
+              error={resetError}
+              info={resetInfo}
+            />
+          }
+        />
+
+        <Route
+          path="/reset-confirm"
+          element={
+            <ResetPasswordConfirm
+              onResetPassword={handleConfirmReset}
+              error={resetError}
+              info={resetConfirmInfo}
+            />
+          }
+        />
+
+        <Route
+          path="/logout"
+          element={
+            <Logout onConfirm={handleLogout} onCancel={() => navigate("/")} />
+          }
+        />
+
+        {/* ✅ SERVICE PROVIDER AREA */}
+        <Route path="/sp/signup" element={<ServiceProviderSignUp />} />
+        <Route path="/sp/login" element={<ServiceProviderLogin />} />
+        <Route path="/auth/redirect" element={<AuthRedirect />} />
+        <Route path="/onboarding" element={<ServiceProviderOnboarding />} />
+
+        <Route path="/service-provider" element={<ServiceProviderLayout />}>
+          <Route path="dashboard" element={<ServiceProviderDashboard />} />
+          <Route
+            path="create-service-offering"
+            element={<CreateServiceOffering />}
           />
-        } />
-
-        <Route path="/reset-confirm" element={
-          <ResetPasswordConfirm
-            onResetPassword={handleConfirmReset}
-            error={resetError}
-            info={resetConfirmInfo}
-          />
-        } />
-
-        <Route path="/logout" element={
-          <Logout onConfirm={handleLogout} onCancel={() => navigate("/")} />
-        } />
+          <Route path="job/:jobId" element={<JobDetailsPage />} />
+          <Route path="home" element={<ServiceProviderHomePage />} />
+          <Route path="profile" element={<ServiceProviderProfile />} />
+        </Route>
       </Routes>
 
       <footer className="text-center py-8 text-neutral-400">
