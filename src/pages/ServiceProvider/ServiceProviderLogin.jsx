@@ -187,7 +187,7 @@ export default function Login() {
 
       await signIn({ username: email, password });
 
-      navigate("/auth/redirect", { replace: true });
+      navigate("/service-provider/dashboard", { replace: true });
     } catch (e) {
       const message =
         e.name === "NotAuthorizedException"
