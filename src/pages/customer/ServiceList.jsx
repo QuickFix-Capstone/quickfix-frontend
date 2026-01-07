@@ -61,7 +61,14 @@ export default function ServiceList() {
 
             if (res.ok) {
                 const data = await res.json();
-                setServices(data.items || []);
+                // Convert S3 paths to full URLs
+                const servicesWithFullUrls = (data.items || []).map(service => ({
+                    ...service,
+                    main_image_url: service.main_image_url
+                        ? `https://quickfix-app-files.s3.us-east-2.amazonaws.com/${service.main_image_url}`
+                        : null
+                }));
+                setServices(servicesWithFullUrls);
             } else {
                 console.error("Failed to fetch services");
             }
