@@ -4,6 +4,8 @@ import { useAuth } from "react-oidc-context";
 import { useNavigate } from "react-router-dom";
 import Card from "../../components/UI/Card";
 import Button from "../../components/UI/Button";
+import UnreadBadge from "../../components/messaging/UnreadBadge";
+import { getConversations } from "../../api/messaging";
 import { User, LogOut, Plus, Calendar, Settings, Upload, Briefcase, MessageSquare, TrendingUp, Clock } from "lucide-react";
 
 export default function CustomerDashboard() {
@@ -11,6 +13,7 @@ export default function CustomerDashboard() {
     const navigate = useNavigate();
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [totalUnread, setTotalUnread] = useState(0);
 
     useEffect(() => {
         if (!auth.isAuthenticated) {
@@ -47,6 +50,31 @@ export default function CustomerDashboard() {
 
         fetchProfile();
     }, [auth.isAuthenticated, auth.user, navigate]);
+
+    // Fetch unread message count
+    useEffect(() => {
+        if (!auth.isAuthenticated) return;
+
+        const fetchUnreadCount = async () => {
+            try {
+                const data = await getConversations(50);
+                const total = (data.conversations || []).reduce(
+                    (sum, conv) => sum + conv.unreadCount,
+                    0
+                );
+                setTotalUnread(total);
+            } catch (error) {
+                // Silently fail - user might not have any conversations yet
+                console.error("Failed to fetch unread count:", error);
+            }
+        };
+
+        fetchUnreadCount();
+
+        // Poll every 30 seconds for new messages
+        const interval = setInterval(fetchUnreadCount, 30000);
+        return () => clearInterval(interval);
+    }, [auth.isAuthenticated]);
 
     const handleLogout = async () => {
         // Clear the auth session locally and navigate to home
@@ -184,22 +212,37 @@ export default function CustomerDashboard() {
                         </Button>
                     </Card>
 
-                    {/* Messages Placeholder Card */}
+                    {/* Messages Card */}
                     <Card className="group cursor-pointer overflow-hidden border-0 bg-gradient-to-br from-pink-500 to-pink-600 p-6 text-white shadow-xl transition-all hover:shadow-2xl hover:scale-105">
-                        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
-                            <MessageSquare className="h-7 w-7" />
+                        <div className="mb-4 flex items-center justify-between">
+                            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
+                                <MessageSquare className="h-7 w-7" />
+                            </div>
+                            {totalUnread > 0 && (
+                                <div className="flex items-center gap-2">
+                                    <UnreadBadge count={totalUnread} />
+                                </div>
+                            )}
                         </div>
                         <h3 className="mb-2 text-xl font-bold">
                             Messages
+                            {totalUnread > 0 && (
+                                <span className="ml-2 text-sm font-normal text-pink-100">
+                                    ({totalUnread} unread)
+                                </span>
+                            )}
                         </h3>
                         <p className="mb-4 text-sm text-pink-100">
-                            Chat with service providers
+                            {totalUnread > 0
+                                ? "You have new messages from providers"
+                                : "Chat with service providers"
+                            }
                         </p>
                         <Button
-                            onClick={() => alert("Messages feature coming soon!")}
+                            onClick={() => navigate("/customer/messages")}
                             className="w-full bg-white text-pink-600 hover:bg-pink-50"
                         >
-                            Coming Soon
+                            {totalUnread > 0 ? "View Messages" : "Open Messages"}
                         </Button>
                     </Card>
                 </div>
