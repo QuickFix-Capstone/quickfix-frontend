@@ -18,10 +18,13 @@ export default function ConversationList({
 }) {
   if (loading) {
     return (
-      <div className="flex h-full items-center justify-center bg-white">
-        <div className="flex flex-col items-center gap-3">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-neutral-200 border-t-neutral-900"></div>
-          <p className="text-sm text-neutral-500">Loading conversations...</p>
+      <div className="flex h-full items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50">
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative">
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-blue-600"></div>
+            <div className="absolute inset-0 h-10 w-10 animate-pulse rounded-full bg-blue-100 opacity-20"></div>
+          </div>
+          <p className="text-sm font-medium text-slate-600">Loading conversations...</p>
         </div>
       </div>
     );
@@ -29,21 +32,23 @@ export default function ConversationList({
 
   if (conversations.length === 0) {
     return (
-      <div className="flex h-full flex-col items-center justify-center bg-white p-6 text-center">
-        <MessageSquare className="h-12 w-12 text-neutral-300" />
-        <p className="mt-3 text-sm font-medium text-neutral-600">
+      <div className="flex h-full flex-col items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50 p-6 text-center">
+        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center mb-4">
+          <MessageSquare className="h-8 w-8 text-blue-600" />
+        </div>
+        <p className="text-sm font-semibold text-slate-700">
           No conversations yet
         </p>
-        <p className="mt-1 text-xs text-neutral-400">
-          Start by messaging a service provider
+        <p className="mt-2 text-xs text-slate-500 max-w-[200px]">
+          Start by messaging a service provider about a job
         </p>
       </div>
     );
   }
 
   return (
-    <div className="h-full overflow-y-auto bg-white">
-      <div className="divide-y divide-neutral-100">
+    <div className="h-full overflow-y-auto bg-gradient-to-b from-white to-slate-50">
+      <div className="divide-y divide-slate-100">
         {conversations.map((conv) => {
           const isSelected =
             selectedConversation?.conversationId === conv.conversationId;
@@ -52,43 +57,45 @@ export default function ConversationList({
             <button
               key={conv.conversationId}
               onClick={() => onSelect(conv)}
-              className={`w-full px-4 py-3 text-left transition-colors hover:bg-neutral-50 ${
-                isSelected ? "bg-neutral-100" : ""
-              }`}
+              className={`w-full px-5 py-4 text-left transition-all hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 relative group ${isSelected ? "bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-600" : ""
+                }`}
             >
+              {/* Selection indicator */}
+              {isSelected && (
+                <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-600 to-indigo-600"></div>
+              )}
+
               {/* Top row: Name and timestamp */}
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0 flex-1">
                   <h3
-                    className={`truncate text-sm font-semibold ${
-                      conv.unreadCount > 0
-                        ? "text-neutral-900"
-                        : "text-neutral-700"
-                    }`}
+                    className={`truncate text-sm font-bold ${conv.unreadCount > 0
+                        ? "text-slate-900"
+                        : "text-slate-700"
+                      }`}
                   >
                     {conv.otherUser.name}
                   </h3>
                   <UnreadBadge count={conv.unreadCount} />
                 </div>
-                <span className="text-xs text-neutral-400 whitespace-nowrap">
+                <span className="text-xs text-slate-400 whitespace-nowrap font-medium">
                   {formatTime(conv.lastMessage.timestamp)}
                 </span>
               </div>
 
               {/* Job title */}
               {conv.jobTitle && (
-                <p className="mt-1 truncate text-xs text-neutral-500">
-                  Job: {conv.jobTitle}
+                <p className="mt-1.5 truncate text-xs text-blue-600 font-medium">
+                  📋 {conv.jobTitle}
                 </p>
               )}
 
               {/* Last message preview */}
               <p
-                className={`mt-1 truncate text-sm ${
-                  conv.unreadCount > 0
-                    ? "font-medium text-neutral-900"
-                    : "text-neutral-600"
-                }`}
+                className={`mt-2 truncate text-sm ${conv.unreadCount > 0
+                    ? "font-semibold text-slate-900"
+                    : "text-slate-600"
+                  }`}
               >
                 {conv.lastMessage.preview}
               </p>
