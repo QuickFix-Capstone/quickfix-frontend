@@ -4,7 +4,8 @@ import { useAuth } from "react-oidc-context";
 import { useNavigate } from "react-router-dom";
 import Card from "../../components/UI/Card";
 import Button from "../../components/UI/Button";
-import { ArrowLeft, Calendar, Clock, MapPin, DollarSign, AlertCircle, ChevronLeft, ChevronRight, Filter } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, MapPin, DollarSign, AlertCircle, ChevronLeft, ChevronRight, Filter, MessageSquare } from "lucide-react";
+import { createConversation } from "../../api/messaging";
 
 export default function Bookings() {
     const auth = useAuth();
@@ -138,6 +139,25 @@ export default function Bookings() {
         } catch (err) {
             console.error("Error cancelling booking:", err);
             alert("Error cancelling booking");
+        }
+    };
+
+    // Handle messaging a provider
+    const handleMessageProvider = async (booking) => {
+        try {
+            await createConversation(
+                booking.provider_id,
+                booking.service_offering_id || booking.booking_id
+            );
+            navigate("/customer/messages");
+        } catch (error) {
+            // If conversation already exists (409), navigate to messages anyway
+            if (error.status === 409) {
+                navigate("/customer/messages");
+            } else {
+                console.error("Failed to create conversation:", error);
+                alert("Failed to start conversation. Please try again.");
+            }
         }
     };
 
@@ -311,13 +331,23 @@ export default function Bookings() {
                                                     Cancel Booking
                                                 </Button>
                                             )}
-                                            <Button
-                                                onClick={() => navigate(`/customer/bookings/${booking.booking_id}`)}
-                                                variant="outline"
-                                                className="w-full"
-                                            >
-                                                View Details
-                                            </Button>
+                                            <div className="flex gap-2">
+                                                <Button
+                                                    onClick={() => navigate(`/customer/bookings/${booking.booking_id}`)}
+                                                    variant="outline"
+                                                    className="flex-1"
+                                                >
+                                                    View Details
+                                                </Button>
+                                                <Button
+                                                    onClick={() => handleMessageProvider(booking)}
+                                                    variant="outline"
+                                                    className="gap-1 border-neutral-300 hover:bg-neutral-50"
+                                                >
+                                                    <MessageSquare className="h-4 w-4" />
+                                                    Message
+                                                </Button>
+                                            </div>
                                         </div>
 
                                         {/* Booking ID */}

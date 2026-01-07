@@ -4,7 +4,8 @@ import { useAuth } from "react-oidc-context";
 import { useNavigate } from "react-router-dom";
 import Card from "../../components/UI/Card";
 import Button from "../../components/UI/Button";
-import { Search, Star, ArrowLeft, Filter } from "lucide-react";
+import { Search, Star, ArrowLeft, Filter, MessageSquare } from "lucide-react";
+import { createConversation } from "../../api/messaging";
 
 export default function ServiceList() {
     const auth = useAuth();
@@ -137,6 +138,25 @@ export default function ServiceList() {
     const goToPage = (pageNumber) => {
         setCurrentPage(pageNumber);
         window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    // Handle messaging a provider
+    const handleMessageProvider = async (service) => {
+        try {
+            const conversation = await createConversation(
+                service.provider_id,
+                service.service_offering_id
+            );
+            navigate("/customer/messages");
+        } catch (error) {
+            // If conversation already exists (409), navigate to messages anyway
+            if (error.status === 409 && error.conversationId) {
+                navigate("/customer/messages");
+            } else {
+                console.error("Failed to create conversation:", error);
+                alert("Failed to start conversation. Please try again.");
+            }
+        }
     };
 
     if (loading) {
@@ -276,14 +296,23 @@ export default function ServiceList() {
                                         {formatPrice(service.price, service.pricing_type)}
                                     </div>
 
-                                    <Button
-                                        onClick={() => {
-                                            navigate("/customer/book", { state: { service } });
-                                        }}
-                                        className="w-full bg-neutral-900 hover:bg-neutral-800"
-                                    >
-                                        Book Now
-                                    </Button>
+                                    <div className="flex gap-2">
+                                        <Button
+                                            onClick={() => {
+                                                navigate("/customer/book", { state: { service } });
+                                            }}
+                                            className="flex-1 bg-neutral-900 hover:bg-neutral-800"
+                                        >
+                                            Book Now
+                                        </Button>
+                                        <Button
+                                            onClick={() => handleMessageProvider(service)}
+                                            variant="outline"
+                                            className="gap-1 border-neutral-300 hover:bg-neutral-50"
+                                        >
+                                            <MessageSquare className="h-4 w-4" />
+                                        </Button>
+                                    </div>
                                 </div>
                             </Card>
                         ))}

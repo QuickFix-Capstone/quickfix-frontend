@@ -528,6 +528,8 @@ import JobDetails from "./pages/customer/JobDetails";
 import EditJob from "./pages/customer/EditJob";
 import JobApplications from "./pages/customer/JobApplications";
 import CustomerEntry from "./pages/customer/CustomerEntry";
+import TestMessagingAPI from "./pages/customer/TestMessagingAPI"; // TEMPORARY TEST PAGE
+import Messages from "./pages/customer/Messages";
 
 // ================= PROVIDER PAGES =================
 import ServiceProviderSignUp from "./pages/ServiceProvider/ServiceProviderSignUp";
@@ -734,6 +736,12 @@ export default function App() {
           path="/customer/jobs/:job_id/applications"
           element={<JobApplications />}
         />
+
+        {/* Messages */}
+        <Route path="/customer/messages" element={<Messages />} />
+
+        {/* TEMPORARY TEST ROUTE - DELETE AFTER TESTING */}
+        <Route path="/customer/test-messaging" element={<TestMessagingAPI />} />
 
         {/* ---------- PROVIDER AUTH ---------- */}
         <Route
