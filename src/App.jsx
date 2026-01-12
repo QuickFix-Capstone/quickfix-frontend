@@ -539,6 +539,7 @@ import ServiceProviderHomePage from "./pages/ServiceProvider/ServiceProviderHome
 import JobDetailsPage from "./pages/ServiceProvider/JobDetailsPage";
 import ServiceProviderProfile from "./pages/ServiceProvider/ServiceProviderProfile";
 import ServiceProviderEntry from "./pages/ServiceProviderEntry";
+import Messages from "./pages/ServiceProvider/Messages";
 
 // ================= AUTH PAGES =================
 import Login from "./pages/Login";
@@ -759,6 +760,7 @@ export default function App() {
           />
           <Route path="job/:jobId" element={<JobDetailsPage />} />
           <Route path="profile" element={<ServiceProviderProfile />} />
+          <Route path="messages" element={<Messages />} />
         </Route>
       </Routes>
 
