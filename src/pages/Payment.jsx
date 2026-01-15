@@ -54,6 +54,7 @@ export default function Payment() {
         const run = async () => {
             try {
                 // Example: you will pass these from quote page
+                const bookingId = localStorage.getItem("booking_id");
                 const customer = JSON.parse(localStorage.getItem("quickfix_currentUser"));
                 const providerId = Number(localStorage.getItem("selected_provider_id") || 2);
                 const amountCents = Number(localStorage.getItem("quote_amount_cents") || 2500);
@@ -66,6 +67,7 @@ export default function Payment() {
                         providerId,
                         amountCents,
                         currency: "cad",
+                        bookingId, // ✅ NEW (backend can store it in metadata)
                     }),
                 });
 
@@ -101,10 +103,15 @@ export default function Payment() {
         <div className="mx-auto max-w-xl p-6">
             <Card className="p-6">
                 <h2 className="text-2xl font-bold text-blue-700">Secure Payment</h2>
-                <p className="text-sm text-neutral-600 mt-1">Pay safely with card / Apple Pay / Google Pay.</p>
+                <div className="mt-3 text-sm text-neutral-700 space-y-1">
+                    <p><b>Provider ID:</b> {Number(localStorage.getItem("selected_provider_id") || 2)}</p>
+                    <p><b>Booking ID:</b> {localStorage.getItem("booking_id") || "N/A"}</p>
+                    <p><b>Total:</b> ${(Number(localStorage.getItem("quote_amount_cents") || 2500) / 100).toFixed(2)} CAD</p>
+                </div>
+                <p className="text-sm text-neutral-600 mt-4">Pay safely with card / Apple Pay / Google Pay.</p>
 
                 <div className="mt-6">
-                    <Elements options={{ clientSecret }} stripe={stripePromise}>
+                    <Elements options={{ clientSecret, appearance: { theme: 'stripe' } }} stripe={stripePromise}>
                         <CheckoutForm orderId={orderId} />
                     </Elements>
                 </div>
