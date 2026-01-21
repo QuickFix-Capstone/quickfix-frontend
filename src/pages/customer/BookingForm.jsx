@@ -66,7 +66,7 @@ export default function BookingForm() {
             console.log("Submitting booking:", bookingData);
 
             const res = await fetch(
-                `${import.meta.env.VITE_API_URL}/booking`,
+                `${import.meta.env.VITE_API_BASE_URL}/booking`,
                 {
                     method: "POST",
                     headers: {
