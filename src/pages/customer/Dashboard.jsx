@@ -6,7 +6,9 @@ import Card from "../../components/UI/Card";
 import Button from "../../components/UI/Button";
 import UnreadBadge from "../../components/messaging/UnreadBadge";
 import { getConversations } from "../../api/messaging";
-import { User, LogOut, Plus, Calendar, Settings, Upload, Briefcase, MessageSquare, TrendingUp, Clock } from "lucide-react";
+import { getMyReviews } from "../../api/reviews";
+import ReviewCard from "./ReviewCard";
+import { User, LogOut, Plus, Calendar, Settings, Upload, Briefcase, MessageSquare, TrendingUp, Clock, Star } from "lucide-react";
 
 export default function CustomerDashboard() {
     const auth = useAuth();
@@ -14,6 +16,8 @@ export default function CustomerDashboard() {
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
     const [totalUnread, setTotalUnread] = useState(0);
+    const [pendingReviews, setPendingReviews] = useState([]);
+    const [myReviews, setMyReviews] = useState([]);
 
     useEffect(() => {
         if (!auth.isAuthenticated) {
@@ -76,6 +80,55 @@ export default function CustomerDashboard() {
         return () => clearInterval(interval);
     }, [auth.isAuthenticated]);
 
+    // Fetch completed bookings that need reviews
+    useEffect(() => {
+        if (!auth.isAuthenticated) return;
+
+        const fetchPendingReviews = async () => {
+            try {
+                const token = auth.user?.id_token || auth.user?.access_token;
+                const res = await fetch(
+                    "https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/customer/bookings?status=completed&limit=5",
+                    {
+                        method: "GET",
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+
+                if (res.status === 200) {
+                    const data = await res.json();
+                    // Filter bookings that don't have reviews yet
+                    const bookingsNeedingReview = (data.bookings || []).filter(
+                        booking => !booking.has_review
+                    );
+                    setPendingReviews(bookingsNeedingReview);
+                }
+            } catch (error) {
+                console.error("Failed to fetch pending reviews:", error);
+            }
+        };
+
+        fetchPendingReviews();
+    }, [auth.isAuthenticated, auth.user]);
+
+    // Fetch customer's reviews
+    useEffect(() => {
+        if (!auth.isAuthenticated) return;
+
+        const fetchMyReviews = async () => {
+            try {
+                const data = await getMyReviews(10);
+                setMyReviews(data.reviews || []);
+            } catch (error) {
+                console.error("Failed to fetch reviews:", error);
+            }
+        };
+
+        fetchMyReviews();
+    }, [auth.isAuthenticated]);
+
     const handleLogout = async () => {
         // Clear the auth session locally and navigate to home
         await auth.removeUser();
@@ -130,7 +183,7 @@ export default function CustomerDashboard() {
                         </p>
                         <Button
                             onClick={() => navigate("/customer/services")}
-                            className="w-full bg-white text-blue-600 hover:bg-blue-50"
+                            className="w-full bg-blue-700 text-white font-bold border-2 border-blue-800 shadow-lg hover:bg-blue-800"
                         >
                             Explore Now
                         </Button>
@@ -149,7 +202,7 @@ export default function CustomerDashboard() {
                         </p>
                         <Button
                             onClick={() => navigate("/customer/post-job")}
-                            className="w-full bg-white text-orange-600 hover:bg-orange-50"
+                            className="w-full bg-orange-700 text-white font-bold border-2 border-orange-800 shadow-lg hover:bg-orange-800"
                         >
                             Create Job
                         </Button>
@@ -168,7 +221,7 @@ export default function CustomerDashboard() {
                         </p>
                         <Button
                             onClick={() => navigate("/customer/jobs")}
-                            className="w-full bg-white text-indigo-600 hover:bg-indigo-50"
+                            className="w-full bg-indigo-700 text-white font-bold border-2 border-indigo-800 shadow-lg hover:bg-indigo-800"
                         >
                             View Jobs
                         </Button>
@@ -187,7 +240,7 @@ export default function CustomerDashboard() {
                         </p>
                         <Button
                             onClick={() => navigate("/customer/bookings")}
-                            className="w-full bg-white text-green-600 hover:bg-green-50"
+                            className="w-full bg-green-700 text-white font-bold border-2 border-green-800 shadow-lg hover:bg-green-800"
                         >
                             View All
                         </Button>
@@ -206,7 +259,7 @@ export default function CustomerDashboard() {
                         </p>
                         <Button
                             onClick={() => navigate("/customer/edit")}
-                            className="w-full bg-white text-purple-600 hover:bg-purple-50"
+                            className="w-full bg-purple-700 text-white font-bold border-2 border-purple-800 shadow-lg hover:bg-purple-800"
                         >
                             Manage
                         </Button>
@@ -240,7 +293,7 @@ export default function CustomerDashboard() {
                         </p>
                         <Button
                             onClick={() => navigate("/customer/messages")}
-                            className="w-full bg-white text-pink-600 hover:bg-pink-50"
+                            className="w-full bg-pink-700 text-white font-bold border-2 border-pink-800 shadow-lg hover:bg-pink-800"
                         >
                             {totalUnread > 0 ? "View Messages" : "Open Messages"}
                         </Button>
@@ -287,6 +340,103 @@ export default function CustomerDashboard() {
                             </div>
                         </div>
                     </Card>
+                </div>
+
+                {/* Pending Reviews Section */}
+                {pendingReviews.length > 0 && (
+                    <div className="mt-8">
+                        <div className="mb-4 flex items-center justify-between">
+                            <div>
+                                <h2 className="text-2xl font-bold text-neutral-900">
+                                    Pending Reviews
+                                </h2>
+                                <p className="text-sm text-neutral-600">
+                                    Share your experience with these completed services
+                                </p>
+                            </div>
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-yellow-100">
+                                <Star className="h-5 w-5 text-yellow-600" />
+                            </div>
+                        </div>
+
+                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                            {pendingReviews.map((booking) => (
+                                <Card
+                                    key={booking.booking_id}
+                                    className="border border-neutral-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow"
+                                >
+                                    <div className="mb-3">
+                                        <p className="font-semibold text-neutral-900">
+                                            {booking.service_description}
+                                        </p>
+                                        <p className="text-sm text-neutral-600 mt-1">
+                                            {booking.provider?.name || "Service Provider"}
+                                        </p>
+                                        <p className="text-xs text-neutral-500 mt-1">
+                                            Completed on{" "}
+                                            {new Date(booking.scheduled_date).toLocaleDateString()}
+                                        </p>
+                                    </div>
+
+                                    <Button
+                                        onClick={() => navigate(`/customer/bookings/${booking.booking_id}`)}
+                                        className="w-full bg-yellow-500 text-white font-semibold hover:bg-yellow-600"
+                                    >
+                                        Leave Review
+                                    </Button>
+                                </Card>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* My Reviews Section */}
+                <div className="mt-8">
+                    <div className="mb-4 flex items-center justify-between">
+                        <div>
+                            <h2 className="text-2xl font-bold text-neutral-900">
+                                My Reviews
+                            </h2>
+                            <p className="text-sm text-neutral-600">
+                                Reviews you've left for service providers
+                            </p>
+                        </div>
+                        {myReviews.length > 0 && (
+                            <Button
+                                onClick={() => navigate("/customer/reviews")}
+                                variant="outline"
+                                className="text-sm"
+                            >
+                                View All
+                            </Button>
+                        )}
+                    </div>
+
+                    {myReviews.length === 0 ? (
+                        <Card className="border border-neutral-200 bg-white p-8 text-center">
+                            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-yellow-100">
+                                <Star className="h-8 w-8 text-yellow-600" />
+                            </div>
+                            <h3 className="mb-2 text-lg font-semibold text-neutral-900">
+                                No Reviews Yet
+                            </h3>
+                            <p className="mb-4 text-sm text-neutral-600">
+                                Complete a booking and share your experience with others
+                            </p>
+                            <Button
+                                onClick={() => navigate("/customer/bookings")}
+                                variant="outline"
+                            >
+                                View Bookings
+                            </Button>
+                        </Card>
+                    ) : (
+                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                            {myReviews.slice(0, 3).map((review) => (
+                                <ReviewCard key={review.review_id} review={review} />
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
