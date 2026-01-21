@@ -1,13 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { loadStripe } from "@stripe/stripe-js";
-import { Elements, useStripe, useElements, PaymentElement } from "@stripe/react-stripe-js";
+import {
+    Elements,
+    useStripe,
+    useElements,
+    PaymentElement,
+} from "@stripe/react-stripe-js";
+import { useAuth } from "react-oidc-context";
 import Card from "../components/UI/Card";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
 function CheckoutForm({ orderId }) {
-    const navigate = useNavigate();
     const stripe = useStripe();
     const elements = useElements();
     const [loading, setLoading] = useState(false);
@@ -16,18 +21,19 @@ function CheckoutForm({ orderId }) {
     const submit = async (e) => {
         e.preventDefault();
         setMsg("");
+
         if (!stripe || !elements) return;
 
         setLoading(true);
+
         const { error } = await stripe.confirmPayment({
             elements,
             confirmParams: {
-                // after success show receipt
                 return_url: `${window.location.origin}/receipt/${orderId}`,
             },
         });
 
-        if (error) setMsg(error.message);
+        if (error) setMsg(error.message || "Payment failed.");
         setLoading(false);
     };
 
@@ -46,43 +52,85 @@ function CheckoutForm({ orderId }) {
 }
 
 export default function Payment() {
+    const navigate = useNavigate();
+    const auth = useAuth();
+
+    const API_BASE = import.meta.env.VITE_API_BASE_URL;
+
     const [clientSecret, setClientSecret] = useState("");
     const [orderId, setOrderId] = useState(null);
     const [error, setError] = useState("");
 
+    // optional: show order details on the page
+    const [order, setOrder] = useState(null);
+
+    const token = auth.user?.access_token; // most common for APIs
+
+    // Stripe Elements options should be stable object
+    const elementsOptions = useMemo(() => {
+        if (!clientSecret) return null;
+        return {
+            clientSecret,
+            appearance: { theme: "stripe" },
+        };
+    }, [clientSecret]);
+
     useEffect(() => {
         const run = async () => {
             try {
-                // Example: you will pass these from quote page
-                const bookingId = localStorage.getItem("booking_id");
-                const customer = JSON.parse(localStorage.getItem("quickfix_currentUser"));
-                const providerId = Number(localStorage.getItem("selected_provider_id") || 2);
-                const amountCents = Number(localStorage.getItem("quote_amount_cents") || 2500);
+                setError("");
 
-                const res = await fetch(`${import.meta.env.VITE_API_URL}/payment/create-intent`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        customerId: customer?.id,
-                        providerId,
-                        amountCents,
-                        currency: "cad",
-                        bookingId, // ✅ NEW (backend can store it in metadata)
-                    }),
+                const id = localStorage.getItem("booking_id"); // you said booking_id = orderId
+                if (!id) {
+                    throw new Error("Missing orderId (booking_id). Please create a booking first.");
+                }
+                setOrderId(id);
+
+                // Require login because GET /orders/:id requires JWT
+                if (auth.isLoading) return; // wait until auth finishes loading
+                if (!auth.isAuthenticated || !token) {
+                    navigate("/login");
+                    return;
+                }
+
+                // (Recommended) Fetch order details (auth required)
+                const orderRes = await fetch(`${API_BASE}/orders/${id}`, {
+                    method: "GET",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
                 });
 
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || "Failed to create payment.");
+                const orderData = await orderRes.json().catch(() => ({}));
+                if (!orderRes.ok) {
+                    throw new Error(orderData?.message || orderData?.error || "Failed to load order.");
+                }
+                setOrder(orderData);
 
-                setClientSecret(data.clientSecret);
-                setOrderId(data.orderId);
+                // Create PaymentIntent (new contract: only orderId)
+                const piRes = await fetch(`${API_BASE}/payment/create-intent`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ orderId: id }),
+                });
+
+                const piData = await piRes.json().catch(() => ({}));
+                if (!piRes.ok) {
+                    throw new Error(piData?.message || piData?.error || "Failed to create payment.");
+                }
+
+                if (!piData.clientSecret) {
+                    throw new Error("Missing clientSecret from server.");
+                }
+
+                setClientSecret(piData.clientSecret);
             } catch (e) {
-                setError(e.message);
+                setError(e?.message || "Payment setup failed.");
             }
         };
 
         run();
-    }, []);
+    }, [API_BASE, auth.isLoading, auth.isAuthenticated, token, navigate]);
 
     if (error) {
         return (
@@ -95,7 +143,7 @@ export default function Payment() {
         );
     }
 
-    if (!clientSecret) {
+    if (!clientSecret || !elementsOptions) {
         return <div className="p-6 text-center text-neutral-600">Preparing secure checkout…</div>;
     }
 
@@ -103,15 +151,26 @@ export default function Payment() {
         <div className="mx-auto max-w-xl p-6">
             <Card className="p-6">
                 <h2 className="text-2xl font-bold text-blue-700">Secure Payment</h2>
+
                 <div className="mt-3 text-sm text-neutral-700 space-y-1">
-                    <p><b>Provider ID:</b> {Number(localStorage.getItem("selected_provider_id") || 2)}</p>
-                    <p><b>Booking ID:</b> {localStorage.getItem("booking_id") || "N/A"}</p>
-                    <p><b>Total:</b> ${(Number(localStorage.getItem("quote_amount_cents") || 2500) / 100).toFixed(2)} CAD</p>
+                    <p>
+                        <b>Order ID:</b> {orderId}
+                    </p>
+
+                    {/* Optional: display total from backend if available */}
+                    {order?.total && (
+                        <p>
+                            <b>Total:</b> ${Number(order.total).toFixed(2)} CAD
+                        </p>
+                    )}
                 </div>
-                <p className="text-sm text-neutral-600 mt-4">Pay safely with card / Apple Pay / Google Pay.</p>
+
+                <p className="text-sm text-neutral-600 mt-4">
+                    Pay safely with card / Apple Pay / Google Pay.
+                </p>
 
                 <div className="mt-6">
-                    <Elements options={{ clientSecret, appearance: { theme: 'stripe' } }} stripe={stripePromise}>
+                    <Elements options={elementsOptions} stripe={stripePromise}>
                         <CheckoutForm orderId={orderId} />
                     </Elements>
                 </div>
