@@ -41,7 +41,6 @@ import JobDetailsPage from "./pages/ServiceProvider/JobDetailsPage";
 import ServiceProviderProfile from "./pages/ServiceProvider/ServiceProviderProfile";
 import ServiceProviderEntry from "./pages/ServiceProviderEntry";
 import ProviderMessages from "./pages/ServiceProvider/Messages";
-import ServiceProviderMessages from "./pages/ServiceProvider/Messages";
 
 // ================= AUTH PAGES =================
 import Login from "./pages/Login";
@@ -274,17 +273,13 @@ export default function App() {
           />
           <Route path="job/:jobId" element={<JobDetailsPage />} />
           <Route path="profile" element={<ServiceProviderProfile />} />
-<<<<<<< HEAD
-  <Route path="messages" element={<ProviderMessages />} />
-=======
-          <Route path="messages" element={<ServiceProviderMessages />} />
->>>>>>> origin/main
+          <Route path="messages" element={<ProviderMessages />} />
         </Route >
       </Routes >
 
-    <footer className="text-center py-8 text-neutral-400">
-      Built for QuickFix Capstone • React + Tailwind • AWS Powered
-    </footer>
+      <footer className="text-center py-8 text-neutral-400">
+        Built for QuickFix Capstone • React + Tailwind • AWS Powered
+      </footer>
     </div >
   );
 }

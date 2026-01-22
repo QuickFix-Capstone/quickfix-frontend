@@ -89,8 +89,18 @@ export default function BookingForm() {
                 localStorage.setItem("selected_provider_id", String(providerId));
                 localStorage.setItem("quote_amount_cents", String(amountCents));
 
+                const bookingId = data.booking_id || data.id || data.booking?.booking_id;
+
+                if (!bookingId) {
+                    console.error("Server response missing booking_id:", data);
+                    alert("Error: Server did not return a booking ID. Response: " + JSON.stringify(data));
+                    return;
+                }
+
                 // Optional (good for future linking)
-                localStorage.setItem("booking_id", String(data.booking_id || data.id || ""));
+                localStorage.setItem("booking_id", String(bookingId));
+                // NEW: Also store as order_id for Payment.jsx to pick up correctly
+                localStorage.setItem("order_id", String(bookingId));
 
                 // 3) Go to payment
                 navigate("/payment");
