@@ -13,7 +13,8 @@ export default function Receipt() {
     const [order, setOrder] = useState(null);
     const [error, setError] = useState("");
 
-    const token = auth.user?.access_token;
+    // Use id_token if available, matching Payment.jsx/BookingForm.jsx
+    const token = auth.user?.id_token || auth.user?.access_token;
 
     useEffect(() => {
         let timer;
@@ -39,14 +40,18 @@ export default function Receipt() {
                 });
 
                 const data = await res.json().catch(() => ({}));
+                console.log("Receipt fetch status:", res.status, "Data:", data);
+
                 if (!res.ok) {
                     throw new Error(data?.message || data?.error || "Failed to load receipt.");
                 }
 
-                setOrder(data);
+                // Handle wrapped response (e.g. { order: {...} }) from API Gateway/Lambda
+                const orderInfo = data.order || data;
+                setOrder(orderInfo);
 
                 // Optional: poll a few times because webhook may update status after redirect
-                const status = (data?.status || "").toLowerCase();
+                const status = (orderInfo?.status || "").toLowerCase();
                 const isFinal =
                     status.includes("paid") ||
                     status.includes("succeeded") ||

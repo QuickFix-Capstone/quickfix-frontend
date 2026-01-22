@@ -64,7 +64,8 @@ export default function Payment() {
     // optional: show order details on the page
     const [order, setOrder] = useState(null);
 
-    const token = auth.user?.access_token; // most common for APIs
+    // Use id_token if available (Cognito Authorizer often prefers it), else access_token
+    const token = auth.user?.id_token || auth.user?.access_token;
 
     // Stripe Elements options should be stable object
     const elementsOptions = useMemo(() => {
@@ -80,19 +81,21 @@ export default function Payment() {
             try {
                 setError("");
 
-                const id = localStorage.getItem("booking_id"); // you said booking_id = orderId
+                const id = localStorage.getItem("order_id"); // using real orderId now
                 if (!id) {
-                    throw new Error("Missing orderId (booking_id). Please create a booking first.");
+                    throw new Error("Missing orderId. Please create a booking first.");
                 }
                 setOrderId(id);
 
                 // Require login because GET /orders/:id requires JWT
                 if (auth.isLoading) return; // wait until auth finishes loading
                 if (!auth.isAuthenticated || !token) {
+                    console.log("Not authenticated or missing token", { isAuthenticated: auth.isAuthenticated, hasToken: !!token });
                     navigate("/login");
                     return;
                 }
 
+                console.log("Fetching order:", id);
                 // (Recommended) Fetch order details (auth required)
                 const orderRes = await fetch(`${API_BASE}/orders/${id}`, {
                     method: "GET",
@@ -103,15 +106,30 @@ export default function Payment() {
 
                 const orderData = await orderRes.json().catch(() => ({}));
                 if (!orderRes.ok) {
-                    throw new Error(orderData?.message || orderData?.error || "Failed to load order.");
+                    console.error("Order fetch failed:", orderRes.status, orderData);
+                    throw new Error(orderData?.message || orderData?.error || `Failed to load order: ${orderRes.status}`);
                 }
                 setOrder(orderData);
 
-                // Create PaymentIntent (new contract: only orderId)
+                // Create PaymentIntent
+                // Backend requires customerId, providerId, amountCents
+                const payload = {
+                    orderId: id,
+                    bookingId: localStorage.getItem("booking_id") || "",
+                    customerId: orderData.customer_id || orderData.customerId || 1,
+                    providerId: orderData.provider_id || orderData.providerId || localStorage.getItem("selected_provider_id"),
+                    amountCents: orderData.amount_cents || orderData.amountCents || localStorage.getItem("quote_amount_cents")
+                };
+
+                console.log("Creating PaymentIntent with payload:", payload);
+
                 const piRes = await fetch(`${API_BASE}/payment/create-intent`, {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ orderId: id }),
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`
+                    },
+                    body: JSON.stringify(payload),
                 });
 
                 const piData = await piRes.json().catch(() => ({}));
