@@ -64,9 +64,6 @@ export default function Payment() {
     // optional: show order details on the page
     const [order, setOrder] = useState(null);
 
-    // Use id_token if available (Cognito Authorizer often prefers it), else access_token
-    const token = auth.user?.id_token || auth.user?.access_token;
-
     // Stripe Elements options should be stable object
     const elementsOptions = useMemo(() => {
         if (!clientSecret) return null;
@@ -81,74 +78,53 @@ export default function Payment() {
             try {
                 setError("");
 
-                const id = localStorage.getItem("order_id"); // using real orderId now
-                if (!id) {
-                    throw new Error("Missing orderId. Please create a booking first.");
-                }
-                setOrderId(id);
+                if (auth.isLoading) return;
+                // ✅ Fix: always prefer access token
+                const token = auth.user?.access_token || auth.user?.id_token;
 
-                // Require login because GET /orders/:id requires JWT
-                if (auth.isLoading) return; // wait until auth finishes loading
                 if (!auth.isAuthenticated || !token) {
-                    console.log("Not authenticated or missing token", { isAuthenticated: auth.isAuthenticated, hasToken: !!token });
                     navigate("/login");
                     return;
                 }
 
-                console.log("Fetching order:", id);
-                // (Recommended) Fetch order details (auth required)
-                const orderRes = await fetch(`${API_BASE}/orders/${id}`, {
-                    method: "GET",
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                });
+                // ✅ Correct flow: Read local storage first
+                const serviceOfferingId = localStorage.getItem("selected_service_offering_id");
+                const amountCents = Number(localStorage.getItem("quote_amount_cents"));
 
-                const orderData = await orderRes.json().catch(() => ({}));
-                if (!orderRes.ok) {
-                    console.error("Order fetch failed:", orderRes.status, orderData);
-                    throw new Error(orderData?.message || orderData?.error || `Failed to load order: ${orderRes.status}`);
-                }
-                setOrder(orderData);
+                if (!serviceOfferingId) throw new Error("Missing serviceOfferingId. Please create a booking first.");
+                if (!amountCents) throw new Error("Missing amount. Please create a booking first.");
 
-                // Create PaymentIntent
-                // Backend requires customerId, providerId, amountCents
+                // Create PaymentIntent directly
                 const payload = {
-                    orderId: id,
-                    bookingId: localStorage.getItem("booking_id") || "",
-                    customerId: orderData.customer_id || orderData.customerId || 1,
-                    providerId: orderData.provider_id || orderData.providerId || localStorage.getItem("selected_provider_id"),
-                    amountCents: orderData.amount_cents || orderData.amountCents || localStorage.getItem("quote_amount_cents")
+                    serviceOfferingId,
+                    amountCents,
+                    currency: "cad",
+                    bookingId: localStorage.getItem("booking_id") || ""
                 };
-
-                console.log("Creating PaymentIntent with payload:", payload);
 
                 const piRes = await fetch(`${API_BASE}/payment/create-intent`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`
+                        Authorization: `Bearer ${token}`,
                     },
                     body: JSON.stringify(payload),
                 });
 
                 const piData = await piRes.json().catch(() => ({}));
-                if (!piRes.ok) {
-                    throw new Error(piData?.message || piData?.error || "Failed to create payment.");
-                }
+                if (!piRes.ok) throw new Error(piData?.message || piData?.error || "Failed to create payment.");
 
-                if (!piData.clientSecret) {
-                    throw new Error("Missing clientSecret from server.");
-                }
+                if (!piData.clientSecret) throw new Error("Missing clientSecret from server.");
 
                 setClientSecret(piData.clientSecret);
+                setOrderId(piData.orderId); // ✅ real orders.id from DB
             } catch (e) {
                 setError(e?.message || "Payment setup failed.");
             }
         };
 
         run();
-    }, [API_BASE, auth.isLoading, auth.isAuthenticated, token, navigate]);
+    }, [API_BASE, auth.isLoading, auth.isAuthenticated, auth.user, navigate]);
 
     if (error) {
         return (

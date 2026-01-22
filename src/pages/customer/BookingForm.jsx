@@ -86,8 +86,10 @@ export default function BookingForm() {
                 const providerId = service.provider_id || 2; // Fallback if missing
 
                 // 2) Store payment context for Payment.jsx
-                localStorage.setItem("selected_provider_id", String(providerId));
+                // 2) Store payment context for Payment.jsx
                 localStorage.setItem("quote_amount_cents", String(amountCents));
+                // Use service.id (or service_offering_id if available on object)
+                localStorage.setItem("selected_service_offering_id", String(service.id || service.service_offering_id));
 
                 const bookingId = data.booking_id || data.id || data.booking?.booking_id;
 
@@ -99,8 +101,6 @@ export default function BookingForm() {
 
                 // Optional (good for future linking)
                 localStorage.setItem("booking_id", String(bookingId));
-                // NEW: Also store as order_id for Payment.jsx to pick up correctly
-                localStorage.setItem("order_id", String(bookingId));
 
                 // 3) Go to payment
                 navigate("/payment");
