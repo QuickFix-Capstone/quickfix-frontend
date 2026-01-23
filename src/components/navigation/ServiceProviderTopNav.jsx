@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   Menu,
   X,
+  MessageCircle,
 } from "lucide-react";
 import GhostButton from "../UI/GhostButton";
 
@@ -75,6 +76,12 @@ export default function TopNav({ currentUser, onLogout }) {
             icon={PlusCircle}
             label="Create Service"
             path="/service-provider/create-service-offering"
+          />
+
+          <NavItem
+            icon={MessageCircle}
+            label="Messages"
+            path="/service-provider/messages"
           />
 
           <div className="mx-2 h-6 w-px bg-neutral-200" />
@@ -144,6 +151,12 @@ export default function TopNav({ currentUser, onLogout }) {
               icon={PlusCircle}
               label="Create Service"
               path="/service-provider/create-service-offering"
+            />
+
+            <NavItem
+              icon={MessageCircle}
+              label="Messages"
+              path="/service-provider/messages"
             />
 
             <div className="my-2 h-px bg-neutral-200" />

@@ -529,7 +529,7 @@ import EditJob from "./pages/customer/EditJob";
 import JobApplications from "./pages/customer/JobApplications";
 import CustomerEntry from "./pages/customer/CustomerEntry";
 import TestMessagingAPI from "./pages/customer/TestMessagingAPI"; // TEMPORARY TEST PAGE
-import Messages from "./pages/customer/Messages";
+import CustomerMessages from "./pages/customer/Messages";
 
 // ================= PROVIDER PAGES =================
 import ServiceProviderSignUp from "./pages/ServiceProvider/ServiceProviderSignUp";
@@ -541,7 +541,7 @@ import ServiceProviderHomePage from "./pages/ServiceProvider/ServiceProviderHome
 import JobDetailsPage from "./pages/ServiceProvider/JobDetailsPage";
 import ServiceProviderProfile from "./pages/ServiceProvider/ServiceProviderProfile";
 import ServiceProviderEntry from "./pages/ServiceProviderEntry";
-import Messages from "./pages/ServiceProvider/Messages";
+import ServiceProviderMessages from "./pages/ServiceProvider/Messages";
 
 // ================= AUTH PAGES =================
 import Login from "./pages/Login";
@@ -550,6 +550,15 @@ import ResetPassword from "./pages/ResetPassword";
 import ResetPasswordConfirm from "./pages/ResetPasswordConfirm";
 import Logout from "./pages/Logout";
 import AuthCallback from "./pages/AuthCallback";
+
+import AllServiceProvider from "./pages/Admin/AllServiceProvider";
+import SystemHealth from "./pages/Admin/SystemHealth";
+import AdminLogin from "./pages/Admin/AdminLogin";
+import AdminSetPassword from "./pages/Admin/AdminSetPassword";
+import AdminRoute from "./pages/Auth/AdminRoute";
+import AdminDashboard from "./pages/Admin/AdminDashboard";
+import UnverifiedServiceProvider from "./pages/Admin/UnverifiedServiceProvider";
+import ChatbotProvider from "./views/chatbot";
 
 // ================= LOCAL AUTH =================
 import {
@@ -612,7 +621,7 @@ export default function App() {
       navigate(
         role === "provider"
           ? "/service-provider/dashboard"
-          : "/customer/dashboard"
+          : "/customer/dashboard",
       );
     } catch (err) {
       setLoginError(err.message);
@@ -626,7 +635,7 @@ export default function App() {
       navigate(
         user.role === "provider"
           ? "/service-provider/onboarding"
-          : "/customer/dashboard"
+          : "/customer/dashboard",
       );
     } catch (err) {
       setRegisterError(err.message);
@@ -665,116 +674,166 @@ export default function App() {
   const isProviderRoute = location.pathname.startsWith("/service-provider");
 
   return (
-    <div className="min-h-screen bg-neutral-100 text-neutral-900">
-      {/* ================= NAV ================= */}
-      {!isProviderRoute &&
-        (isCustomerRoute ? (
-          <CustomerNav currentUser={currentUser} onGoLogout={handleLogout} />
-        ) : (
-          <TopNav currentUser={currentUser} onLogout={handleLogout} />
-        ))}
+    <ChatbotProvider
+      userToken={currentUser?.token || currentUser?.idToken}
+      userRole={currentUser?.role || "customer"}
+    >
+      <div className="min-h-screen bg-neutral-100 text-neutral-900">
+        {/* ================= NAV ================= */}
+        {!isProviderRoute &&
+          (isCustomerRoute ? (
+            <CustomerNav currentUser={currentUser} onGoLogout={handleLogout} />
+          ) : (
+            <TopNav currentUser={currentUser} onLogout={handleLogout} />
+          ))}
 
-      {/* ================= ROUTES ================= */}
-      <Routes>
-        {/* ---------- PUBLIC ---------- */}
-        <Route path="/" element={<Home currentUser={currentUser} />} />
-        <Route path="/search" element={<SearchView />} />
-
-        {/* ---------- AUTH ---------- */}
-        <Route path="/auth/callback" element={<AuthCallback />} />
-        <Route
-          path="/login"
-          element={<Login onLogin={handleLogin} error={loginError} />}
-        />
-        <Route
-          path="/logout"
-          element={
-            <Logout onConfirm={handleLogout} onCancel={() => navigate("/")} />
-          }
-        />
-        <Route
-          path="/reset-password"
-          element={
-            <ResetPassword
-              onRequestReset={handleRequestReset}
-              error={resetError}
-              info={resetInfo}
-            />
-          }
-        />
-        <Route
-          path="/reset-confirm"
-          element={
-            <ResetPasswordConfirm
-              onResetPassword={handleConfirmReset}
-              error={resetError}
-            />
-          }
-        />
-
-        {/* ---------- CUSTOMER ---------- */}
-        <Route path="/customer/login" element={<CustomerLogin />} />
-        <Route
-          path="/customer/register"
-          element={
-            <RegisterCustomer
-              onRegister={handleRegister}
-              error={registerError}
-            />
-          }
-        />
-        <Route path="/customer/entry" element={<CustomerEntry />} />
-        <Route path="/customer/dashboard" element={<CustomerDashboard />} />
-        <Route path="/customer/edit" element={<EditProfile />} />
-        <Route path="/customer/services" element={<ServiceList />} />
-        <Route path="/customer/bookings" element={<Bookings />} />
-        <Route path="/customer/book" element={<BookingForm />} />
-        <Route path="/customer/post-job" element={<PostJob />} />
-        <Route path="/customer/jobs" element={<MyJobs />} />
-        <Route path="/customer/jobs/:job_id" element={<JobDetails />} />
-        <Route path="/customer/jobs/:job_id/edit" element={<EditJob />} />
-        <Route
-          path="/customer/jobs/:job_id/applications"
-          element={<JobApplications />}
-        />
-
-        {/* Messages */}
-        <Route path="/customer/messages" element={<Messages />} />
-
-        {/* TEMPORARY TEST ROUTE - DELETE AFTER TESTING */}
-        <Route path="/customer/test-messaging" element={<TestMessagingAPI />} />
-
-        {/* ---------- PROVIDER AUTH ---------- */}
-        <Route
-          path="/service-provider/signup"
-          element={<ServiceProviderSignUp />}
-        />
-        <Route
-          path="/service-provider/login"
-          element={<ServiceProviderLogin />}
-        />
-        <Route
-          path="/service-provider/onboarding"
-          element={<ServiceProviderOnboarding />}
-        />
-
-        {/* ---------- PROVIDER AREA (NESTED) ---------- */}
-        <Route path="/service-provider" element={<ServiceProviderLayout />}>
-          <Route path="home" element={<ServiceProviderHomePage />} />
-          <Route path="dashboard" element={<ServiceProviderDashboard />} />
+        {/* ================= ROUTES ================= */}
+        <Routes>
+          {/* ---------- PUBLIC ---------- */}
+          <Route path="/" element={<Home currentUser={currentUser} />} />
+          <Route path="/search" element={<SearchView />} />
+          {/* ---------- AUTH ---------- */}
+          <Route path="/auth/callback" element={<AuthCallback />} />
           <Route
-            path="create-service-offering"
-            element={<CreateServiceOffering />}
+            path="/login"
+            element={<Login onLogin={handleLogin} error={loginError} />}
           />
-          <Route path="job/:jobId" element={<JobDetailsPage />} />
-          <Route path="profile" element={<ServiceProviderProfile />} />
-          <Route path="messages" element={<Messages />} />
-        </Route>
-      </Routes>
+          <Route
+            path="/logout"
+            element={
+              <Logout onConfirm={handleLogout} onCancel={() => navigate("/")} />
+            }
+          />
+          <Route
+            path="/reset-password"
+            element={
+              <ResetPassword
+                onRequestReset={handleRequestReset}
+                error={resetError}
+                info={resetInfo}
+              />
+            }
+          />
+          <Route
+            path="/reset-confirm"
+            element={
+              <ResetPasswordConfirm
+                onResetPassword={handleConfirmReset}
+                error={resetError}
+              />
+            }
+          />
 
-      <footer className="text-center py-8 text-neutral-400">
-        Built for QuickFix Capstone • React + Tailwind • AWS Powered
-      </footer>
-    </div>
+          {/* ---------- CUSTOMER ---------- */}
+          <Route path="/customer/login" element={<CustomerLogin />} />
+          <Route
+            path="/customer/register"
+            element={
+              <RegisterCustomer
+                onRegister={handleRegister}
+                error={registerError}
+              />
+            }
+          />
+          <Route path="/customer/entry" element={<CustomerEntry />} />
+          <Route path="/customer/dashboard" element={<CustomerDashboard />} />
+          <Route path="/customer/edit" element={<EditProfile />} />
+          <Route path="/customer/services" element={<ServiceList />} />
+          <Route path="/customer/bookings" element={<Bookings />} />
+          <Route path="/customer/book" element={<BookingForm />} />
+          <Route path="/customer/post-job" element={<PostJob />} />
+          <Route path="/customer/jobs" element={<MyJobs />} />
+          <Route path="/customer/jobs/:job_id" element={<JobDetails />} />
+          <Route path="/customer/jobs/:job_id/edit" element={<EditJob />} />
+          <Route
+            path="/customer/jobs/:job_id/applications"
+            element={<JobApplications />}
+          />
+
+          {/* Messages */}
+          <Route path="/customer/messages" element={<CustomerMessages />} />
+
+          {/* TEMPORARY TEST ROUTE - DELETE AFTER TESTING */}
+          <Route
+            path="/customer/test-messaging"
+            element={<TestMessagingAPI />}
+          />
+
+          {/* ---------- PROVIDER AUTH ---------- */}
+          <Route
+            path="/service-provider/signup"
+            element={<ServiceProviderSignUp />}
+          />
+          <Route
+            path="/service-provider/login"
+            element={<ServiceProviderLogin />}
+          />
+          <Route
+            path="/service-provider/onboarding"
+            element={<ServiceProviderOnboarding />}
+          />
+
+          {/* ---------- PROVIDER AREA (NESTED) ---------- */}
+          <Route path="/service-provider" element={<ServiceProviderLayout />}>
+            <Route path="home" element={<ServiceProviderHomePage />} />
+            <Route path="dashboard" element={<ServiceProviderDashboard />} />
+            <Route
+              path="create-service-offering"
+              element={<CreateServiceOffering />}
+            />
+            <Route path="job/:jobId" element={<JobDetailsPage />} />
+            <Route path="profile" element={<ServiceProviderProfile />} />
+            <Route path="messages" element={<ServiceProviderMessages />} />
+          </Route>
+
+          {/* ---------- ADMIN ----------
+      <Routes>
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route
+          path="/admin/all-service-provider"
+          element={<AllServiceProvider />}
+        />
+        <Route path="/admin/system-health" element={<SystemHealth />} />
+        <Route path="/admin/set-password" element={<AdminSetPassword />} />
+      </Routes> */}
+
+          {/* ---------- ADMIN ---------- */}
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin/set-password" element={<AdminSetPassword />} />
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+
+          <Route
+            path="/admin/all-service-provider"
+            element={
+              <AdminRoute>
+                <AllServiceProvider />
+              </AdminRoute>
+            }
+          />
+
+          <Route
+            path="/admin/unverified-service-provider"
+            element={
+              <AdminRoute>
+                <UnverifiedServiceProvider />
+              </AdminRoute>
+            }
+          />
+
+          <Route
+            path="/admin/system-health"
+            element={
+              <AdminRoute>
+                <SystemHealth />
+              </AdminRoute>
+            }
+          />
+        </Routes>
+
+        <footer className="text-center py-8 text-neutral-400">
+          Built for QuickFix Capstone • React + Tailwind • AWS Powered
+        </footer>
+      </div>
+    </ChatbotProvider>
   );
 }
