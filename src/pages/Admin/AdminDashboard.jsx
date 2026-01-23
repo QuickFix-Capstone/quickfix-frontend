@@ -1,3 +1,67 @@
+// import { useState } from "react";
+// import AdminServiceProviders from "./AllServiceProvider";
+// import SystemHealth from "./SystemHealth";
+
+// const TABS = {
+//   ALL: "ALL",
+//   UNVERIFIED: "UNVERIFIED",
+//   SYSTEM: "SYSTEM",
+// };
+
+// export default function AdminDashboard() {
+//   const [activeTab, setActiveTab] = useState(TABS.ALL);
+
+//   const tabStyle = (tab) =>
+//     `px-4 py-2 rounded-lg text-sm font-semibold transition
+//      ${
+//        activeTab === tab
+//          ? "bg-blue-600 text-white"
+//          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+//      }`;
+
+//   return (
+//     <div className="p-6 max-w-7xl mx-auto space-y-6">
+//       {/* ================= HEADER ================= */}
+//       <div>
+//         <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+//         <p className="text-sm text-gray-500">
+//           Manage service providers and monitor system health
+//         </p>
+//       </div>
+
+//       {/* ================= TAB BUTTONS ================= */}
+//       <div className="flex gap-3">
+//         <button
+//           className={tabStyle(TABS.ALL)}
+//           onClick={() => setActiveTab(TABS.ALL)}
+//         >
+//           All Service Providers
+//         </button>
+
+//         <button
+//           className={tabStyle(TABS.UNVERIFIED)}
+//           onClick={() => setActiveTab(TABS.UNVERIFIED)}
+//         >
+//           Unverified Providers
+//         </button>
+
+//         <button
+//           className={tabStyle(TABS.SYSTEM)}
+//           onClick={() => setActiveTab(TABS.SYSTEM)}
+//         >
+//           System Dashboard
+//         </button>
+//       </div>
+
+//       {/* ================= TAB CONTENT ================= */}
+//       <div className="bg-white border rounded-xl p-4">
+//         {activeTab === TABS.ALL && <AdminServiceProviders />}
+//         {activeTab === TABS.SYSTEM && <SystemHealth />}
+//       </div>
+//     </div>
+//   );
+// }
+
 import { useState } from "react";
 import AdminServiceProviders from "./AllServiceProvider";
 import SystemHealth from "./SystemHealth";
@@ -12,49 +76,51 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState(TABS.ALL);
 
   const tabStyle = (tab) =>
-    `px-4 py-2 rounded-lg text-sm font-semibold transition
+    `px-4 py-2 text-sm font-medium rounded-md transition-all whitespace-nowrap
      ${
        activeTab === tab
-         ? "bg-blue-600 text-white"
-         : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+         ? "bg-black text-white shadow-sm"
+         : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
      }`;
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
+    <div className="p-6 max-w-7xl mx-auto space-y-6 bg-white min-h-screen">
       {/* ================= HEADER ================= */}
       <div>
-        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-        <p className="text-sm text-gray-500">
-          Manage service providers and monitor system health
+        <h1 className="text-2xl font-semibold text-gray-900">
+          Admin Dashboard
+        </h1>
+        <p className="text-sm text-gray-500 mt-1">
+          Manage providers and monitor platform health
         </p>
       </div>
 
-      {/* ================= TAB BUTTONS ================= */}
-      <div className="flex gap-3">
+      {/* ================= TABS ================= */}
+      <div className="flex gap-2 border border-gray-200 rounded-lg p-1 w-fit overflow-x-auto">
         <button
           className={tabStyle(TABS.ALL)}
           onClick={() => setActiveTab(TABS.ALL)}
         >
-          All Service Providers
+          All Providers
         </button>
 
         <button
           className={tabStyle(TABS.UNVERIFIED)}
           onClick={() => setActiveTab(TABS.UNVERIFIED)}
         >
-          Unverified Providers
+          Unverified
         </button>
 
         <button
           className={tabStyle(TABS.SYSTEM)}
           onClick={() => setActiveTab(TABS.SYSTEM)}
         >
-          System Dashboard
+          System Health
         </button>
       </div>
 
-      {/* ================= TAB CONTENT ================= */}
-      <div className="bg-white border rounded-xl p-4">
+      {/* ================= CONTENT ================= */}
+      <div className="border border-gray-200 rounded-xl p-4">
         {activeTab === TABS.ALL && <AdminServiceProviders />}
         {activeTab === TABS.SYSTEM && <SystemHealth />}
       </div>
