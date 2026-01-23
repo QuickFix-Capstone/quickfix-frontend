@@ -28,23 +28,28 @@ function getAuthToken() {
 }
 
 /**
- * Create a new review for a completed booking
- * @param {string} bookingId - The booking ID
- * @param {number} rating - Star rating (1-5)
- * @param {string} comment - Optional review text
+ * Create a new customer review for a completed booking or job
+ * @param {Object} params - Review parameters
+ * @param {string} params.booking_id - The booking ID (optional, either booking_id or job_id required)
+ * @param {string} params.job_id - The job ID (optional, either booking_id or job_id required)
+ * @param {string} params.provider_id - The provider being reviewed
+ * @param {number} params.rating - Star rating (1-5)
+ * @param {string} params.comment - Optional review text
  * @returns {Promise<Object>} Created review object
  */
-export async function createReview(bookingId, rating, comment = "") {
+export async function createCustomerReview({ booking_id, job_id, provider_id, rating, comment = "" }) {
   const token = getAuthToken();
 
-  const res = await fetch(`${API_BASE}/reviews`, {
+  const res = await fetch(`${API_BASE}/customer/reviews`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({
-      booking_id: bookingId,
+      booking_id: booking_id || null,
+      job_id: job_id || null,
+      provider_id,
       rating,
       comment: comment.trim(),
     }),
