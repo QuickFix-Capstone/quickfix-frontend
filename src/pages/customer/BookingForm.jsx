@@ -66,7 +66,7 @@ export default function BookingForm() {
             console.log("Submitting booking:", bookingData);
 
             const res = await fetch(
-                "https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/booking",
+                `${import.meta.env.VITE_API_BASE_URL}/booking`,
                 {
                     method: "POST",
                     headers: {
@@ -80,8 +80,30 @@ export default function BookingForm() {
             if (res.ok) {
                 const data = await res.json();
                 console.log("Booking created:", data);
-                alert("Booking created successfully!");
-                navigate("/customer/bookings");
+
+                // 1) Compute amount in cents (Stripe needs cents)
+                const amountCents = Math.round(Number(service.price) * 100);
+                const providerId = service.provider_id || 2; // Fallback if missing
+
+                // 2) Store payment context for Payment.jsx
+                // 2) Store payment context for Payment.jsx
+                localStorage.setItem("quote_amount_cents", String(amountCents));
+                // Use service.id (or service_offering_id if available on object)
+                localStorage.setItem("selected_service_offering_id", String(service.id || service.service_offering_id));
+
+                const bookingId = data.booking_id || data.id || data.booking?.booking_id;
+
+                if (!bookingId) {
+                    console.error("Server response missing booking_id:", data);
+                    alert("Error: Server did not return a booking ID. Response: " + JSON.stringify(data));
+                    return;
+                }
+
+                // Optional (good for future linking)
+                localStorage.setItem("booking_id", String(bookingId));
+
+                // 3) Go to payment
+                navigate("/payment");
             } else {
                 const error = await res.text();
                 console.error("Booking failed:", error);
