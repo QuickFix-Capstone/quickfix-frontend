@@ -231,7 +231,6 @@ const ChatbotPopup = ({
   isOpen,
   onClose,
   userToken = null,
-  userRole = "customer",
 }) => {
   const [inputMessage, setInputMessage] = useState("");
   const messagesEndRef = useRef(null);
@@ -502,6 +501,7 @@ export const ChatbotProvider = ({
 };
 
 // Export hook for programmatic control
+// eslint-disable-next-line react-refresh/only-export-components
 export { useChatbotContext };
 // Default export
 export default ChatbotProvider;

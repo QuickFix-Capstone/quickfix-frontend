@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 
 // Mock function - replace with your actual import
-const fetchAuthSession = async ({ forceRefresh }) => {
+const fetchAuthSession = async () => {
   return {
     tokens: {
       idToken: {

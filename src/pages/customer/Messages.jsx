@@ -127,7 +127,7 @@ export default function Messages() {
    * Handle new conversation created from modal
    * @param {Object} conversation - The created conversation
    */
-  function handleConversationCreated(conversation) {
+  function handleConversationCreated() {
     // Refresh conversations list to include new one
     loadConversations();
 

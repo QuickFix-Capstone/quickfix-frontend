@@ -22,7 +22,7 @@ function getAuthToken() {
     }
 
     return token;
-  } catch (error) {
+  } catch {
     throw new Error("Failed to parse authentication data");
   }
 }

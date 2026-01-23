@@ -62,7 +62,7 @@ export default function Payment() {
     const [error, setError] = useState("");
 
     // optional: show order details on the page
-    const [order, setOrder] = useState(null);
+    const [order, _setOrder] = useState(null);
 
     // Stripe Elements options should be stable object
     const elementsOptions = useMemo(() => {
