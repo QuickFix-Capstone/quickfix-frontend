@@ -143,7 +143,7 @@ export default function ServiceList() {
     // Handle messaging a provider
     const handleMessageProvider = async (service) => {
         try {
-            const conversation = await createConversation(
+            await createConversation(
                 service.provider_id,
                 service.service_offering_id
             );

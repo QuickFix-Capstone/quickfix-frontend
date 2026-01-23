@@ -83,7 +83,7 @@ export default function BookingForm() {
 
                 // 1) Compute amount in cents (Stripe needs cents)
                 const amountCents = Math.round(Number(service.price) * 100);
-                const providerId = service.provider_id || 2; // Fallback if missing
+                const _providerId = service.provider_id || 2; // Fallback if missing
 
                 // 2) Store payment context for Payment.jsx
                 // 2) Store payment context for Payment.jsx
