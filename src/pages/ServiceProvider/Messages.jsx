@@ -85,12 +85,12 @@ export default function ProviderMessages() {
         <aside
           className={`${
             selectedConversation ? "hidden md:flex" : "flex"
-          } md:w-[340px] w-full flex-col border-r bg-white`}
+          } md:w-[300px] lg:w-[340px] w-full flex-col border-r bg-white`}
         >
-          <div className="sticky top-0 z-10 bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-4">
+          <div className="sticky top-0 z-10 bg-gradient-to-r from-blue-600 to-indigo-600 px-4 sm:px-5 py-3 sm:py-4">
             <div className="flex items-center justify-between">
-              <h1 className="text-lg font-bold text-white flex items-center gap-2">
-                <MessageSquare className="h-5 w-5" />
+              <h1 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5" />
                 Messages
               </h1>
               <Button
@@ -120,25 +120,25 @@ export default function ProviderMessages() {
           {selectedConversation ? (
             <>
               {/* Header */}
-              <div className="sticky top-0 z-10 flex items-center gap-3 border-b bg-white px-4 py-3">
+              <div className="sticky top-0 z-10 flex items-center gap-2 sm:gap-3 border-b bg-white px-3 sm:px-4 py-2.5 sm:py-3">
                 <button
                   onClick={() => setSelectedConversation(null)}
-                  className="md:hidden text-slate-500"
+                  className="md:hidden text-slate-500 p-1"
                 >
-                  <ArrowLeft />
+                  <ArrowLeft className="h-5 w-5" />
                 </button>
 
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold">
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold text-sm sm:text-base shrink-0">
                   {selectedConversation.otherUser.name[0]}
                 </div>
 
-                <div>
-                  <h2 className="font-semibold text-slate-900">
+                <div className="min-w-0 flex-1">
+                  <h2 className="font-semibold text-slate-900 text-sm sm:text-base truncate">
                     {selectedConversation.otherUser.name}
                   </h2>
                   {selectedConversation.jobTitle && (
-                    <p className="text-xs text-blue-600">
-                      📋 {selectedConversation.jobTitle}
+                    <p className="text-xs text-blue-600 truncate">
+                      {selectedConversation.jobTitle}
                     </p>
                   )}
                 </div>
@@ -161,14 +161,14 @@ export default function ProviderMessages() {
               </div>
             </>
           ) : (
-            <div className="flex flex-1 flex-col items-center justify-center text-center px-6">
-              <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center mb-4">
-                <MessageSquare className="h-8 w-8 text-blue-600" />
+            <div className="flex flex-1 flex-col items-center justify-center text-center px-4 sm:px-6">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-blue-100 flex items-center justify-center mb-3 sm:mb-4">
+                <MessageSquare className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
               </div>
-              <h3 className="text-lg font-semibold text-slate-800">
+              <h3 className="text-base sm:text-lg font-semibold text-slate-800">
                 Your inbox is empty
               </h3>
-              <p className="text-sm text-slate-500 mt-2">
+              <p className="text-sm text-slate-500 mt-1 sm:mt-2 max-w-xs">
                 Select a conversation or start a new one
               </p>
             </div>

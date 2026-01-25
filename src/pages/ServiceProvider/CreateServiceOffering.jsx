@@ -119,17 +119,17 @@ export default function CreateServiceOffering({ onCancel, onSuccess }) {
   };
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8">
+    <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Create a Service Offering</h1>
-        <p className="text-neutral-600">
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Create a Service Offering</h1>
+        <p className="text-sm sm:text-base text-neutral-600 mt-1">
           List a service clients can discover and book instantly.
         </p>
       </div>
 
       {/* Card */}
-      <div className="card p-6 space-y-6">
+      <div className="card p-4 sm:p-6 space-y-5 sm:space-y-6">
         {error && (
           <div className="rounded-xl bg-red-100 px-4 py-3 text-sm text-red-700">
             {error}
@@ -138,8 +138,8 @@ export default function CreateServiceOffering({ onCancel, onSuccess }) {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Service Details */}
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold">Service Details</h2>
+          <div className="space-y-3 sm:space-y-4">
+            <h2 className="text-base sm:text-lg font-semibold">Service Details</h2>
 
             <div className="space-y-2">
               <label className="text-sm text-neutral-600">Title</label>
@@ -163,7 +163,7 @@ export default function CreateServiceOffering({ onCancel, onSuccess }) {
               />
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
               <div className="space-y-2">
                 <label className="text-sm text-neutral-600">Category</label>
                 <select
@@ -199,8 +199,8 @@ export default function CreateServiceOffering({ onCancel, onSuccess }) {
           </div>
 
           {/* Pricing */}
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold">Pricing</h2>
+          <div className="space-y-3 sm:space-y-4">
+            <h2 className="text-base sm:text-lg font-semibold">Pricing</h2>
 
             <div className="space-y-2">
               <label className="text-sm text-neutral-600">Price</label>
@@ -219,8 +219,8 @@ export default function CreateServiceOffering({ onCancel, onSuccess }) {
           </div>
 
           {/* Media */}
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold">Media</h2>
+          <div className="space-y-3 sm:space-y-4">
+            <h2 className="text-base sm:text-lg font-semibold">Media</h2>
 
             <div className="space-y-2">
               <label className="text-sm text-neutral-600">
@@ -242,11 +242,11 @@ export default function CreateServiceOffering({ onCancel, onSuccess }) {
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 pt-6">
+          <div className="flex flex-col-reverse sm:flex-row gap-3 pt-4 sm:pt-6">
             <button
               type="button"
               onClick={handleCancel}
-              className="w-full rounded-xl border border-neutral-300 px-4 py-2 text-neutral-700 hover:bg-neutral-100"
+              className="w-full rounded-xl border border-neutral-300 px-4 py-2.5 sm:py-2 text-neutral-700 hover:bg-neutral-100 transition"
             >
               Cancel
             </button>
@@ -254,7 +254,7 @@ export default function CreateServiceOffering({ onCancel, onSuccess }) {
             <button
               type="submit"
               disabled={loading || imageUploading}
-              className="btn-primary w-full"
+              className="btn-primary w-full py-2.5 sm:py-2"
             >
               {imageUploading
                 ? "Uploading image..."

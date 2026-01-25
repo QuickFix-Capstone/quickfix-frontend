@@ -677,10 +677,10 @@ export default function ServiceProviderOnboarding() {
   // UI
   // ===============================
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10 space-y-8">
+    <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10 space-y-6 sm:space-y-8">
       <div>
-        <h1 className="text-2xl font-bold">Service Provider Onboarding</h1>
-        <p className="text-neutral-600">
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Service Provider Onboarding</h1>
+        <p className="text-sm sm:text-base text-neutral-600 mt-1">
           Create your professional profile so customers can trust and book you.
         </p>
       </div>
@@ -691,91 +691,138 @@ export default function ServiceProviderOnboarding() {
         </div>
       )}
 
-      <div className="card p-6 space-y-6">
-        <input
-          name="name"
-          placeholder="Full Name"
-          className="input"
-          value={form.name}
-          onChange={handleChange}
-        />
+      <div className="card p-4 sm:p-6 space-y-4 sm:space-y-6">
+        {/* Personal Information */}
+        <div className="space-y-3 sm:space-y-4">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900">Personal Information</h2>
 
-        <input
-          name="business_name"
-          placeholder="Business Name (optional)"
-          className="input"
-          value={form.business_name}
-          onChange={handleChange}
-        />
+          <div className="space-y-1">
+            <label className="block text-sm text-neutral-600">Full Name</label>
+            <input
+              name="name"
+              placeholder="John Doe"
+              className="input h-11 sm:h-12"
+              value={form.name}
+              onChange={handleChange}
+            />
+          </div>
 
-        <input
-          name="address_line"
-          placeholder="Street Address"
-          className="input"
-          value={form.address_line}
-          onChange={handleChange}
-        />
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <input
-            name="city"
-            placeholder="City"
-            className="input"
-            value={form.city}
-            onChange={handleChange}
-          />
-          <input
-            name="province"
-            placeholder="Province"
-            className="input"
-            value={form.province}
-            onChange={handleChange}
-          />
-          <input
-            name="postal_code"
-            placeholder="Postal Code"
-            className="input"
-            value={form.postal_code}
-            onChange={handleChange}
-          />
+          <div className="space-y-1">
+            <label className="block text-sm text-neutral-600">Business Name (optional)</label>
+            <input
+              name="business_name"
+              placeholder="Your Business LLC"
+              className="input h-11 sm:h-12"
+              value={form.business_name}
+              onChange={handleChange}
+            />
+          </div>
         </div>
 
-        <textarea
-          name="bio"
-          placeholder="Professional bio"
-          className="input min-h-[120px]"
-          value={form.bio}
-          onChange={handleChange}
-        />
+        {/* Location */}
+        <div className="space-y-3 sm:space-y-4">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900">Location</h2>
 
-        <input
-          type="file"
-          accept="application/pdf"
-          className="input"
-          onChange={(e) => {
-            setFile(e.target.files[0]);
-            setStatus("");
-          }}
-        />
+          <div className="space-y-1">
+            <label className="block text-sm text-neutral-600">Street Address</label>
+            <input
+              name="address_line"
+              placeholder="123 Main Street"
+              className="input h-11 sm:h-12"
+              value={form.address_line}
+              onChange={handleChange}
+            />
+          </div>
 
-        <button
-          type="button"
-          onClick={uploadCertification}
-          disabled={uploading || !file}
-          className="btn-secondary"
-        >
-          {uploading ? "Uploading…" : "Upload Certification PDF"}
-        </button>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+            <div className="space-y-1">
+              <label className="block text-sm text-neutral-600">City</label>
+              <input
+                name="city"
+                placeholder="Toronto"
+                className="input h-11 sm:h-12"
+                value={form.city}
+                onChange={handleChange}
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="block text-sm text-neutral-600">Province</label>
+              <input
+                name="province"
+                placeholder="Ontario"
+                className="input h-11 sm:h-12"
+                value={form.province}
+                onChange={handleChange}
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="block text-sm text-neutral-600">Postal Code</label>
+              <input
+                name="postal_code"
+                placeholder="M5V 1A1"
+                className="input h-11 sm:h-12"
+                value={form.postal_code}
+                onChange={handleChange}
+              />
+            </div>
+          </div>
+        </div>
 
-        {status && <div className="text-sm text-blue-600">{status}</div>}
+        {/* Bio */}
+        <div className="space-y-3 sm:space-y-4">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900">Professional Bio</h2>
 
-        <button
-          onClick={submit}
-          disabled={loading || uploading || !form.certification_s3_key}
-          className="btn-primary w-full"
-        >
-          {loading ? "Submitting…" : "Complete Onboarding"}
-        </button>
+          <div className="space-y-1">
+            <label className="block text-sm text-neutral-600">Tell customers about yourself</label>
+            <textarea
+              name="bio"
+              placeholder="Describe your experience, skills, and what makes you a great service provider..."
+              className="input min-h-[100px] sm:min-h-[120px]"
+              value={form.bio}
+              onChange={handleChange}
+            />
+          </div>
+        </div>
+
+        {/* Certification */}
+        <div className="space-y-3 sm:space-y-4">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900">Certification</h2>
+
+          <div className="space-y-1">
+            <label className="block text-sm text-neutral-600">Upload your certification (PDF)</label>
+            <input
+              type="file"
+              accept="application/pdf"
+              className="input file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-neutral-100 file:text-neutral-700 hover:file:bg-neutral-200"
+              onChange={(e) => {
+                setFile(e.target.files[0]);
+                setStatus("");
+              }}
+            />
+          </div>
+
+          <button
+            type="button"
+            onClick={uploadCertification}
+            disabled={uploading || !file}
+            className="btn-secondary w-full sm:w-auto h-10 sm:h-11 px-6"
+          >
+            {uploading ? "Uploading…" : "Upload Certification PDF"}
+          </button>
+
+          {status && <div className="text-sm text-blue-600">{status}</div>}
+        </div>
+
+        {/* Submit */}
+        <div className="pt-2 sm:pt-4">
+          <button
+            onClick={submit}
+            disabled={loading || uploading || !form.certification_s3_key}
+            className="btn-primary w-full h-11 sm:h-12 text-base"
+          >
+            {loading ? "Submitting…" : "Complete Onboarding"}
+          </button>
+        </div>
       </div>
     </div>
   );
