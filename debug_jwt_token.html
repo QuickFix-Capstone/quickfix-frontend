@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JWT Token Decoder</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 { color: #333; }
+        textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        button:hover { background: #0056b3; }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border-left: 4px solid #28a745;
+        }
+        .error {
+            border-left-color: #dc3545;
+            background: #fff5f5;
+        }
+        .code {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+        .highlight {
+            background: #ffc107;
+            padding: 2px 4px;
+            border-radius: 2px;
+            color: #000;
+            font-weight: bold;
+        }
+        .sql-query {
+            margin-top: 15px;
+            padding: 10px;
+            background: #e7f3ff;
+            border-left: 4px solid #007bff;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 JWT Token Decoder</h1>
+        <p>Paste your JWT token below to extract the <code>cognito_sub</code> (Cognito User ID)</p>
+        
+        <textarea id="tokenInput" placeholder="Paste your JWT token here (starts with eyJ...)"></textarea>
+        <button onclick="decodeToken()">Decode Token</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        function decodeToken() {
+            const token = document.getElementById('tokenInput').value.trim();
+            const resultDiv = document.getElementById('result');
+            
+            if (!token) {
+                resultDiv.innerHTML = '<div class="result error">Please paste a JWT token</div>';
+                return;
+            }
+
+            try {
+                // JWT format: header.payload.signature
+                const parts = token.split('.');
+                if (parts.length !== 3) {
+                    throw new Error('Invalid JWT format. Expected 3 parts separated by dots.');
+                }
+
+                // Decode the payload (second part)
+                const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+                
+                const cognitoSub = payload.sub;
+                const email = payload.email || 'N/A';
+                const groups = payload['cognito:groups'] || [];
+                
+                if (!cognitoSub) {
+                    throw new Error('No "sub" field found in token payload');
+                }
+
+                resultDiv.innerHTML = `
+                    <div class="result">
+                        <h3>✅ Token Decoded Successfully</h3>
+                        <p><strong>Cognito Sub (User ID):</strong> <span class="highlight">${cognitoSub}</span></p>
+                        <p><strong>Email:</strong> ${email}</p>
+                        <p><strong>Groups:</strong> ${groups.length > 0 ? groups.join(', ') : 'None'}</p>
+                        
+                        <div class="sql-query">
+                            <strong>📋 SQL Query to Check Customer:</strong>
+                            <div class="code">SELECT customer_id, cognito_sub, email, first_name, last_name<br>FROM customers<br>WHERE cognito_sub = '${cognitoSub}';</div>
+                            <button onclick="copyToClipboard('${cognitoSub}')" style="margin-top: 10px; font-size: 14px;">Copy cognito_sub</button>
+                        </div>
+
+                        <details style="margin-top: 15px;">
+                            <summary style="cursor: pointer; font-weight: bold;">View Full Token Payload</summary>
+                            <pre class="code" style="margin-top: 10px;">${JSON.stringify(payload, null, 2)}</pre>
+                        </details>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        <h3>❌ Error Decoding Token</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Cognito Sub copied to clipboard!');
+            });
+        }
+
+        // Auto-decode if token is pasted
+        document.getElementById('tokenInput').addEventListener('paste', () => {
+            setTimeout(decodeToken, 100);
+        });
+    </script>
+</body>
+</html>

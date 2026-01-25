@@ -1,3 +1,20 @@
 {
-  "css.lint.unknownAtRules": "ignore"
+  "css.lint.unknownAtRules": "ignore",
+  "sqltools.connections": [
+    {
+      "mysqlOptions": {
+        "authProtocol": "default",
+        "enableSsl": "Disabled"
+      },
+      "ssh": "Disabled",
+      "previewLimit": 50,
+      "server": "quickfix-mysql.cno624c2aarh.us-east-2.rds.amazonaws.com",
+      "port": 3306,
+      "driver": "MySQL",
+      "name": "QuickFix",
+      "database": "quickfix",
+      "username": "admin",
+      "password": "QuickFix123!"
+    }
+  ]
 }
