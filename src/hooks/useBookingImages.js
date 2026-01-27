@@ -34,7 +34,17 @@ export function useBookingImages(bookingId) {
             setImages(fetchedImages);
         } catch (err) {
             console.error('Failed to fetch images:', err);
-            setError('Failed to load images. Please try again.');
+            
+            // Provide more specific error messages
+            if (err.message.includes('404')) {
+                setError('Booking not found or no images endpoint available.');
+            } else if (err.message.includes('401') || err.message.includes('403')) {
+                setError('Authentication failed. Please log in again.');
+            } else if (err.message.includes('500')) {
+                setError('Server error. The images API may not be deployed yet.');
+            } else {
+                setError(`Failed to load images: ${err.message}`);
+            }
         } finally {
             setLoading(false);
         }
@@ -62,6 +72,9 @@ export function useBookingImages(bookingId) {
                 const file = validation.validFiles[i];
                 const fileId = `${file.name}-${Date.now()}`;
                 
+                // Calculate image order (1-based, next available slot)
+                const imageOrder = images.length + i + 1;
+                
                 // Update progress
                 setUploadProgress(prev => ({
                     ...prev,
@@ -70,8 +83,8 @@ export function useBookingImages(bookingId) {
 
                 try {
                     const uploadOptions = {
-                        order: images.length + i,
-                        description: options.description || '',
+                        order: imageOrder,
+                        description: options.description || null,
                         ...options
                     };
 
@@ -181,7 +194,7 @@ export function useBookingImages(bookingId) {
         
         // Computed values
         imageCount: images.length,
-        canUploadMore: images.length < 10, // MAX_FILES_PER_BOOKING
+        canUploadMore: images.length < 5, // MAX_FILES_PER_BOOKING from API
         hasImages: images.length > 0
     };
 }

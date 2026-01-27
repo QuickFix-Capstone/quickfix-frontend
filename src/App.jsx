@@ -521,6 +521,7 @@ import RegisterCustomer from "./pages/customer/RegisterCustomer";
 import EditProfile from "./pages/customer/EditProfile";
 import ServiceList from "./pages/customer/ServiceList";
 import Bookings from "./pages/customer/Bookings";
+import BookingDetails from "./pages/customer/BookingDetails";
 import BookingForm from "./pages/customer/BookingForm";
 import PostJob from "./pages/customer/PostJob";
 import MyJobs from "./pages/customer/MyJobs";
@@ -729,6 +730,7 @@ export default function App() {
         <Route path="/customer/edit" element={<EditProfile />} />
         <Route path="/customer/services" element={<ServiceList />} />
         <Route path="/customer/bookings" element={<Bookings />} />
+        <Route path="/customer/bookings/:bookingId" element={<BookingDetails />} />
         <Route path="/customer/book" element={<BookingForm />} />
         <Route path="/customer/post-job" element={<PostJob />} />
         <Route path="/customer/jobs" element={<MyJobs />} />

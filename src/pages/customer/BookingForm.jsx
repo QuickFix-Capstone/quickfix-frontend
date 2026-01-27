@@ -4,7 +4,9 @@ import { useAuth } from "react-oidc-context";
 import { useNavigate, useLocation } from "react-router-dom";
 import Card from "../../components/UI/Card";
 import Button from "../../components/UI/Button";
-import { ArrowLeft, Calendar, Clock, MapPin, FileText, DollarSign } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, MapPin, FileText, DollarSign, Camera, Upload } from "lucide-react";
+import FileInput from "../../components/UI/FileInput";
+import { uploadBookingImage } from "../../api/bookingImages";
 
 export default function BookingForm() {
     const auth = useAuth();
@@ -23,6 +25,8 @@ export default function BookingForm() {
         notes: "",
     });
     const [submitting, setSubmitting] = useState(false);
+    const [selectedImages, setSelectedImages] = useState([]);
+    const [uploadingImages, setUploadingImages] = useState(false);
 
     if (!service) {
         return (
@@ -82,6 +86,16 @@ export default function BookingForm() {
             if (res.ok) {
                 const data = await res.json();
                 console.log("Booking created:", data);
+
+                // Extract booking_id from response (it's inside data.booking)
+                const bookingId = data.booking?.booking_id || data.booking_id;
+
+                // If images were selected, upload them to the new booking
+                if (selectedImages.length > 0 && bookingId) {
+                    setUploadingImages(true);
+                    await uploadImagesToBooking(bookingId);
+                }
+
                 alert("Booking created successfully!");
                 navigate("/customer/bookings");
             } else {
@@ -94,7 +108,34 @@ export default function BookingForm() {
             alert("Error creating booking. Please try again.");
         } finally {
             setSubmitting(false);
+            setUploadingImages(false);
         }
+    };
+
+    const uploadImagesToBooking = async (bookingId) => {
+        console.log(`Uploading ${selectedImages.length} images to booking ${bookingId}`);
+        
+        try {
+            for (let i = 0; i < selectedImages.length; i++) {
+                const file = selectedImages[i];
+                const options = {
+                    order: i + 1,
+                    description: `Issue photo ${i + 1}`,
+                };
+                
+                await uploadBookingImage(bookingId, file, auth, options);
+                console.log(`Uploaded image ${i + 1}/${selectedImages.length}`);
+            }
+            console.log("All images uploaded successfully");
+        } catch (error) {
+            console.error("Error uploading images:", error);
+            // Don't fail the booking creation if image upload fails
+            alert("Booking created, but some images failed to upload. You can add them later from the booking details page.");
+        }
+    };
+
+    const handleImagesSelected = (files) => {
+        setSelectedImages(files);
     };
 
     // Get minimum date (tomorrow)
@@ -274,6 +315,33 @@ export default function BookingForm() {
                             />
                         </div>
 
+                        {/* Image Upload */}
+                        <div>
+                            <label className="mb-2 flex items-center gap-2 text-sm font-medium text-neutral-700">
+                                <Camera className="h-4 w-4" />
+                                Photos (Optional)
+                            </label>
+                            <p className="mb-3 text-sm text-neutral-500">
+                                Upload photos to help the service provider understand the issue or requirements. 
+                                You can add up to 5 images (JPEG, PNG, WebP under 5MB each).
+                            </p>
+                            <FileInput
+                                onFilesSelected={handleImagesSelected}
+                                multiple={true}
+                                disabled={submitting || uploadingImages}
+                                existingCount={0}
+                                maxFiles={5}
+                                showPreview={true}
+                                className="border-2 border-dashed border-neutral-300 rounded-lg"
+                            />
+                            {selectedImages.length > 0 && (
+                                <p className="mt-2 text-sm text-green-600">
+                                    {selectedImages.length} image{selectedImages.length !== 1 ? 's' : ''} selected. 
+                                    {selectedImages.length === 1 ? ' It' : ' They'} will be uploaded after the booking is created.
+                                </p>
+                            )}
+                        </div>
+
                         {/* Submit Button */}
                         <div className="flex gap-4">
                             <Button
@@ -281,17 +349,37 @@ export default function BookingForm() {
                                 onClick={() => navigate("/customer/services")}
                                 variant="outline"
                                 className="flex-1"
+                                disabled={submitting || uploadingImages}
                             >
                                 Cancel
                             </Button>
                             <Button
                                 type="submit"
-                                disabled={submitting}
-                                className="flex-1 bg-neutral-900 hover:bg-neutral-800"
+                                disabled={submitting || uploadingImages}
+                                className="flex-1 bg-neutral-900 hover:bg-neutral-800 disabled:opacity-50"
                             >
-                                {submitting ? "Creating Booking..." : "Confirm Booking"}
+                                {uploadingImages ? (
+                                    <div className="flex items-center gap-2">
+                                        <Upload className="h-4 w-4 animate-pulse" />
+                                        Uploading Images...
+                                    </div>
+                                ) : submitting ? (
+                                    "Creating Booking..."
+                                ) : (
+                                    "Confirm Booking"
+                                )}
                             </Button>
                         </div>
+                        
+                        {/* Progress Info */}
+                        {(submitting || uploadingImages) && (
+                            <div className="text-center text-sm text-neutral-600">
+                                {submitting && !uploadingImages && "Creating your booking..."}
+                                {uploadingImages && `Uploading ${selectedImages.length} image${selectedImages.length !== 1 ? 's' : ''}...`}
+                                <br />
+                                <span className="text-xs text-neutral-500">Please don't close this page</span>
+                            </div>
+                        )}
                     </form>
                 </Card>
             </div>
