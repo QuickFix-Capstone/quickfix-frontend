@@ -530,6 +530,7 @@ import JobApplications from "./pages/customer/JobApplications";
 import CustomerEntry from "./pages/customer/CustomerEntry";
 import TestMessagingAPI from "./pages/customer/TestMessagingAPI"; // TEMPORARY TEST PAGE
 import Messages from "./pages/customer/Messages";
+import TestBookingImages from "./components/TestBookingImages"; // TEMPORARY TEST COMPONENT
 
 // ================= PROVIDER PAGES =================
 import ServiceProviderSignUp from "./pages/ServiceProvider/ServiceProviderSignUp";
@@ -743,6 +744,7 @@ export default function App() {
 
         {/* TEMPORARY TEST ROUTE - DELETE AFTER TESTING */}
         <Route path="/customer/test-messaging" element={<TestMessagingAPI />} />
+        <Route path="/test-booking-images" element={<TestBookingImages />} />
 
         {/* ---------- PROVIDER AUTH ---------- */}
         <Route

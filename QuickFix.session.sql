@@ -355,3 +355,8 @@ ORDER BY created_at DESC
 LIMIT 10;
 DELETE FROM customers
 WHERE customer_id = 10;
+
+
+DELETE FROM customers WHERE customer_id = 3;
+
+DELETE FROM customers WHERE customer_id = 11;

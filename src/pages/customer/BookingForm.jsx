@@ -4,7 +4,7 @@ import { useAuth } from "react-oidc-context";
 import { useNavigate, useLocation } from "react-router-dom";
 import Card from "../../components/UI/Card";
 import Button from "../../components/UI/Button";
-import { ArrowLeft, Calendar, Clock, MapPin, FileText } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, MapPin, FileText, DollarSign } from "lucide-react";
 
 export default function BookingForm() {
     const auth = useAuth();
@@ -19,6 +19,7 @@ export default function BookingForm() {
         service_city: "",
         service_state: "",
         service_postal_code: "",
+        estimated_price: "",
         notes: "",
     });
     const [submitting, setSubmitting] = useState(false);
@@ -60,6 +61,7 @@ export default function BookingForm() {
                 service_city: formData.service_city,
                 service_state: formData.service_state,
                 service_postal_code: formData.service_postal_code || "RSH 139",
+                estimated_price: parseFloat(formData.estimated_price),
                 notes: formData.notes,
             };
 
@@ -170,6 +172,29 @@ export default function BookingForm() {
                                     className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-2 text-neutral-900 focus:border-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900"
                                 />
                             </div>
+                        </div>
+
+                        {/* Estimated Price */}
+                        <div>
+                            <label className="mb-2 flex items-center gap-2 text-sm font-medium text-neutral-700">
+                                <DollarSign className="h-4 w-4" />
+                                Estimated Price *
+                            </label>
+                            <input
+                                type="number"
+                                name="estimated_price"
+                                value={formData.estimated_price}
+                                onChange={handleChange}
+                                placeholder="Enter your estimated price"
+                                min="0"
+                                step="0.01"
+                                required
+                                className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-2 text-neutral-900 placeholder-neutral-500 focus:border-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900"
+                            />
+                            <p className="mt-1 text-sm text-neutral-500">
+                                Service provider's listed price: ${service.price.toFixed(2)}
+                                {service.pricing_type === "HOURLY" ? "/hr" : ""}
+                            </p>
                         </div>
 
                         {/* Address */}
