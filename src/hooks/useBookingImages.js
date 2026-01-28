@@ -12,12 +12,12 @@ import { validateImageFiles } from '../utils/imageValidation';
  * @param {string} bookingId - The booking ID
  * @returns {Object} Hook state and methods
  */
-export function useBookingImages(bookingId) {
+export function useBookingImages(bookingId, initialImages = null) {
     const auth = useAuth();
-    
+
     // State management
-    const [images, setImages] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const [images, setImages] = useState(initialImages || []);
+    const [loading, setLoading] = useState(!initialImages);
     const [uploading, setUploading] = useState(false);
     const [error, setError] = useState(null);
     const [uploadProgress, setUploadProgress] = useState({});
@@ -26,15 +26,20 @@ export function useBookingImages(bookingId) {
     const fetchImages = useCallback(async () => {
         if (!bookingId || !auth.isAuthenticated) return;
 
+        // If we provided initial images and this is the first run, we might want to skip?
+        // But refresh needs to fetch.
+        // Let's rely on loading state or just fetch anyway if refresh is called.
+        // For component mount, useEffect logic below handles it.
+
         setLoading(true);
         setError(null);
-        
+
         try {
             const fetchedImages = await getBookingImages(bookingId, auth);
             setImages(fetchedImages);
         } catch (err) {
             console.error('Failed to fetch images:', err);
-            
+
             // Provide more specific error messages
             if (err.message.includes('404')) {
                 setError('Booking not found or no images endpoint available.');
@@ -63,7 +68,7 @@ export function useBookingImages(bookingId) {
 
         setUploading(true);
         setError(null);
-        
+
         const results = [];
         const totalFiles = validation.validFiles.length;
 
@@ -71,10 +76,10 @@ export function useBookingImages(bookingId) {
             for (let i = 0; i < validation.validFiles.length; i++) {
                 const file = validation.validFiles[i];
                 const fileId = `${file.name}-${Date.now()}`;
-                
+
                 // Calculate image order (1-based, next available slot)
                 const imageOrder = images.length + i + 1;
-                
+
                 // Update progress
                 setUploadProgress(prev => ({
                     ...prev,
@@ -89,7 +94,7 @@ export function useBookingImages(bookingId) {
                     };
 
                     const result = await uploadBookingImage(bookingId, file, auth, uploadOptions);
-                    
+
                     // Update progress
                     setUploadProgress(prev => ({
                         ...prev,
@@ -97,22 +102,22 @@ export function useBookingImages(bookingId) {
                     }));
 
                     results.push({ success: true, file, result });
-                    
+
                     // Add to images state immediately
                     setImages(prev => [...prev, result]);
-                    
+
                 } catch (uploadError) {
                     console.error(`Failed to upload ${file.name}:`, uploadError);
-                    
+
                     setUploadProgress(prev => ({
                         ...prev,
                         [fileId]: { progress: 0, status: 'error', error: uploadError.message }
                     }));
 
-                    results.push({ 
-                        success: false, 
-                        file, 
-                        error: uploadError.message 
+                    results.push({
+                        success: false,
+                        file,
+                        error: uploadError.message
                     });
                 }
             }
@@ -151,10 +156,10 @@ export function useBookingImages(bookingId) {
 
         try {
             await deleteBookingImage(bookingId, imageId, auth);
-            
+
             // Remove from state
             setImages(prev => prev.filter(img => img.image_id !== imageId));
-            
+
             return { success: true };
         } catch (err) {
             console.error('Failed to delete image:', err);
@@ -175,8 +180,11 @@ export function useBookingImages(bookingId) {
 
     // Load images on mount and when bookingId changes
     useEffect(() => {
-        fetchImages();
-    }, [fetchImages]);
+        // Only fetch if we didn't start with initial images
+        if (!initialImages) {
+            fetchImages();
+        }
+    }, [fetchImages, initialImages]);
 
     return {
         // State
@@ -185,13 +193,13 @@ export function useBookingImages(bookingId) {
         uploading,
         error,
         uploadProgress,
-        
+
         // Methods
         uploadImages,
         deleteImage,
         refresh,
         clearError,
-        
+
         // Computed values
         imageCount: images.length,
         canUploadMore: images.length < 5, // MAX_FILES_PER_BOOKING from API

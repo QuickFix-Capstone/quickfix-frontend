@@ -50,12 +50,12 @@ export default function BookingDetails() {
     const fetchBookingDetails = async () => {
         setLoading(true);
         setError(null);
-        
+
         try {
             const token = auth.user?.id_token || auth.user?.access_token;
 
             const res = await fetch(
-                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/booking/${bookingId}`,
+                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/customer/bookings/${bookingId}`,
                 {
                     method: "GET",
                     headers: {
@@ -67,7 +67,7 @@ export default function BookingDetails() {
             if (res.ok) {
                 const data = await res.json();
                 console.log("Booking details:", data);
-                setBooking(data);
+                setBooking(data.booking); // Extract the booking object from the response
             } else if (res.status === 404) {
                 setError("Booking not found");
             } else if (res.status === 403) {
@@ -94,6 +94,7 @@ export default function BookingDetails() {
     };
 
     const formatTime = (timeString) => {
+        if (!timeString) return 'N/A';
         const [hours, minutes] = timeString.split(":");
         const hour = parseInt(hours);
         const ampm = hour >= 12 ? "PM" : "AM";
@@ -109,7 +110,7 @@ export default function BookingDetails() {
         try {
             const token = auth.user?.id_token || auth.user?.access_token;
             const res = await fetch(
-                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/booking/${bookingId}`,
+                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/customer/bookings/${bookingId}`,
                 {
                     method: "PUT",
                     headers: {
@@ -136,7 +137,7 @@ export default function BookingDetails() {
 
     const handleMessageProvider = async () => {
         if (!booking) return;
-        
+
         try {
             await createConversation(
                 booking.provider_id,
@@ -201,24 +202,24 @@ export default function BookingDetails() {
                         <ArrowLeft className="h-4 w-4" />
                         Back to Bookings
                     </Button>
-                    
+
                     <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                         <div>
                             <h1 className="text-3xl font-bold text-neutral-900">
-                                {booking.service_description}
+                                {booking.service?.description || booking.service_description}
                             </h1>
                             <p className="mt-1 text-neutral-600">
                                 Booking ID: {booking.booking_id}
                             </p>
                         </div>
-                        
+
                         <div className="flex items-center gap-2">
                             <span
-                                className={`rounded-full px-3 py-1 text-sm font-medium ${categoryColors[booking.service_category] ||
+                                className={`rounded-full px-3 py-1 text-sm font-medium ${categoryColors[booking.service?.category || booking.service_category] ||
                                     "bg-neutral-100 text-neutral-800"
                                     }`}
                             >
-                                {booking.service_category?.replace("_", " ")}
+                                {(booking.service?.category || booking.service_category)?.replace("_", " ")}
                             </span>
                             <span
                                 className={`rounded-full border px-3 py-1 text-sm font-medium ${statusColors[booking.status] ||
@@ -244,14 +245,14 @@ export default function BookingDetails() {
                                         <Calendar className="h-5 w-5" />
                                         <div>
                                             <p className="font-medium">Date</p>
-                                            <p className="text-sm">{formatDate(booking.scheduled_date)}</p>
+                                            <p className="text-sm">{formatDate(booking.schedule?.date || booking.scheduled_date)}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2 text-neutral-600">
                                         <Clock className="h-5 w-5" />
                                         <div>
                                             <p className="font-medium">Time</p>
-                                            <p className="text-sm">{formatTime(booking.scheduled_time)}</p>
+                                            <p className="text-sm">{formatTime(booking.schedule?.time || booking.scheduled_time)}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -311,12 +312,12 @@ export default function BookingDetails() {
                             <div className="text-center">
                                 <div className="flex items-center justify-center gap-1 text-3xl font-bold text-neutral-900">
                                     <DollarSign className="h-6 w-6" />
-                                    {booking.estimated_price?.toFixed(2) || booking.final_price?.toFixed(2)}
+                                    {(booking.pricing?.estimated_price || booking.estimated_price)?.toFixed(2) || (booking.pricing?.final_price || booking.final_price)?.toFixed(2)}
                                 </div>
-                                {booking.estimated_price && !booking.final_price && (
+                                {(booking.pricing?.estimated_price || booking.estimated_price) && !(booking.pricing?.final_price || booking.final_price) && (
                                     <span className="text-sm text-neutral-500">Estimated Price</span>
                                 )}
-                                {booking.final_price && (
+                                {(booking.pricing?.final_price || booking.final_price) && (
                                     <span className="text-sm text-green-600">Final Price</span>
                                 )}
                             </div>
@@ -335,7 +336,7 @@ export default function BookingDetails() {
                                         Cancel Booking
                                     </Button>
                                 )}
-                                
+
                                 <Button
                                     onClick={handleMessageProvider}
                                     className="w-full gap-2"
@@ -343,7 +344,7 @@ export default function BookingDetails() {
                                     <MessageSquare className="h-4 w-4" />
                                     Message Provider
                                 </Button>
-                                
+
                                 <Button
                                     onClick={() => navigate("/customer/bookings")}
                                     variant="outline"

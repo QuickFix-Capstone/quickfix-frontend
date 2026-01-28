@@ -11,6 +11,7 @@ import ImageGallery from './ImageGallery';
  */
 export default function BookingImagesSection({
     bookingId,
+    initialImages = null,
     title = "Booking Images",
     showUpload = true,
     allowDelete = true,
@@ -41,7 +42,7 @@ export default function BookingImagesSection({
                         <Camera className="h-5 w-5 mr-2" />
                         {title}
                     </h3>
-                    
+
                     {showUpload && (
                         <div className="flex space-x-2">
                             <Button
@@ -70,6 +71,7 @@ export default function BookingImagesSection({
                 {activeTab === 'gallery' ? (
                     <ImageGallery
                         bookingId={bookingId}
+                        initialImages={initialImages}
                         showUpload={false}
                         showSearch={true}
                         showSort={true}

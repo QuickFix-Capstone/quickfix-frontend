@@ -7,6 +7,7 @@ import { useBookingImages } from '../../hooks/useBookingImages';
 
 export default function ImageGallery({
     bookingId,
+    initialImages = null,
     showUpload = false,
     showSearch = true,
     showSort = true,
@@ -24,7 +25,7 @@ export default function ImageGallery({
         refresh,
         clearError,
         hasImages
-    } = useBookingImages(bookingId);
+    } = useBookingImages(bookingId, initialImages);
 
     const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list'
     const [searchTerm, setSearchTerm] = useState('');
@@ -40,7 +41,7 @@ export default function ImageGallery({
         // Apply search filter
         if (searchTerm.trim()) {
             const term = searchTerm.toLowerCase();
-            filtered = filtered.filter(image => 
+            filtered = filtered.filter(image =>
                 image.file_name?.toLowerCase().includes(term) ||
                 image.description?.toLowerCase().includes(term)
             );
@@ -49,7 +50,7 @@ export default function ImageGallery({
         // Apply sorting
         filtered.sort((a, b) => {
             let comparison = 0;
-            
+
             switch (sortBy) {
                 case 'name':
                     comparison = (a.file_name || '').localeCompare(b.file_name || '');
@@ -65,7 +66,7 @@ export default function ImageGallery({
                     comparison = new Date(a.created_at || 0) - new Date(b.created_at || 0);
                     break;
             }
-            
+
             return sortOrder === 'asc' ? comparison : -comparison;
         });
 
@@ -133,7 +134,7 @@ export default function ImageGallery({
                         No Images Yet
                     </h3>
                     <p className="text-gray-500 mb-4">
-                        {showUpload 
+                        {showUpload
                             ? 'Upload some images to get started'
                             : 'No images have been uploaded for this booking'
                         }
@@ -151,24 +152,24 @@ export default function ImageGallery({
                     <h3 className="text-lg font-medium text-gray-900">
                         Images ({filteredAndSortedImages.length})
                     </h3>
-                    
+
                     {/* View Mode Toggle */}
                     <div className="flex border border-gray-300 rounded-md">
                         <button
                             onClick={() => setViewMode('grid')}
-                            className={`p-2 ${viewMode === 'grid' 
-                                ? 'bg-blue-500 text-white' 
+                            className={`p-2 ${viewMode === 'grid'
+                                ? 'bg-blue-500 text-white'
                                 : 'bg-white text-gray-600 hover:bg-gray-50'
-                            }`}
+                                }`}
                         >
                             <Grid className="h-4 w-4" />
                         </button>
                         <button
                             onClick={() => setViewMode('list')}
-                            className={`p-2 ${viewMode === 'list' 
-                                ? 'bg-blue-500 text-white' 
+                            className={`p-2 ${viewMode === 'list'
+                                ? 'bg-blue-500 text-white'
                                 : 'bg-white text-gray-600 hover:bg-gray-50'
-                            }`}
+                                }`}
                         >
                             <List className="h-4 w-4" />
                         </button>
@@ -203,14 +204,14 @@ export default function ImageGallery({
                                 <option value="size">Size</option>
                                 <option value="order">Order</option>
                             </select>
-                            
+
                             <button
                                 onClick={toggleSortOrder}
                                 className="p-2 border border-gray-300 rounded-md hover:bg-gray-50"
                                 title={`Sort ${sortOrder === 'asc' ? 'Descending' : 'Ascending'}`}
                             >
-                                {sortOrder === 'asc' ? 
-                                    <SortAsc className="h-4 w-4" /> : 
+                                {sortOrder === 'asc' ?
+                                    <SortAsc className="h-4 w-4" /> :
                                     <SortDesc className="h-4 w-4" />
                                 }
                             </button>
@@ -258,7 +259,7 @@ export default function ImageGallery({
                                         onClick={() => handleImageView(image)}
                                     />
                                 </div>
-                                
+
                                 <div className="flex-1 min-w-0">
                                     <p className="text-sm font-medium text-gray-900 truncate">
                                         {image.file_name}
@@ -272,7 +273,7 @@ export default function ImageGallery({
                                         {new Date(image.created_at).toLocaleDateString()}
                                     </p>
                                 </div>
-                                
+
                                 <div className="flex items-center space-x-2">
                                     <Button
                                         onClick={() => handleImageView(image)}
@@ -281,7 +282,7 @@ export default function ImageGallery({
                                     >
                                         View
                                     </Button>
-                                    
+
                                     {allowDelete && (
                                         <Button
                                             onClick={() => handleImageDelete(image.image_id)}

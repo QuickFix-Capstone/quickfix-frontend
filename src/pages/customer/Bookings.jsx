@@ -6,7 +6,7 @@ import Card from "../../components/UI/Card";
 import Button from "../../components/UI/Button";
 import { ArrowLeft, Calendar, Clock, MapPin, DollarSign, AlertCircle, ChevronLeft, ChevronRight, Filter, MessageSquare, Camera, Image } from "lucide-react";
 import { createConversation } from "../../api/messaging";
-import { getBookingImages } from "../../api/bookingImages";
+
 
 export default function Bookings() {
     const auth = useAuth();
@@ -17,7 +17,7 @@ export default function Bookings() {
     const [limit] = useState(20);
     const [offset, setOffset] = useState(0);
     const [pagination, setPagination] = useState({ total: 0, has_more: false });
-    const [bookingImages, setBookingImages] = useState({}); // Store images for each booking
+
 
     const statusColors = {
         pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
@@ -62,7 +62,7 @@ export default function Bookings() {
             console.log("Fetching bookings with params:", params.toString());
 
             const res = await fetch(
-                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/customer/bookings?${params.toString()}`,
+                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/customer/bookings?${params.toString()}`,
                 {
                     method: "GET",
                     headers: {
@@ -83,11 +83,8 @@ export default function Bookings() {
                     fetchedBookings = data.bookings || [];
                     setPagination(data.pagination || { total: 0, has_more: false });
                 }
-                
+
                 setBookings(fetchedBookings);
-                
-                // Load images for each booking (async, don't block UI)
-                loadBookingImages(fetchedBookings);
             } else {
                 console.error("Failed to fetch bookings", res.status, res.statusText);
             }
@@ -95,53 +92,6 @@ export default function Bookings() {
             console.error("Error fetching bookings:", err);
         } finally {
             setLoading(false);
-        }
-    };
-
-    // Load images for bookings (non-blocking)
-    const loadBookingImages = async (bookingsList) => {
-        console.log(`Loading images for ${bookingsList.length} bookings`);
-        
-        const imagePromises = bookingsList.map(async (booking) => {
-            try {
-                const images = await getBookingImages(booking.booking_id, auth);
-                return { 
-                    bookingId: booking.booking_id, 
-                    images: images.slice(0, 5), // Limit to 5 images for performance
-                    success: true 
-                };
-            } catch (error) {
-                // Don't log errors for 404s (no images) - this is expected
-                if (!error.message.includes('404')) {
-                    console.log(`Error loading images for booking ${booking.booking_id}:`, error.message);
-                }
-                return { 
-                    bookingId: booking.booking_id, 
-                    images: [], 
-                    success: false 
-                };
-            }
-        });
-
-        try {
-            const results = await Promise.allSettled(imagePromises);
-            const imagesMap = {};
-            let successCount = 0;
-            let errorCount = 0;
-            
-            results.forEach((result) => {
-                if (result.status === 'fulfilled') {
-                    const { bookingId, images, success } = result.value;
-                    imagesMap[bookingId] = images;
-                    if (success && images.length > 0) successCount++;
-                    if (!success) errorCount++;
-                }
-            });
-            
-            console.log(`Images loaded: ${successCount} bookings with photos, ${errorCount} errors`);
-            setBookingImages(imagesMap);
-        } catch (error) {
-            console.error("Error in image loading process:", error);
         }
     };
 
@@ -172,7 +122,7 @@ export default function Bookings() {
         try {
             const token = auth.user?.id_token || auth.user?.access_token;
             const res = await fetch(
-                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/booking/${bookingId}`,
+                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/customer/bookings/${bookingId}`,
                 {
                     method: "PUT",
                     headers: {
@@ -323,10 +273,10 @@ export default function Bookings() {
                                                     {booking.status?.replace("_", " ").toUpperCase()}
                                                 </span>
                                                 {/* Photo indicator badge */}
-                                                {bookingImages[booking.booking_id] && bookingImages[booking.booking_id].length > 0 && (
+                                                {booking.images && booking.images.length > 0 && (
                                                     <span className="rounded-full bg-blue-100 text-blue-800 px-2 py-1 text-xs font-medium flex items-center gap-1">
                                                         <Camera className="h-3 w-3" />
-                                                        {bookingImages[booking.booking_id].length}
+                                                        {booking.images.length}
                                                     </span>
                                                 )}
                                             </div>
@@ -369,19 +319,19 @@ export default function Bookings() {
                                         )}
 
                                         {/* Image Thumbnails */}
-                                        {bookingImages[booking.booking_id] && bookingImages[booking.booking_id].length > 0 && (
+                                        {booking.images && booking.images.length > 0 && (
                                             <div className="space-y-2">
                                                 <div className="flex items-center gap-2 text-sm text-neutral-600">
                                                     <Camera className="h-4 w-4" />
-                                                    <span>{bookingImages[booking.booking_id].length} photo{bookingImages[booking.booking_id].length !== 1 ? 's' : ''}</span>
+                                                    <span>{booking.images.length} photo{booking.images.length !== 1 ? 's' : ''}</span>
                                                     <span className="text-xs text-neutral-400">• Click to view</span>
                                                 </div>
                                                 <div className="flex gap-2 flex-wrap">
-                                                    {bookingImages[booking.booking_id].slice(0, 3).map((image, index) => (
-                                                        <div key={image.image_id} className="relative group">
+                                                    {booking.images.slice(0, 3).map((image, index) => (
+                                                        <div key={index} className="relative group">
                                                             <img
                                                                 src={image.url}
-                                                                alt={image.description || `Issue photo ${index + 1}`}
+                                                                alt={`Issue photo ${index + 1}`}
                                                                 className="w-16 h-16 object-cover rounded-lg border border-neutral-200 cursor-pointer hover:opacity-90 hover:scale-105 transition-all duration-200 shadow-sm hover:shadow-md"
                                                                 onClick={() => navigate(`/customer/bookings/${booking.booking_id}`)}
                                                                 onError={(e) => {
@@ -403,14 +353,14 @@ export default function Bookings() {
                                                             </div>
                                                         </div>
                                                     ))}
-                                                    {bookingImages[booking.booking_id].length > 3 && (
-                                                        <div 
+                                                    {booking.images.length > 3 && (
+                                                        <div
                                                             className="w-16 h-16 bg-gradient-to-br from-neutral-100 to-neutral-200 rounded-lg border border-neutral-200 flex items-center justify-center cursor-pointer hover:from-neutral-200 hover:to-neutral-300 transition-all duration-200 shadow-sm hover:shadow-md hover:scale-105 group"
                                                             onClick={() => navigate(`/customer/bookings/${booking.booking_id}`)}
                                                         >
                                                             <div className="text-center">
                                                                 <div className="text-sm font-semibold text-neutral-700 group-hover:text-neutral-800">
-                                                                    +{bookingImages[booking.booking_id].length - 3}
+                                                                    +{booking.images.length - 3}
                                                                 </div>
                                                                 <div className="text-xs text-neutral-500 group-hover:text-neutral-600">
                                                                     more
@@ -421,14 +371,9 @@ export default function Bookings() {
                                                 </div>
                                             </div>
                                         )}
-                                        
+
                                         {/* Loading state for images */}
-                                        {bookingImages[booking.booking_id] === undefined && (
-                                            <div className="flex items-center gap-2 text-xs text-neutral-400">
-                                                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-neutral-400"></div>
-                                                <span>Loading photos...</span>
-                                            </div>
-                                        )}
+
                                     </div>
 
                                     {/* Right: Price & Actions */}

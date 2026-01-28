@@ -72,7 +72,7 @@ export default function BookingForm() {
             console.log("Submitting booking:", bookingData);
 
             const res = await fetch(
-                "https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/booking",
+                "https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/customer/bookings",
                 {
                     method: "POST",
                     headers: {
@@ -114,7 +114,7 @@ export default function BookingForm() {
 
     const uploadImagesToBooking = async (bookingId) => {
         console.log(`Uploading ${selectedImages.length} images to booking ${bookingId}`);
-        
+
         try {
             for (let i = 0; i < selectedImages.length; i++) {
                 const file = selectedImages[i];
@@ -122,7 +122,7 @@ export default function BookingForm() {
                     order: i + 1,
                     description: `Issue photo ${i + 1}`,
                 };
-                
+
                 await uploadBookingImage(bookingId, file, auth, options);
                 console.log(`Uploaded image ${i + 1}/${selectedImages.length}`);
             }
@@ -322,7 +322,7 @@ export default function BookingForm() {
                                 Photos (Optional)
                             </label>
                             <p className="mb-3 text-sm text-neutral-500">
-                                Upload photos to help the service provider understand the issue or requirements. 
+                                Upload photos to help the service provider understand the issue or requirements.
                                 You can add up to 5 images (JPEG, PNG, WebP under 5MB each).
                             </p>
                             <FileInput
@@ -336,7 +336,7 @@ export default function BookingForm() {
                             />
                             {selectedImages.length > 0 && (
                                 <p className="mt-2 text-sm text-green-600">
-                                    {selectedImages.length} image{selectedImages.length !== 1 ? 's' : ''} selected. 
+                                    {selectedImages.length} image{selectedImages.length !== 1 ? 's' : ''} selected.
                                     {selectedImages.length === 1 ? ' It' : ' They'} will be uploaded after the booking is created.
                                 </p>
                             )}
@@ -370,7 +370,7 @@ export default function BookingForm() {
                                 )}
                             </Button>
                         </div>
-                        
+
                         {/* Progress Info */}
                         {(submitting || uploadingImages) && (
                             <div className="text-center text-sm text-neutral-600">
