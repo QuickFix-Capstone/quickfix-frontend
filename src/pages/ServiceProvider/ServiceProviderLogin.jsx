@@ -6,56 +6,6 @@
 // import AuthDivider from "../../components/auth/AuthDivider";
 
 // export default function Login() {
-//   const [email, setEmail] = useState("");
-//   const [password, setPassword] = useState("");
-//   const [error, setError] = useState("");
-//   const navigate = useNavigate();
-
-//   const handleLogin = async () => {
-//     try {
-//       await signIn({ username: email, password });
-//       navigate("/auth/redirect", { replace: true });
-//     } catch (e) {
-//       setError(e.message);
-//     }
-//   };
-
-//   return (
-//     <AuthCard title="Sign in to QuickFix">
-//       <SocialAuthButtons />
-//       <AuthDivider />
-
-//       <input
-//         className="input"
-//         placeholder="Email"
-//         value={email}
-//         onChange={(e) => setEmail(e.target.value)}
-//       />
-//       <input
-//         className="input mt-3"
-//         type="password"
-//         placeholder="Password"
-//         value={password}
-//         onChange={(e) => setPassword(e.target.value)}
-//       />
-
-//       <button onClick={handleLogin} className="btn-primary mt-4">
-//         Continue
-//       </button>
-
-//       {error && <p className="text-red-500 text-sm mt-3">{error}</p>}
-//     </AuthCard>
-//   );
-// }
-
-// import { signIn } from "aws-amplify/auth";
-// import { useState } from "react";
-// import { useNavigate } from "react-router-dom";
-// import AuthCard from "../../components/auth/AuthCard";
-// import SocialAuthButtons from "../../components/auth/SocialAuthButtons";
-// import AuthDivider from "../../components/auth/AuthDivider";
-
-// export default function Login() {
 //   const navigate = useNavigate();
 
 //   const [email, setEmail] = useState("");
@@ -65,13 +15,27 @@
 //   const [loading, setLoading] = useState(false);
 
 //   const handleLogin = async () => {
+//     if (!email || !password) {
+//       setError("Please enter your email and password");
+//       return;
+//     }
+
 //     try {
 //       setLoading(true);
 //       setError("");
+
 //       await signIn({ username: email, password });
-//       navigate("/auth/redirect", { replace: true });
+
+//       navigate("/service-provider/dashboard", { replace: true });
 //     } catch (e) {
-//       setError(e.message || "Failed to sign in");
+//       const message =
+//         e.name === "NotAuthorizedException"
+//           ? "Incorrect email or password"
+//           : e.name === "UserNotConfirmedException"
+//             ? "Please confirm your email before signing in"
+//             : e.message || "Failed to sign in";
+
+//       setError(message);
 //     } finally {
 //       setLoading(false);
 //     }
@@ -81,19 +45,16 @@
 //     <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8">
 //       <div className="w-full max-w-md">
 //         <AuthCard
-//           title="Sign in to QuickFix"
-//           subtitle="Welcome back — let’s get you working"
+//           title="Welcome back"
+//           subtitle="Sign in to continue to your QuickFix account"
 //         >
-//           {/* Social Login */}
-//           <SocialAuthButtons />
-//           <AuthDivider />
-
 //           {/* Email */}
 //           <div className="space-y-1">
 //             <label className="text-sm sm:text-base text-neutral-600">
-//               Email
+//               Email address
 //             </label>
 //             <input
+//               autoFocus
 //               className="input h-11 sm:h-12"
 //               type="email"
 //               placeholder="you@example.com"
@@ -125,15 +86,27 @@
 //                 {showPassword ? "Hide" : "Show"}
 //               </button>
 //             </div>
+
+//             {/* Forgot Password */}
+//             <p className="mt-2 text-right text-sm">
+//               <a
+//                 href="/forgot-password"
+//                 className="text-neutral-600 hover:text-black hover:underline"
+//               >
+//                 Forgot password?
+//               </a>
+//             </p>
 //           </div>
 
 //           {/* CTA */}
 //           <button
 //             onClick={handleLogin}
 //             disabled={loading}
-//             className="btn-primary mt-6 w-full h-11 sm:h-12 text-base"
+//             className={`btn-primary mt-6 w-full h-11 sm:h-12 text-base ${
+//               loading ? "opacity-60 cursor-not-allowed" : ""
+//             }`}
 //           >
-//             {loading ? "Signing in..." : "Continue"}
+//             {loading ? "Signing in..." : "Sign in"}
 //           </button>
 
 //           {/* Error */}
@@ -143,14 +116,17 @@
 //             </div>
 //           )}
 
+//           {/* Divider */}
+//           <AuthDivider text="or sign in with" />
+
+//           {/* Social Login */}
+//           <SocialAuthButtons />
+
 //           {/* Footer */}
-//           <p className="mt-6 text-center text-sm sm:text-base text-neutral-600">
-//             Don’t have an account?{" "}
-//             <a
-//               href="/signup"
-//               className="font-medium text-black hover:underline"
-//             >
-//               Sign up
+//           <p className="mt-6 text-center text-sm text-neutral-500">
+//             New to QuickFix?{" "}
+//             <a href="/signup" className="underline hover:text-black">
+//               Create an account
 //             </a>
 //           </p>
 //         </AuthCard>
@@ -159,7 +135,9 @@
 //   );
 // }
 
-import { signIn } from "aws-amplify/auth";
+
+
+import { signIn, fetchAuthSession, fetchUserAttributes } from "aws-amplify/auth";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AuthCard from "../../components/auth/AuthCard";
@@ -175,6 +153,24 @@ export default function Login() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Helper function to decode JWT token
+  const decodeToken = (token) => {
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split('')
+          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+          .join('')
+      );
+      return JSON.parse(jsonPayload);
+    } catch (error) {
+      console.error("Error decoding token:", error);
+      return null;
+    }
+  };
+
   const handleLogin = async () => {
     if (!email || !password) {
       setError("Please enter your email and password");
@@ -185,7 +181,43 @@ export default function Login() {
       setLoading(true);
       setError("");
 
+      // Sign in the user
       await signIn({ username: email, password });
+
+      // Fetch authentication session (tokens)
+      const session = await fetchAuthSession();
+      
+      // Fetch user attributes
+      const userAttributes = await fetchUserAttributes();
+
+      // Extract tokens
+      const accessToken = session.tokens?.accessToken?.toString();
+      const idToken = session.tokens?.idToken?.toString();
+      const refreshToken = session.tokens?.refreshToken?.toString();
+
+      // Decode ID token to get user groups and other claims
+      const decodedIdToken = idToken ? decodeToken(idToken) : null;
+      const userGroups = decodedIdToken?.['cognito:groups'] || [];
+
+      // Create user data object
+      const userData = {
+        email: userAttributes.email,
+        sub: userAttributes.sub,
+        emailVerified: userAttributes.email_verified,
+        userGroups: userGroups,
+        accessToken: accessToken,
+        idToken: idToken,
+        refreshToken: refreshToken,
+        decodedToken: decodedIdToken,
+        allAttributes: userAttributes,
+        loginTime: new Date().toISOString()
+      };
+
+      // Store in localStorage
+      localStorage.setItem('quickfix_user', JSON.stringify(userData));
+      localStorage.setItem('quickfix_access_token', accessToken);
+      localStorage.setItem('quickfix_id_token', idToken);
+      localStorage.setItem('quickfix_user_groups', JSON.stringify(userGroups));
 
       navigate("/service-provider/dashboard", { replace: true });
     } catch (e) {
@@ -193,10 +225,11 @@ export default function Login() {
         e.name === "NotAuthorizedException"
           ? "Incorrect email or password"
           : e.name === "UserNotConfirmedException"
-          ? "Please confirm your email before signing in"
-          : e.message || "Failed to sign in";
+            ? "Please confirm your email before signing in"
+            : e.message || "Failed to sign in";
 
       setError(message);
+      console.error("Login error:", e);
     } finally {
       setLoading(false);
     }
