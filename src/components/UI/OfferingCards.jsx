@@ -128,7 +128,7 @@ export default function OfferingCard({
         <div className="absolute inset-x-0 bottom-0 flex gap-2 bg-white/90 px-4 py-3 opacity-0 backdrop-blur transition group-hover:opacity-100">
           {onEdit && (
             <button
-              onClick={() => onEdit(offering)}
+              onClick={(e) => onEdit(offering)}
               className="w-full rounded-lg border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-100"
             >
               Edit

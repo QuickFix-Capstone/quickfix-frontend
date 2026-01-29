@@ -193,8 +193,8 @@ export default function Login() {
         e.name === "NotAuthorizedException"
           ? "Incorrect email or password"
           : e.name === "UserNotConfirmedException"
-          ? "Please confirm your email before signing in"
-          : e.message || "Failed to sign in";
+            ? "Please confirm your email before signing in"
+            : e.message || "Failed to sign in";
 
       setError(message);
     } finally {
