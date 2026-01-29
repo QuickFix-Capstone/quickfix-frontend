@@ -15,9 +15,28 @@ export default function BookingDetails() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    // Modal states
+    const [showRescheduleModal, setShowRescheduleModal] = useState(false);
+    const [showAddressModal, setShowAddressModal] = useState(false);
+
+    // Form states
+    const [rescheduleData, setRescheduleData] = useState({
+        scheduled_date: '',
+        scheduled_time: '',
+        notes: ''
+    });
+    const [addressData, setAddressData] = useState({
+        service_address: '',
+        service_city: '',
+        service_state: '',
+        service_postal_code: ''
+    });
+
     const statusColors = {
         pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
+        pending_confirmation: "bg-orange-100 text-orange-800 border-orange-200",
         confirmed: "bg-blue-100 text-blue-800 border-blue-200",
+        pending_reschedule: "bg-amber-100 text-amber-800 border-amber-200",
         in_progress: "bg-purple-100 text-purple-800 border-purple-200",
         completed: "bg-green-100 text-green-800 border-green-200",
         cancelled: "bg-red-100 text-red-800 border-red-200",
@@ -118,7 +137,8 @@ export default function BookingDetails() {
                         "Content-Type": "application/json",
                     },
                     body: JSON.stringify({
-                        status: "CANCELLED",
+                        status: "cancelled",
+                        notes: "Booking cancelled by customer"
                     }),
                 }
             );
@@ -132,6 +152,121 @@ export default function BookingDetails() {
         } catch (err) {
             console.error("Error cancelling booking:", err);
             alert("Error cancelling booking");
+        }
+    };
+
+    const handleReschedule = async () => {
+        if (!rescheduleData.scheduled_date || !rescheduleData.scheduled_time) {
+            alert("Please select both date and time");
+            return;
+        }
+
+        try {
+            const token = auth.user?.id_token || auth.user?.access_token;
+            const res = await fetch(
+                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/customer/bookings/${bookingId}`,
+                {
+                    method: "PUT",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        scheduled_date: rescheduleData.scheduled_date,
+                        scheduled_time: rescheduleData.scheduled_time,
+                        notes: rescheduleData.notes || "Rescheduled by customer"
+                    }),
+                }
+            );
+
+            const data = await res.json();
+
+            if (res.ok) {
+                setBooking(data.booking);
+                setShowRescheduleModal(false);
+                setRescheduleData({ scheduled_date: '', scheduled_time: '', notes: '' });
+                alert("Booking rescheduled successfully");
+            } else {
+                alert(data.message || "Failed to reschedule booking");
+            }
+        } catch (err) {
+            console.error("Error rescheduling booking:", err);
+            alert("Error rescheduling booking");
+        }
+    };
+
+    const handleUpdateAddress = async () => {
+        if (!addressData.service_address || !addressData.service_city ||
+            !addressData.service_state || !addressData.service_postal_code) {
+            alert("Please fill in all address fields");
+            return;
+        }
+
+        try {
+            const token = auth.user?.id_token || auth.user?.access_token;
+            const res = await fetch(
+                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/customer/bookings/${bookingId}`,
+                {
+                    method: "PUT",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        ...addressData,
+                        notes: "Service address updated by customer"
+                    }),
+                }
+            );
+
+            const data = await res.json();
+
+            if (res.ok) {
+                setBooking(data.booking);
+                setShowAddressModal(false);
+                alert("Address updated successfully");
+            } else {
+                alert(data.message || "Failed to update address");
+            }
+        } catch (err) {
+            console.error("Error updating address:", err);
+            alert("Error updating address");
+        }
+    };
+
+    const handleRequestMoreTime = async () => {
+        if (!confirm("Request more time to decide on this booking?")) {
+            return;
+        }
+
+        try {
+            const token = auth.user?.id_token || auth.user?.access_token;
+            const res = await fetch(
+                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/customer/bookings/${bookingId}`,
+                {
+                    method: "PUT",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        status: "pending_reschedule",
+                        notes: "Customer needs more time to decide"
+                    }),
+                }
+            );
+
+            const data = await res.json();
+
+            if (res.ok) {
+                setBooking(data.booking);
+                alert("Status updated - you can reschedule when ready");
+            } else {
+                alert(data.message || "Failed to update status");
+            }
+        } catch (err) {
+            console.error("Error updating status:", err);
+            alert("Error updating status");
         }
     };
 
@@ -323,17 +458,70 @@ export default function BookingDetails() {
                             </div>
                         </Card>
 
+
                         {/* Actions */}
                         <Card className="p-6">
                             <h3 className="text-lg font-semibold mb-4">Actions</h3>
                             <div className="space-y-3">
-                                {booking.status === "pending" && (
+                                {/* Cancel - Available for pending, pending_confirmation, confirmed, pending_reschedule */}
+                                {["pending", "pending_confirmation", "confirmed", "pending_reschedule"].includes(booking.status) && (
                                     <Button
                                         onClick={handleCancelBooking}
                                         variant="outline"
                                         className="w-full border-red-300 text-red-600 hover:bg-red-50"
                                     >
                                         Cancel Booking
+                                    </Button>
+                                )}
+
+                                {/* Reschedule - Available for pending, pending_confirmation, confirmed, pending_reschedule */}
+                                {["pending", "pending_confirmation", "confirmed", "pending_reschedule"].includes(booking.status) && (
+                                    <Button
+                                        onClick={() => {
+                                            setRescheduleData({
+                                                scheduled_date: booking.schedule?.date || booking.scheduled_date || '',
+                                                scheduled_time: booking.schedule?.time || booking.scheduled_time || '',
+                                                notes: ''
+                                            });
+                                            setShowRescheduleModal(true);
+                                        }}
+                                        variant="outline"
+                                        className="w-full"
+                                    >
+                                        <Calendar className="h-4 w-4 mr-2" />
+                                        Reschedule Booking
+                                    </Button>
+                                )}
+
+                                {/* Update Address - For pending, pending_confirmation, and pending_reschedule */}
+                                {["pending", "pending_confirmation", "pending_reschedule"].includes(booking.status) && (
+                                    <Button
+                                        onClick={() => {
+                                            setAddressData({
+                                                service_address: booking.location?.address || booking.service_address || '',
+                                                service_city: booking.location?.city || booking.service_city || '',
+                                                service_state: booking.location?.state || booking.service_state || '',
+                                                service_postal_code: booking.location?.postal_code || booking.service_postal_code || ''
+                                            });
+                                            setShowAddressModal(true);
+                                        }}
+                                        variant="outline"
+                                        className="w-full"
+                                    >
+                                        <MapPin className="h-4 w-4 mr-2" />
+                                        Update Address
+                                    </Button>
+                                )}
+
+                                {/* Request More Time - For pending or confirmed */}
+                                {["pending", "confirmed"].includes(booking.status) && (
+                                    <Button
+                                        onClick={handleRequestMoreTime}
+                                        variant="outline"
+                                        className="w-full"
+                                    >
+                                        <Clock className="h-4 w-4 mr-2" />
+                                        Request More Time
                                     </Button>
                                 )}
 
@@ -357,6 +545,143 @@ export default function BookingDetails() {
                     </div>
                 </div>
             </div>
+
+            {/* Reschedule Modal */}
+            {showRescheduleModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <Card className="w-full max-w-md p-6 m-4">
+                        <h3 className="text-xl font-semibold mb-4">Reschedule Booking</h3>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    New Date
+                                </label>
+                                <input
+                                    type="date"
+                                    value={rescheduleData.scheduled_date}
+                                    onChange={(e) => setRescheduleData({ ...rescheduleData, scheduled_date: e.target.value })}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    min={new Date().toISOString().split('T')[0]}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    New Time
+                                </label>
+                                <input
+                                    type="time"
+                                    value={rescheduleData.scheduled_time}
+                                    onChange={(e) => setRescheduleData({ ...rescheduleData, scheduled_time: e.target.value })}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Notes (Optional)
+                                </label>
+                                <textarea
+                                    value={rescheduleData.notes}
+                                    onChange={(e) => setRescheduleData({ ...rescheduleData, notes: e.target.value })}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    rows="3"
+                                    placeholder="Reason for rescheduling..."
+                                />
+                            </div>
+                            <div className="flex gap-3">
+                                <Button
+                                    onClick={handleReschedule}
+                                    className="flex-1"
+                                >
+                                    Confirm Reschedule
+                                </Button>
+                                <Button
+                                    onClick={() => setShowRescheduleModal(false)}
+                                    variant="outline"
+                                    className="flex-1"
+                                >
+                                    Cancel
+                                </Button>
+                            </div>
+                        </div>
+                    </Card>
+                </div>
+            )}
+
+            {/* Update Address Modal */}
+            {showAddressModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <Card className="w-full max-w-md p-6 m-4">
+                        <h3 className="text-xl font-semibold mb-4">Update Service Address</h3>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Street Address
+                                </label>
+                                <input
+                                    type="text"
+                                    value={addressData.service_address}
+                                    onChange={(e) => setAddressData({ ...addressData, service_address: e.target.value })}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="123 Main St"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    City
+                                </label>
+                                <input
+                                    type="text"
+                                    value={addressData.service_city}
+                                    onChange={(e) => setAddressData({ ...addressData, service_city: e.target.value })}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="Toronto"
+                                />
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        State/Province
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={addressData.service_state}
+                                        onChange={(e) => setAddressData({ ...addressData, service_state: e.target.value })}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        placeholder="ON"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Postal Code
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={addressData.service_postal_code}
+                                        onChange={(e) => setAddressData({ ...addressData, service_postal_code: e.target.value })}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        placeholder="M5H 2N2"
+                                    />
+                                </div>
+                            </div>
+                            <div className="flex gap-3">
+                                <Button
+                                    onClick={handleUpdateAddress}
+                                    className="flex-1"
+                                >
+                                    Update Address
+                                </Button>
+                                <Button
+                                    onClick={() => setShowAddressModal(false)}
+                                    variant="outline"
+                                    className="flex-1"
+                                >
+                                    Cancel
+                                </Button>
+                            </div>
+                        </div>
+                    </Card>
+                </div>
+            )}
         </div>
     );
 }
