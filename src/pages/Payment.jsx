@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { loadStripe } from "@stripe/stripe-js";
 import {
@@ -12,7 +12,11 @@ import Card from "../components/UI/Card";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
-function CheckoutForm({ orderId }) {
+// ✅ Tax and fee constants
+const TAX_RATE = 0.13;
+const APP_FEE_CENTS = 1400; // $14
+
+function CheckoutForm({ paymentId }) {
     const stripe = useStripe();
     const elements = useElements();
     const [loading, setLoading] = useState(false);
@@ -29,7 +33,7 @@ function CheckoutForm({ orderId }) {
         const { error } = await stripe.confirmPayment({
             elements,
             confirmParams: {
-                return_url: `${window.location.origin}/receipt/${orderId}`,
+                return_url: `${window.location.origin}/receipt/${paymentId}`,
             },
         });
 
@@ -58,14 +62,19 @@ export default function Payment() {
     const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
     const [clientSecret, setClientSecret] = useState("");
-    const [orderId, setOrderId] = useState(null);
+    const [paymentId, setPaymentId] = useState(null);
     const [error, setError] = useState("");
 
-    // optional: show order details on the page
-    const [order, setOrder] = useState(null);
+    // Store breakdown for display
+    const [subtotalCents, setSubtotalCents] = useState(0);
+    const [taxCents, setTaxCents] = useState(0);
+    const [totalCents, setTotalCents] = useState(0);
 
-    // Use id_token if available (Cognito Authorizer often prefers it), else access_token
-    const token = auth.user?.id_token || auth.user?.access_token;
+    // ✅ Prevent duplicate PaymentIntent creation in React 18 StrictMode
+    const createdRef = useRef(false);
+
+    // ✅ Extract token to reduce dependency changes
+    const token = auth.user?.access_token || auth.user?.id_token;
 
     // Stripe Elements options should be stable object
     const elementsOptions = useMemo(() => {
@@ -81,67 +90,64 @@ export default function Payment() {
             try {
                 setError("");
 
-                const id = localStorage.getItem("order_id"); // using real orderId now
-                if (!id) {
-                    throw new Error("Missing orderId. Please create a booking first.");
-                }
-                setOrderId(id);
+                if (auth.isLoading) return;
 
-                // Require login because GET /orders/:id requires JWT
-                if (auth.isLoading) return; // wait until auth finishes loading
                 if (!auth.isAuthenticated || !token) {
-                    console.log("Not authenticated or missing token", { isAuthenticated: auth.isAuthenticated, hasToken: !!token });
                     navigate("/login");
                     return;
                 }
 
-                console.log("Fetching order:", id);
-                // (Recommended) Fetch order details (auth required)
-                const orderRes = await fetch(`${API_BASE}/orders/${id}`, {
-                    method: "GET",
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                });
+                // ✅ Correct flow: Read local storage first
+                const serviceOfferingId = localStorage.getItem("selected_service_offering_id");
+                const amountCents = Number(localStorage.getItem("quote_amount_cents"));
 
-                const orderData = await orderRes.json().catch(() => ({}));
-                if (!orderRes.ok) {
-                    console.error("Order fetch failed:", orderRes.status, orderData);
-                    throw new Error(orderData?.message || orderData?.error || `Failed to load order: ${orderRes.status}`);
-                }
-                setOrder(orderData);
+                if (!serviceOfferingId) throw new Error("Missing serviceOfferingId. Please create a booking first.");
+                if (!amountCents) throw new Error("Missing amount. Please create a booking first.");
 
-                // Create PaymentIntent
-                // Backend requires customerId, providerId, amountCents
+                // ✅ Prevent duplicate create-intent calls
+                if (createdRef.current) return;
+                createdRef.current = true;
+
+                // ✅ Calculate total with tax and fee
+                const subtotalCents = amountCents; // service price in cents
+                const taxCents = Math.round(subtotalCents * TAX_RATE);
+                const totalCents = subtotalCents + taxCents + APP_FEE_CENTS;
+
+                // Store breakdown for display
+                setSubtotalCents(subtotalCents);
+                setTaxCents(taxCents);
+                setTotalCents(totalCents);
+
+                // ✅ Store breakdown in localStorage for Receipt page
+                localStorage.setItem("receipt_subtotal_cents", String(subtotalCents));
+                localStorage.setItem("receipt_tax_cents", String(taxCents));
+                localStorage.setItem("receipt_fee_cents", String(APP_FEE_CENTS));
+                localStorage.setItem("receipt_total_cents", String(totalCents));
+
+                // Create PaymentIntent directly
                 const payload = {
-                    orderId: id,
-                    bookingId: localStorage.getItem("booking_id") || "",
-                    customerId: orderData.customer_id || orderData.customerId || 1,
-                    providerId: orderData.provider_id || orderData.providerId || localStorage.getItem("selected_provider_id"),
-                    amountCents: orderData.amount_cents || orderData.amountCents || localStorage.getItem("quote_amount_cents")
+                    serviceOfferingId,
+                    amountCents: totalCents,   // ✅ charge total to Stripe
+                    currency: "cad",
+                    bookingId: localStorage.getItem("booking_id") || ""
                 };
-
-                console.log("Creating PaymentIntent with payload:", payload);
 
                 const piRes = await fetch(`${API_BASE}/payment/create-intent`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`
+                        Authorization: `Bearer ${token}`,
                     },
                     body: JSON.stringify(payload),
                 });
 
                 const piData = await piRes.json().catch(() => ({}));
-                if (!piRes.ok) {
-                    throw new Error(piData?.message || piData?.error || "Failed to create payment.");
-                }
+                if (!piRes.ok) throw new Error(piData?.message || piData?.error || "Failed to create payment.");
 
-                if (!piData.clientSecret) {
-                    throw new Error("Missing clientSecret from server.");
-                }
+                if (!piData.clientSecret) throw new Error("Missing clientSecret from server.");
 
                 setClientSecret(piData.clientSecret);
+                setPaymentId(piData.paymentId); // ✅ real payment.id from DB
             } catch (e) {
                 setError(e?.message || "Payment setup failed.");
             }
@@ -172,14 +178,17 @@ export default function Payment() {
 
                 <div className="mt-3 text-sm text-neutral-700 space-y-1">
                     <p>
-                        <b>Order ID:</b> {orderId}
+                        <b>Payment ID:</b> {paymentId}
                     </p>
 
-                    {/* Optional: display total from backend if available */}
-                    {order?.total && (
-                        <p>
-                            <b>Total:</b> ${Number(order.total).toFixed(2)} CAD
-                        </p>
+                    {/* ✅ Display price breakdown */}
+                    {subtotalCents > 0 && (
+                        <>
+                            <p className="mt-3"><b>Subtotal:</b> ${(subtotalCents / 100).toFixed(2)} CAD</p>
+                            <p><b>Tax (13%):</b> ${(taxCents / 100).toFixed(2)} CAD</p>
+                            <p><b>Application fee:</b> $14.00 CAD</p>
+                            <p className="font-bold text-base mt-2"><b>Total:</b> ${(totalCents / 100).toFixed(2)} CAD</p>
+                        </>
                     )}
                 </div>
 
@@ -189,7 +198,7 @@ export default function Payment() {
 
                 <div className="mt-6">
                     <Elements options={elementsOptions} stripe={stripePromise}>
-                        <CheckoutForm orderId={orderId} />
+                        <CheckoutForm paymentId={paymentId} />
                     </Elements>
                 </div>
             </Card>
