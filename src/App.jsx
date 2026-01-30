@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "react-oidc-context";
@@ -41,6 +40,7 @@ import JobDetailsPage from "./pages/ServiceProvider/JobDetailsPage";
 import ServiceProviderProfile from "./pages/ServiceProvider/ServiceProviderProfile";
 import ServiceProviderEntry from "./pages/ServiceProviderEntry";
 import ServiceProviderMessages from "./pages/ServiceProvider/Messages";
+import ProviderDocuments from "./pages/ServiceProvider/ProviderDocuments";
 
 // ================= AUTH PAGES =================
 import Login from "./pages/Login";
@@ -91,10 +91,10 @@ export default function App() {
   // ================= OIDC USER =================
   const oidcUser = auth.user
     ? {
-      name: auth.user.profile.name || auth.user.profile.email,
-      email: auth.user.profile.email,
-      role: "customer",
-    }
+        name: auth.user.profile.name || auth.user.profile.email,
+        email: auth.user.profile.email,
+        role: "customer",
+      }
     : null;
 
   const currentUser = oidcUser || localUser;
@@ -290,6 +290,7 @@ export default function App() {
             <Route path="job/:jobId" element={<JobDetailsPage />} />
             <Route path="profile" element={<ServiceProviderProfile />} />
             <Route path="messages" element={<ServiceProviderMessages />} />
+            <Route path="documents" element={<ProviderDocuments />} />
           </Route>
 
           {/* ---------- ADMIN ---------- */}

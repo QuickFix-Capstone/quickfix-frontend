@@ -1,15 +1,5 @@
 import React, { useEffect, useState } from "react";
-
-// Mock function - replace with your actual import
-const fetchAuthSession = async () => {
-  return {
-    tokens: {
-      idToken: {
-        toString: () => "mock-jwt-token-12345",
-      },
-    },
-  };
-};
+import { fetchAuthSession } from "aws-amplify/auth";
 
 const API_BASE = "https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod";
 
@@ -42,7 +32,7 @@ export default function AdminUnverifiedServiceProviders() {
       const res = await fetch(`${API_BASE}/admin/unverified_service_provider`, {
         method: "GET",
         headers: {
-          Authorization: idToken,
+          Authorization: `Bearer ${idToken}`, // ✅ Fixed: Added "Bearer " prefix
           "Content-Type": "application/json",
         },
       });

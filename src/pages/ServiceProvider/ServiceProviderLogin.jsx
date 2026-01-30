@@ -135,9 +135,11 @@
 //   );
 // }
 
-
-
-import { signIn, fetchAuthSession, fetchUserAttributes } from "aws-amplify/auth";
+import {
+  signIn,
+  fetchAuthSession,
+  fetchUserAttributes,
+} from "aws-amplify/auth";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AuthCard from "../../components/auth/AuthCard";
@@ -156,13 +158,13 @@ export default function Login() {
   // Helper function to decode JWT token
   const decodeToken = (token) => {
     try {
-      const base64Url = token.split('.')[1];
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const base64Url = token.split(".")[1];
+      const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
       const jsonPayload = decodeURIComponent(
         atob(base64)
-          .split('')
-          .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-          .join('')
+          .split("")
+          .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+          .join(""),
       );
       return JSON.parse(jsonPayload);
     } catch (error) {
@@ -186,7 +188,7 @@ export default function Login() {
 
       // Fetch authentication session (tokens)
       const session = await fetchAuthSession();
-      
+
       // Fetch user attributes
       const userAttributes = await fetchUserAttributes();
 
@@ -197,7 +199,7 @@ export default function Login() {
 
       // Decode ID token to get user groups and other claims
       const decodedIdToken = idToken ? decodeToken(idToken) : null;
-      const userGroups = decodedIdToken?.['cognito:groups'] || [];
+      const userGroups = decodedIdToken?.["cognito:groups"] || [];
 
       // Create user data object
       const userData = {
@@ -210,14 +212,14 @@ export default function Login() {
         refreshToken: refreshToken,
         decodedToken: decodedIdToken,
         allAttributes: userAttributes,
-        loginTime: new Date().toISOString()
+        loginTime: new Date().toISOString(),
       };
 
       // Store in localStorage
-      localStorage.setItem('quickfix_user', JSON.stringify(userData));
-      localStorage.setItem('quickfix_access_token', accessToken);
-      localStorage.setItem('quickfix_id_token', idToken);
-      localStorage.setItem('quickfix_user_groups', JSON.stringify(userGroups));
+      localStorage.setItem("quickfix_user", JSON.stringify(userData));
+      localStorage.setItem("quickfix_access_token", accessToken);
+      localStorage.setItem("quickfix_id_token", idToken);
+      localStorage.setItem("quickfix_user_groups", JSON.stringify(userGroups));
 
       navigate("/service-provider/dashboard", { replace: true });
     } catch (e) {
@@ -319,7 +321,10 @@ export default function Login() {
           {/* Footer */}
           <p className="mt-6 text-center text-sm text-neutral-500">
             New to QuickFix?{" "}
-            <a href="/signup" className="underline hover:text-black">
+            <a
+              href="/service-provider/signup"
+              className="underline hover:text-black"
+            >
               Create an account
             </a>
           </p>
