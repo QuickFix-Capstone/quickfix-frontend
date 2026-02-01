@@ -19,6 +19,11 @@ export default function CustomerDashboard() {
     const [pendingReviews, setPendingReviews] = useState([]);
     const [myReviews, setMyReviews] = useState([]);
 
+    // Dashboard stats
+    const [totalBookings, setTotalBookings] = useState(0);
+    const [activeJobs, setActiveJobs] = useState(0);
+    const [pendingBookings, setPendingBookings] = useState(0);
+
     useEffect(() => {
         if (!auth.isAuthenticated) {
             navigate("/customer/login");
@@ -128,6 +133,67 @@ export default function CustomerDashboard() {
 
         fetchMyReviews();
     }, [auth.isAuthenticated]);
+
+    // Fetch dashboard stats
+    useEffect(() => {
+        if (!auth.isAuthenticated) return;
+
+        const fetchStats = async () => {
+            try {
+                const token = auth.user?.id_token || auth.user?.access_token;
+
+                // Fetch all bookings to calculate total and pending
+                const bookingsRes = await fetch(
+                    "https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/customer/bookings?limit=1000",
+                    {
+                        method: "GET",
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+
+                if (bookingsRes.ok) {
+                    const bookingsData = await bookingsRes.json();
+                    const bookings = bookingsData.bookings || [];
+
+                    setTotalBookings(bookings.length);
+
+                    // Count pending confirmations
+                    const pending = bookings.filter(
+                        b => b.status === 'pending_confirmation' || b.status === 'PENDING CONFIRMATION'
+                    ).length;
+                    setPendingBookings(pending);
+                }
+
+                // Fetch all jobs to calculate active jobs
+                const jobsRes = await fetch(
+                    "https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/customer/jobs?limit=1000",
+                    {
+                        method: "GET",
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
+                );
+
+                if (jobsRes.ok) {
+                    const jobsData = await jobsRes.json();
+                    const jobs = jobsData.jobs || [];
+
+                    // Count active jobs (assigned or in_progress)
+                    const active = jobs.filter(
+                        j => j.status === 'assigned' || j.status === 'in_progress'
+                    ).length;
+                    setActiveJobs(active);
+                }
+            } catch (error) {
+                console.error("Failed to fetch dashboard stats:", error);
+            }
+        };
+
+        fetchStats();
+    }, [auth.isAuthenticated, auth.user]);
 
     const handleLogout = async () => {
         // Clear the auth session locally and navigate to home
@@ -302,41 +368,50 @@ export default function CustomerDashboard() {
 
                 {/* Activity Overview */}
                 <div className="grid gap-6 md:grid-cols-3">
-                    {/* Stats Card 1 */}
-                    <Card className="border-0 bg-white p-6 shadow-lg">
+                    {/* Stats Card 1 - Total Bookings */}
+                    <Card
+                        className="border-0 bg-white p-6 shadow-lg cursor-pointer transition-all hover:shadow-xl hover:scale-105"
+                        onClick={() => navigate("/customer/bookings")}
+                    >
                         <div className="flex items-center gap-4">
                             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100">
                                 <TrendingUp className="h-6 w-6 text-blue-600" />
                             </div>
                             <div>
                                 <p className="text-sm text-neutral-600">Total Bookings</p>
-                                <p className="text-2xl font-bold text-neutral-900">0</p>
+                                <p className="text-2xl font-bold text-neutral-900">{totalBookings}</p>
                             </div>
                         </div>
                     </Card>
 
-                    {/* Stats Card 2 */}
-                    <Card className="border-0 bg-white p-6 shadow-lg">
+                    {/* Stats Card 2 - Active Jobs */}
+                    <Card
+                        className="border-0 bg-white p-6 shadow-lg cursor-pointer transition-all hover:shadow-xl hover:scale-105"
+                        onClick={() => navigate("/customer/jobs")}
+                    >
                         <div className="flex items-center gap-4">
                             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-orange-100">
                                 <Briefcase className="h-6 w-6 text-orange-600" />
                             </div>
                             <div>
                                 <p className="text-sm text-neutral-600">Active Jobs</p>
-                                <p className="text-2xl font-bold text-neutral-900">0</p>
+                                <p className="text-2xl font-bold text-neutral-900">{activeJobs}</p>
                             </div>
                         </div>
                     </Card>
 
-                    {/* Stats Card 3 */}
-                    <Card className="border-0 bg-white p-6 shadow-lg">
+                    {/* Stats Card 3 - Pending Confirmations */}
+                    <Card
+                        className="border-0 bg-white p-6 shadow-lg cursor-pointer transition-all hover:shadow-xl hover:scale-105"
+                        onClick={() => navigate("/customer/bookings")}
+                    >
                         <div className="flex items-center gap-4">
                             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-100">
                                 <Clock className="h-6 w-6 text-green-600" />
                             </div>
                             <div>
                                 <p className="text-sm text-neutral-600">Pending</p>
-                                <p className="text-2xl font-bold text-neutral-900">0</p>
+                                <p className="text-2xl font-bold text-neutral-900">{pendingBookings}</p>
                             </div>
                         </div>
                     </Card>

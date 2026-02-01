@@ -4,7 +4,8 @@ import { useAuth } from "react-oidc-context";
 import { useNavigate } from "react-router-dom";
 import Card from "../../components/UI/Card";
 import Button from "../../components/UI/Button";
-import { ArrowLeft, Briefcase, MapPin, Calendar, Clock, DollarSign, Users } from "lucide-react";
+import { ArrowLeft, Briefcase, MapPin, Calendar, Clock, DollarSign, Users, Image } from "lucide-react";
+import { getJobImages } from "../../api/jobImages";
 
 export default function MyJobs() {
     const auth = useAuth();
@@ -13,6 +14,7 @@ export default function MyJobs() {
     const [loading, setLoading] = useState(true);
     const [limit] = useState(10);
     const [offset, setOffset] = useState(0);
+    const [jobImages, setJobImages] = useState({}); // Store images for each job: { jobId: [images] }
 
     useEffect(() => {
         fetchJobs();
@@ -45,6 +47,11 @@ export default function MyJobs() {
                 console.log("Jobs array:", data.jobs);
                 console.log("Jobs array length:", data.jobs?.length);
                 setJobs(data.jobs || []);
+
+                // Fetch images for all jobs
+                if (data.jobs && data.jobs.length > 0) {
+                    fetchJobImages(data.jobs);
+                }
             } else {
                 const errorText = await res.text();
                 console.error("Failed to fetch jobs. Status:", res.status, "Error:", errorText);
@@ -56,6 +63,27 @@ export default function MyJobs() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const fetchJobImages = async (jobsList) => {
+        const imagesMap = {};
+
+        // Fetch images for each job in parallel
+        await Promise.all(
+            jobsList.map(async (job) => {
+                try {
+                    const images = await getJobImages(job.job_id, auth);
+                    if (images && images.length > 0) {
+                        imagesMap[job.job_id] = images;
+                    }
+                } catch (err) {
+                    // Silently fail - job might not have images or images endpoint might not be available
+                    console.log(`No images for job ${job.job_id}:`, err.message);
+                }
+            })
+        );
+
+        setJobImages(imagesMap);
     };
 
     const getStatusColor = (status) => {
@@ -171,6 +199,35 @@ export default function MyJobs() {
                                         <p className="mb-4 text-neutral-600">
                                             {job.description}
                                         </p>
+
+                                        {/* Job Images Gallery */}
+                                        {jobImages[job.job_id] && jobImages[job.job_id].length > 0 && (
+                                            <div className="mb-4">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <Image className="h-4 w-4 text-neutral-600" />
+                                                    <span className="text-sm font-medium text-neutral-700">
+                                                        {jobImages[job.job_id].length} Image{jobImages[job.job_id].length !== 1 ? 's' : ''}
+                                                    </span>
+                                                </div>
+                                                <div className="flex gap-2 overflow-x-auto pb-2">
+                                                    {jobImages[job.job_id].slice(0, 5).map((image) => (
+                                                        <div
+                                                            key={image.image_id}
+                                                            className="relative flex-shrink-0 w-24 h-24 rounded-lg overflow-hidden border border-neutral-200 hover:border-neutral-400 transition-colors cursor-pointer"
+                                                            onClick={() => window.open(image.url, '_blank')}
+                                                            title="Click to view full size"
+                                                        >
+                                                            <img
+                                                                src={image.url}
+                                                                alt={image.description || `Job image ${image.image_order}`}
+                                                                className="w-full h-full object-cover"
+                                                                loading="lazy"
+                                                            />
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
 
                                         {/* Job Details Grid */}
                                         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">

@@ -8,6 +8,7 @@ export const ALLOWED_FILE_TYPES = [
 
 export const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB (as per API docs)
 export const MAX_FILES_PER_BOOKING = 5; // 5 images max (as per API docs)
+export const MAX_FILES_PER_JOB = 5; // 5 images max (as per API docs)
 
 /**
  * Validate a single file
