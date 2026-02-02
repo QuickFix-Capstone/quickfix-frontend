@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Star, Search, Filter, Upload } from "lucide-react";
 import Card from "../components/UI/Card";
 import Button from "../components/UI/Button";
+import { useLocation as useUserLocation } from "../context/LocationContext";
 
 /* ================= CONFIG ================= */
 const S3_BASE_URL = "https://quickfix-app-files.s3.us-east-2.amazonaws.com";
@@ -18,8 +19,16 @@ const resolveImageUrl = (url) => {
 export default function ServiceList() {
   const auth = useAuth();
   const navigate = useNavigate();
+  const { location: userLocation, getLocation } = useUserLocation();
 
   const [services, setServices] = useState([]);
+
+  // Get user location on mount
+  useEffect(() => {
+    if (!userLocation) {
+      getLocation();
+    }
+  }, [userLocation, getLocation]);
   const [filteredServices, setFilteredServices] = useState([]);
   const [loading, setLoading] = useState(true);
 

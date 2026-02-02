@@ -7,6 +7,7 @@ import "./index.css";
 import App from "./App.jsx";
 import awsConfig from "./awsConfig";
 import { Amplify } from "aws-amplify";
+import { LocationProvider } from "./context/LocationContext";
 
 Amplify.configure(awsConfig);
 
@@ -26,7 +27,9 @@ createRoot(document.getElementById("root")).render(
   <StrictMode>
     <AuthProvider {...cognitoAuthConfig}>
       <BrowserRouter>
-        <App />
+        <LocationProvider>
+          <App />
+        </LocationProvider>
       </BrowserRouter>
     </AuthProvider>
   </StrictMode>

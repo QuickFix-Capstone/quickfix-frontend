@@ -1,11 +1,21 @@
+import { useEffect } from "react";
 import Card from "../components/UI/Card";
 import Button from "../components/UI/Button";
 import Input from "../components/UI/Input";
 import Tag from "../components/UI/Tag";
 import Rating from "../components/UI/Rating";
+import { useLocation as useUserLocation } from "../context/LocationContext";
 
 export default function SearchView({ searchTerm, setSearchTerm, onBookGig, gigs = [] }) {
+  const { location: userLocation, getLocation } = useUserLocation();
   const categories = ["Plumbing", "Electrical", "HVAC", "Handyman", "Appliance Repair", "Painting"];
+
+  // Get user location on mount
+  useEffect(() => {
+    if (!userLocation) {
+      getLocation();
+    }
+  }, [userLocation, getLocation]);
 
   const filtered = gigs.filter((g) =>
     g.title.toLowerCase().includes(searchTerm.toLowerCase())

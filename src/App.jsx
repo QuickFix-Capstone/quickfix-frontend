@@ -59,6 +59,7 @@ import AdminSetPassword from "./pages/Admin/AdminSetPassword";
 import AdminRoute from "./pages/Auth/AdminRoute";
 import AdminDashboard from "./pages/Admin/AdminDashboard";
 import UnverifiedServiceProvider from "./pages/Admin/UnverifiedServiceProvider";
+import AdminProviderDetails from "./pages/Admin/AdminProviderDetails";
 import ChatbotProvider from "./views/chatbot";
 
 // ================= LOCAL AUTH =================
@@ -312,6 +313,15 @@ export default function App() {
             element={
               <AdminRoute>
                 <UnverifiedServiceProvider />
+              </AdminRoute>
+            }
+          />
+
+          <Route
+            path="/admin/service-providers-details/:provider_id"
+            element={
+              <AdminRoute>
+                <AdminProviderDetails />
               </AdminRoute>
             }
           />

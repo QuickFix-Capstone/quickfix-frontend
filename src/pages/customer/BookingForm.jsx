@@ -1,7 +1,8 @@
 // src/pages/customer/BookingForm.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "react-oidc-context";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useLocation as useUserLocation } from "../../context/LocationContext";
 import Card from "../../components/UI/Card";
 import Button from "../../components/UI/Button";
 import { ArrowLeft, Calendar, Clock, MapPin, FileText } from "lucide-react";
@@ -10,7 +11,15 @@ export default function BookingForm() {
     const auth = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
+    const { location: userLocation, getLocation } = useUserLocation();
     const service = location.state?.service;
+
+    // Get user location on mount
+    useEffect(() => {
+        if (!userLocation) {
+            getLocation();
+        }
+    }, [userLocation, getLocation]);
 
     const [formData, setFormData] = useState({
         scheduled_date: "",
