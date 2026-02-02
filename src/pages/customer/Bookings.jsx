@@ -4,8 +4,9 @@ import { useAuth } from "react-oidc-context";
 import { useNavigate } from "react-router-dom";
 import Card from "../../components/UI/Card";
 import Button from "../../components/UI/Button";
-import { ArrowLeft, Calendar, Clock, MapPin, DollarSign, AlertCircle, ChevronLeft, ChevronRight, Filter, MessageSquare } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, MapPin, DollarSign, AlertCircle, ChevronLeft, ChevronRight, Filter, MessageSquare, Camera, Image } from "lucide-react";
 import { createConversation } from "../../api/messaging";
+
 
 export default function Bookings() {
     const auth = useAuth();
@@ -17,9 +18,12 @@ export default function Bookings() {
     const [offset, setOffset] = useState(0);
     const [pagination, setPagination] = useState({ total: 0, has_more: false });
 
+
     const statusColors = {
         pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
+        pending_confirmation: "bg-orange-100 text-orange-800 border-orange-200",
         confirmed: "bg-blue-100 text-blue-800 border-blue-200",
+        pending_reschedule: "bg-amber-100 text-amber-800 border-amber-200",
         in_progress: "bg-purple-100 text-purple-800 border-purple-200",
         completed: "bg-green-100 text-green-800 border-green-200",
         cancelled: "bg-red-100 text-red-800 border-red-200",
@@ -60,7 +64,7 @@ export default function Bookings() {
             console.log("Fetching bookings with params:", params.toString());
 
             const res = await fetch(
-                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/customer/bookings?${params.toString()}`,
+                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/customer/bookings?${params.toString()}`,
                 {
                     method: "GET",
                     headers: {
@@ -73,13 +77,16 @@ export default function Bookings() {
                 const data = await res.json();
                 console.log("Bookings API response:", data);
                 // Handle both array and object with bookings property
+                let fetchedBookings = [];
                 if (Array.isArray(data)) {
-                    setBookings(data);
+                    fetchedBookings = data;
                     setPagination({ total: data.length, has_more: false });
                 } else {
-                    setBookings(data.bookings || []);
+                    fetchedBookings = data.bookings || [];
                     setPagination(data.pagination || { total: 0, has_more: false });
                 }
+
+                setBookings(fetchedBookings);
             } else {
                 console.error("Failed to fetch bookings", res.status, res.statusText);
             }
@@ -117,7 +124,7 @@ export default function Bookings() {
         try {
             const token = auth.user?.id_token || auth.user?.access_token;
             const res = await fetch(
-                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/booking/${bookingId}`,
+                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/customer/bookings/${bookingId}`,
                 {
                     method: "PUT",
                     headers: {
@@ -125,7 +132,8 @@ export default function Bookings() {
                         "Content-Type": "application/json",
                     },
                     body: JSON.stringify({
-                        status: "CANCELLED",
+                        status: "cancelled",
+                        notes: "Booking cancelled by customer"
                     }),
                 }
             );
@@ -252,7 +260,7 @@ export default function Bookings() {
                                             <h3 className="text-xl font-semibold text-neutral-900">
                                                 {booking.service_description}
                                             </h3>
-                                            <div className="mt-2 flex items-center gap-2">
+                                            <div className="mt-2 flex items-center gap-2 flex-wrap">
                                                 <span
                                                     className={`rounded-full px-3 py-1 text-xs font-medium ${categoryColors[booking.service_category] ||
                                                         "bg-neutral-100 text-neutral-800"
@@ -267,6 +275,13 @@ export default function Bookings() {
                                                 >
                                                     {booking.status?.replace("_", " ").toUpperCase()}
                                                 </span>
+                                                {/* Photo indicator badge */}
+                                                {booking.images && booking.images.length > 0 && (
+                                                    <span className="rounded-full bg-blue-100 text-blue-800 px-2 py-1 text-xs font-medium flex items-center gap-1">
+                                                        <Camera className="h-3 w-3" />
+                                                        {booking.images.length}
+                                                    </span>
+                                                )}
                                             </div>
                                         </div>
 
@@ -305,6 +320,63 @@ export default function Bookings() {
                                                 <span className="font-medium">Notes:</span> {booking.notes}
                                             </div>
                                         )}
+
+                                        {/* Image Thumbnails */}
+                                        {booking.images && booking.images.length > 0 && (
+                                            <div className="space-y-2">
+                                                <div className="flex items-center gap-2 text-sm text-neutral-600">
+                                                    <Camera className="h-4 w-4" />
+                                                    <span>{booking.images.length} photo{booking.images.length !== 1 ? 's' : ''}</span>
+                                                    <span className="text-xs text-neutral-400">• Click to view</span>
+                                                </div>
+                                                <div className="flex gap-2 flex-wrap">
+                                                    {booking.images.slice(0, 3).map((image, index) => (
+                                                        <div key={index} className="relative group">
+                                                            <img
+                                                                src={image.url}
+                                                                alt={`Issue photo ${index + 1}`}
+                                                                className="w-16 h-16 object-cover rounded-lg border border-neutral-200 cursor-pointer hover:opacity-90 hover:scale-105 transition-all duration-200 shadow-sm hover:shadow-md"
+                                                                onClick={() => navigate(`/customer/bookings/${booking.booking_id}`)}
+                                                                onError={(e) => {
+                                                                    e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yOCAyNEgzNlYzMkgyOFYyNFoiIGZpbGw9IiM5Q0EzQUYiLz4KPC9zdmc+';
+                                                                    e.target.className = 'w-16 h-16 object-cover rounded-lg border border-neutral-200 opacity-50';
+                                                                }}
+                                                                loading="lazy"
+                                                            />
+                                                            {/* Hover overlay */}
+                                                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 rounded-lg transition-all duration-200 flex items-center justify-center">
+                                                                <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                                                    <div className="w-6 h-6 bg-white bg-opacity-90 rounded-full flex items-center justify-center">
+                                                                        <svg className="w-3 h-3 text-neutral-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                                        </svg>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                    {booking.images.length > 3 && (
+                                                        <div
+                                                            className="w-16 h-16 bg-gradient-to-br from-neutral-100 to-neutral-200 rounded-lg border border-neutral-200 flex items-center justify-center cursor-pointer hover:from-neutral-200 hover:to-neutral-300 transition-all duration-200 shadow-sm hover:shadow-md hover:scale-105 group"
+                                                            onClick={() => navigate(`/customer/bookings/${booking.booking_id}`)}
+                                                        >
+                                                            <div className="text-center">
+                                                                <div className="text-sm font-semibold text-neutral-700 group-hover:text-neutral-800">
+                                                                    +{booking.images.length - 3}
+                                                                </div>
+                                                                <div className="text-xs text-neutral-500 group-hover:text-neutral-600">
+                                                                    more
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Loading state for images */}
+
                                     </div>
 
                                     {/* Right: Price & Actions */}
@@ -322,7 +394,8 @@ export default function Bookings() {
 
                                         {/* Actions */}
                                         <div className="flex flex-col gap-2 w-full">
-                                            {booking.status === "pending" && (
+                                            {/* Cancel - Available for pending, pending_confirmation, confirmed, pending_reschedule */}
+                                            {["pending", "pending_confirmation", "confirmed", "pending_reschedule"].includes(booking.status) && (
                                                 <Button
                                                     onClick={() => handleCancelBooking(booking.booking_id)}
                                                     variant="outline"

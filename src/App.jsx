@@ -19,6 +19,7 @@ import RegisterCustomer from "./pages/customer/RegisterCustomer";
 import EditProfile from "./pages/customer/EditProfile";
 import ServiceList from "./pages/customer/ServiceList";
 import Bookings from "./pages/customer/Bookings";
+import BookingDetails from "./pages/customer/BookingDetails";
 import BookingForm from "./pages/customer/BookingForm";
 import PostJob from "./pages/customer/PostJob";
 import MyJobs from "./pages/customer/MyJobs";
@@ -28,6 +29,7 @@ import JobApplications from "./pages/customer/JobApplications";
 import CustomerEntry from "./pages/customer/CustomerEntry";
 import TestMessagingAPI from "./pages/customer/TestMessagingAPI"; // TEMPORARY TEST PAGE
 import CustomerMessages from "./pages/customer/Messages";
+import TestBookingImages from "./components/TestBookingImages"; // TEMPORARY TEST COMPONENT
 
 // ================= PROVIDER PAGES =================
 import ServiceProviderSignUp from "./pages/ServiceProvider/ServiceProviderSignUp";
@@ -246,6 +248,7 @@ export default function App() {
           <Route path="/customer/edit" element={<EditProfile />} />
           <Route path="/customer/services" element={<ServiceList />} />
           <Route path="/customer/bookings" element={<Bookings />} />
+          <Route path="/customer/bookings/:bookingId" element={<BookingDetails />} />
           <Route path="/customer/book" element={<BookingForm />} />
           <Route path="/customer/post-job" element={<PostJob />} />
           <Route path="/customer/jobs" element={<MyJobs />} />
@@ -264,6 +267,7 @@ export default function App() {
             path="/customer/test-messaging"
             element={<TestMessagingAPI />}
           />
+          <Route path="/test-booking-images" element={<TestBookingImages />} />
 
           {/* ---------- PROVIDER AUTH ---------- */}
           <Route

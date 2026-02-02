@@ -4,6 +4,7 @@ import { useAuth } from "react-oidc-context";
 import { useNavigate, useParams } from "react-router-dom";
 import Card from "../../components/UI/Card";
 import Button from "../../components/UI/Button";
+import JobImagesSection from "../../components/job/JobImagesSection";
 import {
     ArrowLeft,
     Briefcase,
@@ -273,6 +274,15 @@ export default function JobDetails() {
                         </div>
                     </div>
                 </Card>
+
+                {/* Job Images Section */}
+                <JobImagesSection
+                    jobId={job_id}
+                    title="Job Images"
+                    showUpload={job.status === "open"}
+                    allowDelete={job.status === "open"}
+                    className="mb-6"
+                />
 
                 {/* Assigned Provider Card (if assigned) */}
                 {job.assigned_provider_id && job.provider_name && (
