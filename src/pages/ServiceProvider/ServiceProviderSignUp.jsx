@@ -308,84 +308,123 @@ export default function Signup() {
   // UI
   // ===============================
   return (
-    <AuthCard
-      title="Join QuickFix"
-      subtitle="Find trusted service providers or offer your skills"
-    >
-      <SocialAuthButtons />
-      <AuthDivider />
+    <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-md">
+        <AuthCard
+          title="Join QuickFix"
+          subtitle="Find trusted service providers or offer your skills"
+        >
+          <SocialAuthButtons />
+          <AuthDivider />
 
-      {step === "signup" && (
-        <>
-          <input
-            className="input"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
+          {step === "signup" && (
+            <>
+              <div className="space-y-1">
+                <label className="block text-sm sm:text-base text-neutral-600">
+                  Email address
+                </label>
+                <input
+                  className="input h-11 sm:h-12"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
 
-          {/* Password Field */}
-          <div className="relative mt-3">
-            <input
-              className="input pr-10"
-              type={showPassword ? "text" : "password"}
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+              {/* Password Field */}
+              <div className="space-y-1 mt-3 sm:mt-4">
+                <label className="block text-sm sm:text-base text-neutral-600">
+                  Password
+                </label>
+                <div className="relative">
+                  <input
+                    className="input pr-12 h-11 sm:h-12"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Create a password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
 
-            <button
-              type="button"
-              aria-label={showPassword ? "Hide password" : "Show password"}
-              onClick={() => setShowPassword((prev) => !prev)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-              tabIndex={-1}
-            >
-              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-            </button>
-          </div>
+                  <button
+                    type="button"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 p-1"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
 
-          <button
-            onClick={handleSignup}
-            className="btn-primary mt-4"
-            disabled={loading || !normalizedEmail || !password}
-          >
-            {loading ? "Creating account..." : "Continue"}
-          </button>
-        </>
-      )}
+              <button
+                onClick={handleSignup}
+                className="btn-primary mt-5 sm:mt-6 w-full h-11 sm:h-12 text-base"
+                disabled={loading || !normalizedEmail || !password}
+              >
+                {loading ? "Creating account..." : "Continue"}
+              </button>
+            </>
+          )}
 
-      {step === "confirm" && (
-        <>
-          <input
-            className="input"
-            placeholder="Verification code"
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-          />
+          {step === "confirm" && (
+            <div className="space-y-4">
+              <div className="text-center mb-2">
+                <p className="text-sm sm:text-base text-neutral-600">
+                  We've sent a verification code to{" "}
+                  <span className="font-medium text-neutral-900 break-all">{normalizedEmail}</span>
+                </p>
+              </div>
 
-          <button
-            onClick={handleConfirm}
-            className="btn-primary mt-4"
-            disabled={loading || !code}
-          >
-            {loading ? "Verifying..." : "Verify & Continue"}
-          </button>
+              <div className="space-y-1">
+                <label className="block text-sm sm:text-base text-neutral-600">
+                  Verification code
+                </label>
+                <input
+                  className="input h-11 sm:h-12 text-center tracking-widest font-mono"
+                  placeholder="Enter 6-digit code"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  maxLength={6}
+                  inputMode="numeric"
+                />
+              </div>
 
-          <button
-            onClick={handleResend}
-            className="text-sm text-blue-500 mt-3"
-            type="button"
-            disabled={loading}
-          >
-            Resend code
-          </button>
-        </>
-      )}
+              <button
+                onClick={handleConfirm}
+                className="btn-primary w-full h-11 sm:h-12 text-base"
+                disabled={loading || !code}
+              >
+                {loading ? "Verifying..." : "Verify & Continue"}
+              </button>
 
-      {error && (
-        <p className="text-red-500 text-sm mt-3 text-center">{error}</p>
-      )}
-    </AuthCard>
+              <button
+                onClick={handleResend}
+                className="w-full text-sm sm:text-base text-blue-600 hover:text-blue-700 hover:underline py-2"
+                type="button"
+                disabled={loading}
+              >
+                Resend code
+              </button>
+            </div>
+          )}
+
+          {error && (
+            <div className="mt-4 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 text-center">
+              {error}
+            </div>
+          )}
+
+          {/* Footer */}
+          <p className="mt-6 text-center text-sm sm:text-base text-neutral-500">
+            Already have an account?{" "}
+            <a href="/login" className="text-blue-600 hover:underline font-medium">
+              Sign in
+            </a>
+          </p>
+        </AuthCard>
+      </div>
+    </div>
   );
 }

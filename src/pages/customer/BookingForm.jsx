@@ -72,7 +72,7 @@ export default function BookingForm() {
             console.log("Submitting booking:", bookingData);
 
             const res = await fetch(
-                "https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/customer/bookings",
+                `${import.meta.env.VITE_API_BASE_URL}/booking`,
                 {
                     method: "POST",
                     headers: {
@@ -87,17 +87,31 @@ export default function BookingForm() {
                 const data = await res.json();
                 console.log("Booking created:", data);
 
-                // Extract booking_id from response (it's inside data.booking)
-                const bookingId = data.booking?.booking_id || data.booking_id;
+                // Extract booking_id from response
+                const bookingId = data.booking_id || data.id || data.booking?.booking_id;
+
+                if (!bookingId) {
+                    console.error("Server response missing booking_id:", data);
+                    alert("Error: Server did not return a booking ID. Response: " + JSON.stringify(data));
+                    return;
+                }
 
                 // If images were selected, upload them to the new booking
-                if (selectedImages.length > 0 && bookingId) {
+                if (selectedImages.length > 0) {
                     setUploadingImages(true);
                     await uploadImagesToBooking(bookingId);
                 }
 
-                alert("Booking created successfully!");
-                navigate("/customer/bookings");
+                // Compute amount in cents (Stripe needs cents)
+                const amountCents = Math.round(Number(service.price) * 100);
+
+                // Store payment context for Payment.jsx
+                localStorage.setItem("quote_amount_cents", String(amountCents));
+                localStorage.setItem("selected_service_offering_id", String(service.id || service.service_offering_id));
+                localStorage.setItem("booking_id", String(bookingId));
+
+                // Go to payment
+                navigate("/payment");
             } else {
                 const error = await res.text();
                 console.error("Booking failed:", error);

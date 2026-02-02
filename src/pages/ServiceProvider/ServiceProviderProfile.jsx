@@ -374,11 +374,11 @@ export default function ServiceProviderProfile() {
      ============================== */
   if (loading) {
     return (
-      <div className="max-w-3xl mx-auto px-4 py-10 animate-pulse">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 animate-pulse">
         <div className="h-6 bg-gray-200 rounded w-48 mb-6" />
         <div className="space-y-4">
           {[...Array(7)].map((_, i) => (
-            <div key={i} className="h-10 bg-gray-100 rounded" />
+            <div key={i} className="h-10 sm:h-12 bg-gray-100 rounded-lg" />
           ))}
         </div>
       </div>
@@ -389,17 +389,17 @@ export default function ServiceProviderProfile() {
     <>
       {/* HEADER */}
       <div className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b">
-        <div className="max-w-3xl mx-auto px-4 py-4">
-          <h1 className="text-xl font-semibold text-gray-900">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
+          <h1 className="text-lg sm:text-xl font-semibold text-gray-900">
             Service Provider Profile
           </h1>
-          <p className="text-sm text-gray-500">
+          <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
             Keep your details accurate so customers can trust you
           </p>
         </div>
       </div>
 
-      <div className="max-w-3xl mx-auto px-4 py-8">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {/* ALERT */}
         {alert && (
           <Alert
@@ -409,7 +409,7 @@ export default function ServiceProviderProfile() {
           />
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5">
           <Input
             label="Your Name"
             name="name"
@@ -439,7 +439,7 @@ export default function ServiceProviderProfile() {
             onChange={handleChange}
           />
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
             <Input
               label="City"
               name="city"
@@ -472,7 +472,7 @@ export default function ServiceProviderProfile() {
               rows={4}
               maxLength={500}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm
-                         focus:ring-2 focus:ring-black"
+                         focus:ring-2 focus:ring-black min-h-[100px] sm:min-h-[120px]"
             />
             <div className="text-xs text-gray-500 text-right mt-1">
               {form.bio.length}/500
@@ -480,11 +480,11 @@ export default function ServiceProviderProfile() {
           </div>
 
           {/* ACTIONS */}
-          <div className="flex justify-end gap-3 pt-4">
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-4">
             <button
               type="button"
               onClick={() => navigate(-1)}
-              className="rounded-lg border px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              className="rounded-lg border px-4 py-2.5 sm:py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
             >
               Cancel
             </button>
@@ -492,8 +492,8 @@ export default function ServiceProviderProfile() {
             <button
               type="submit"
               disabled={saving || !hasChanges}
-              className="rounded-lg bg-black px-5 py-2 text-sm font-medium text-white
-                         hover:bg-gray-800 disabled:opacity-40"
+              className="rounded-lg bg-black px-5 py-2.5 sm:py-2 text-sm font-medium text-white
+                         hover:bg-gray-800 disabled:opacity-40 transition"
             >
               {saving ? "Saving..." : "Save Changes"}
             </button>
@@ -516,8 +516,9 @@ function Input({ label, helper, ...props }) {
       </label>
       <input
         {...props}
-        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm
-                   focus:ring-2 focus:ring-black focus:border-black transition"
+        className="w-full rounded-lg border border-gray-300 px-3 py-2 sm:py-2.5 text-sm
+                   focus:ring-2 focus:ring-black focus:border-black transition
+                   h-10 sm:h-11"
       />
       {helper && <p className="mt-1 text-xs text-gray-500">{helper}</p>}
     </div>

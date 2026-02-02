@@ -320,25 +320,25 @@ export default function ServiceProviderHome() {
   });
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 space-y-10">
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8 lg:space-y-10">
       {/* 🌟 HERO */}
-      <Card className="relative overflow-hidden border bg-gradient-to-br from-neutral-50 via-white to-neutral-100 p-8">
-        <div className="grid gap-6 md:grid-cols-2 items-center">
-          <div className="space-y-4">
-            <h1 className="text-3xl font-bold tracking-tight">
+      <Card className="relative overflow-hidden border bg-gradient-to-br from-neutral-50 via-white to-neutral-100 p-4 sm:p-6 lg:p-8">
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-2 items-center">
+          <div className="space-y-3 sm:space-y-4">
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
               Find jobs that match your skills
             </h1>
-            <p className="text-neutral-600 max-w-md">
+            <p className="text-sm sm:text-base text-neutral-600 max-w-md">
               Browse live job requests from verified customers. Apply on your
               schedule.
             </p>
 
             {/* 🔎 SEARCH */}
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
                 <Input
-                  className="pl-9"
+                  className="pl-9 h-10 sm:h-11"
                   placeholder="Search by title, category, or city"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -346,6 +346,7 @@ export default function ServiceProviderHome() {
               </div>
               <Button
                 variant="ghost"
+                className="w-full sm:w-auto"
                 onClick={() => {
                   setSearchTerm("");
                   setSelectedCategory("");
@@ -358,7 +359,7 @@ export default function ServiceProviderHome() {
 
           <img
             src="https://picsum.photos/seed/jobs/640/360"
-            className="rounded-2xl object-cover shadow-sm"
+            className="rounded-xl sm:rounded-2xl object-cover shadow-sm w-full h-48 sm:h-auto"
             alt="Jobs"
           />
         </div>
@@ -366,8 +367,8 @@ export default function ServiceProviderHome() {
 
       {/* 🏷️ CATEGORY FILTER */}
       <section>
-        <h2 className="mb-3 text-lg font-semibold">Job categories</h2>
-        <div className="flex flex-wrap gap-2">
+        <h2 className="mb-2 sm:mb-3 text-base sm:text-lg font-semibold">Job categories</h2>
+        <div className="flex flex-wrap gap-1.5 sm:gap-2">
           <Tag
             onClick={() => setSelectedCategory("")}
             className={`cursor-pointer transition ${
@@ -395,17 +396,17 @@ export default function ServiceProviderHome() {
 
       {/* 🧰 JOB LIST */}
       <section>
-        <h2 className="mb-4 text-lg font-semibold">
+        <h2 className="mb-3 sm:mb-4 text-base sm:text-lg font-semibold">
           Available jobs ({filteredJobs.length})
         </h2>
 
-        {loading && <p className="text-neutral-500">Loading jobs…</p>}
-        {error && <p className="text-red-500">{error}</p>}
+        {loading && <p className="text-sm sm:text-base text-neutral-500">Loading jobs…</p>}
+        {error && <p className="text-sm sm:text-base text-red-500">{error}</p>}
         {!loading && filteredJobs.length === 0 && (
-          <p className="text-neutral-500">No jobs found.</p>
+          <p className="text-sm sm:text-base text-neutral-500">No jobs found.</p>
         )}
 
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {filteredJobs.map((job) => {
             const category = normalizeCategory(job.category);
 
@@ -414,16 +415,16 @@ export default function ServiceProviderHome() {
                 key={job.job_id}
                 className="group transition hover:-translate-y-1 hover:shadow-lg"
               >
-                <div className="p-5 space-y-4">
+                <div className="p-4 sm:p-5 space-y-3 sm:space-y-4">
                   {/* HEADER */}
-                  <div className="flex justify-between items-start">
-                    <div className="space-y-1">
-                      <h3 className="font-semibold text-lg leading-tight">
+                  <div className="flex justify-between items-start gap-2">
+                    <div className="space-y-1 min-w-0">
+                      <h3 className="font-semibold text-base sm:text-lg leading-tight truncate">
                         {job.title}
                       </h3>
                       <Tag>{category.replaceAll("_", " ")}</Tag>
                     </div>
-                    <Tag variant="success">OPEN</Tag>
+                    <Tag variant="success" className="shrink-0">OPEN</Tag>
                   </div>
 
                   {/* DESCRIPTION */}
@@ -432,20 +433,20 @@ export default function ServiceProviderHome() {
                   </p>
 
                   {/* META */}
-                  <div className="space-y-2 text-sm text-neutral-500">
+                  <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm text-neutral-500">
                     <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4" />
-                      {job.location?.city}, {job.location?.state}
+                      <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+                      <span className="truncate">{job.location?.city}, {job.location?.state}</span>
                     </div>
 
                     <div className="flex items-center gap-2 text-neutral-700">
-                      <DollarSign className="h-4 w-4" />${job.budget?.min} – $
+                      <DollarSign className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />${job.budget?.min} – $
                       {job.budget?.max}
                     </div>
 
                     {(job.preferred_date || job.preferred_time) && (
                       <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4" />
+                        <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
                         {job.preferred_date} {job.preferred_time || ""}
                       </div>
                     )}
@@ -454,7 +455,7 @@ export default function ServiceProviderHome() {
                   {/* CTA */}
                   <div className="pt-2 flex justify-end">
                     <Button
-                      className="gap-1"
+                      className="gap-1 w-full sm:w-auto"
                       onClick={() =>
                         navigate(`/service-provider/job/${job.job_id}`)
                       }
