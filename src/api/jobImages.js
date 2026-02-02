@@ -1,4 +1,4 @@
-import { API_BASE } from "./config";
+import { JOB_IMAGES_API_BASE } from "./config";
 
 /**
  * Get S3 upload URL for job image
@@ -14,7 +14,7 @@ export async function getUploadUrl(jobId, fileName, contentType, imageOrder, aut
 
     console.log('Getting upload URL for job image:', { jobId, fileName, contentType, imageOrder });
 
-    const response = await fetch(`${API_BASE}/jobs/${jobId}/images/upload-url`, {
+    const response = await fetch(`${JOB_IMAGES_API_BASE}/jobs/${jobId}/images/upload-url`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -89,7 +89,7 @@ export async function saveImageMetadata(jobId, imageData, auth) {
 
     console.log('Saving job image metadata:', { jobId, imageData });
 
-    const response = await fetch(`${API_BASE}/jobs/${jobId}/images`, {
+    const response = await fetch(`${JOB_IMAGES_API_BASE}/jobs/${jobId}/images`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -124,7 +124,7 @@ export async function getJobImages(jobId, auth) {
     console.log('Job ID:', jobId);
     console.log('Token present:', token ? 'Yes' : 'No');
     console.log('Token length:', token ? token.length : 0);
-    console.log('API URL:', `${API_BASE}/jobs/${jobId}/images`);
+    console.log('API URL:', `${JOB_IMAGES_API_BASE}/jobs/${jobId}/images`);
 
     if (!token) {
         throw new Error('No authentication token available');
@@ -135,7 +135,7 @@ export async function getJobImages(jobId, auth) {
     }
 
     try {
-        const response = await fetch(`${API_BASE}/jobs/${jobId}/images`, {
+        const response = await fetch(`${JOB_IMAGES_API_BASE}/jobs/${jobId}/images`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -206,7 +206,7 @@ export async function getJobImages(jobId, auth) {
 export async function deleteJobImage(jobId, imageId, auth) {
     const token = auth.user?.id_token || auth.user?.access_token;
 
-    const response = await fetch(`${API_BASE}/jobs/${jobId}/images/${imageId}`, {
+    const response = await fetch(`${JOB_IMAGES_API_BASE}/jobs/${jobId}/images/${imageId}`, {
         method: 'DELETE',
         headers: {
             'Authorization': `Bearer ${token}`,

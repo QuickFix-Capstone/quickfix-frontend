@@ -86,14 +86,17 @@ export default function PostJob() {
                 const data = await res.json();
                 console.log("Job posted successfully:", data);
 
+                // Get job_id from the response (nested in job object)
+                const jobId = data.job?.job_id || data.job_id;
+
                 // Upload images if any were selected
                 if (selectedImages.length > 0) {
                     setUploadingImages(true);
-                    console.log(`Uploading ${selectedImages.length} images for job ${data.job_id}...`);
+                    console.log(`Uploading ${selectedImages.length} images for job ${jobId}...`);
 
                     try {
                         const uploadPromises = selectedImages.map((file, index) =>
-                            uploadJobImage(data.job_id, file, auth, {
+                            uploadJobImage(jobId, file, auth, {
                                 order: index + 1,
                                 description: null
                             })
