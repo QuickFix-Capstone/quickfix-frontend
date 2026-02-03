@@ -49,10 +49,10 @@ export const paypalCreateOrder = (jobId, authHeaders) =>
     });
 
 // ✅ PayPal: capture
-export const paypalCapture = (orderId, authHeaders) =>
+export const paypalCapture = (paymentId, orderId, authHeaders) =>
     api(`/payments/paypal/capture`, {
         method: "POST",
-        body: { order_id: orderId },
+        body: { payment_id: paymentId, order_id: orderId },
         headers: authHeaders,
     });
 

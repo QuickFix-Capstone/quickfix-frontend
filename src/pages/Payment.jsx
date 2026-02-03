@@ -7,6 +7,7 @@ import {
     useElements,
     PaymentElement,
 } from "@stripe/react-stripe-js";
+import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import { useAuth } from "react-oidc-context";
 import Card from "../components/UI/Card";
 
@@ -55,6 +56,46 @@ function CheckoutForm({ paymentId }) {
     );
 }
 
+// PayPal component
+function PayPalCheckout({ paymentId, totalCents }) {
+    const navigate = useNavigate();
+
+    return (
+        <PayPalButtons
+            style={{ layout: "vertical", color: "gold", shape: "rect", label: "paypal" }}
+            createOrder={(data, actions) => {
+                return actions.order.create({
+                    purchase_units: [
+                        {
+                            amount: {
+                                value: (totalCents / 100).toFixed(2),
+                                currency_code: "CAD",
+                            },
+                            description: `QuickFix Payment #${paymentId}`,
+                        },
+                    ],
+                    application_context: {
+                        shipping_preference: "NO_SHIPPING",
+                    },
+                });
+            }}
+            onApprove={async (data, actions) => {
+                try {
+                    const details = await actions.order.capture();
+                    console.log("PayPal payment successful:", details);
+                    // Redirect to receipt page
+                    navigate(`/receipt/${paymentId}`);
+                } catch (error) {
+                    console.error("PayPal capture error:", error);
+                }
+            }}
+            onError={(err) => {
+                console.error("PayPal error:", err);
+            }}
+        />
+    );
+}
+
 export default function Payment() {
     const navigate = useNavigate();
     const auth = useAuth();
@@ -84,6 +125,13 @@ export default function Payment() {
             appearance: { theme: "stripe" },
         };
     }, [clientSecret]);
+
+    // PayPal options
+    const paypalOptions = {
+        clientId: import.meta.env.VITE_PAYPAL_CLIENT_ID,
+        currency: "CAD",
+        intent: "capture",
+    };
 
     useEffect(() => {
         const run = async () => {
@@ -196,10 +244,29 @@ export default function Payment() {
                     Pay safely with card / Apple Pay / Google Pay.
                 </p>
 
+                {/* Stripe Payment */}
                 <div className="mt-6">
                     <Elements options={elementsOptions} stripe={stripePromise}>
                         <CheckoutForm paymentId={paymentId} />
                     </Elements>
+                </div>
+
+                {/* Divider */}
+                <div className="relative my-6">
+                    <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-neutral-300"></div>
+                    </div>
+                    <div className="relative flex justify-center text-sm">
+                        <span className="px-4 bg-white text-neutral-500">OR</span>
+                    </div>
+                </div>
+
+                {/* PayPal Payment */}
+                <div>
+                    <p className="text-sm text-neutral-600 mb-3">Pay with PayPal:</p>
+                    <PayPalScriptProvider options={paypalOptions}>
+                        <PayPalCheckout paymentId={paymentId} totalCents={totalCents} />
+                    </PayPalScriptProvider>
                 </div>
             </Card>
         </div>

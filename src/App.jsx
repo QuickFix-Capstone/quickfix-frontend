@@ -51,6 +51,8 @@ import Logout from "./pages/Logout";
 import AuthCallback from "./pages/AuthCallback";
 import Payment from "./pages/Payment";
 import Receipt from "./pages/Receipt";
+import Checkout from "./pages/Checkout";
+import ReceiptNew from "./pages/ReceiptNew";
 
 // ================= LOCAL AUTH =================
 import {
@@ -215,7 +217,9 @@ export default function App() {
 
         {/* Payment */}
         <Route path="/payment" element={<Payment />} />
+        <Route path="/checkout/:jobId" element={<Checkout />} />
         <Route path="/receipt/:id" element={<Receipt />} />
+        <Route path="/receipt-new/:id" element={<ReceiptNew />} />
 
         {/* ---------- CUSTOMER ---------- */}
         <Route path="/customer/login" element={<CustomerLogin />} />

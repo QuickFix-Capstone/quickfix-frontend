@@ -7,7 +7,7 @@ import Card from "../components/UI/Card";
 const money = (cents) => `$${(Number(cents || 0) / 100).toFixed(2)}`;
 
 export default function ReceiptNew() {
-    const { paymentId } = useParams();
+    const { id: paymentId } = useParams(); // Route uses :id, not :paymentId
     const auth = useAuth();
     const [data, setData] = useState(null);
     const [err, setErr] = useState("");

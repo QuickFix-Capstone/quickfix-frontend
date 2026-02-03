@@ -6,6 +6,7 @@ import { paypalCreateOrder, paypalCapture, getAuthHeaders } from "../../api/paym
 export default function PayPalCheckout({ jobId, onPaid }) {
     const auth = useAuth();
     const [err, setErr] = useState("");
+    const [paymentId, setPaymentId] = useState(null); // Store payment_id from createOrder
 
     return (
         <div>
@@ -23,9 +24,23 @@ export default function PayPalCheckout({ jobId, onPaid }) {
                         setErr("");
                         const authHeaders = getAuthHeaders(auth.user);
                         const res = await paypalCreateOrder(jobId, authHeaders);
-                        // Expected: { orderId, payment_id }
-                        return res.orderId;
+                        console.log("✅ PayPal createOrder response:", res);
+
+                        // Lambda returns order_id (snake_case), not orderId (camelCase)
+                        const orderId = res.order_id || res.orderId;
+                        const pId = res.payment_id || res.paymentId;
+                        console.log("📦 Extracted orderId:", orderId, "payment_id:", pId);
+
+                        if (!orderId) {
+                            throw new Error("No order_id in response: " + JSON.stringify(res));
+                        }
+
+                        // Store payment_id for later use in capture
+                        setPaymentId(pId);
+
+                        return orderId;
                     } catch (e) {
+                        console.error("❌ PayPal createOrder error:", e);
                         setErr(e.message);
                         throw e;
                     }
@@ -33,12 +48,24 @@ export default function PayPalCheckout({ jobId, onPaid }) {
                 onApprove={async (data) => {
                     try {
                         setErr("");
+                        console.log("🎯 PayPal onApprove data:", data);
+                        console.log("💾 Stored payment_id:", paymentId);
+
+                        if (!paymentId) {
+                            throw new Error("payment_id not found - createOrder may have failed");
+                        }
+
                         const authHeaders = getAuthHeaders(auth.user);
-                        const res = await paypalCapture(data.orderID, authHeaders);
+                        console.log("📤 Calling paypalCapture with payment_id:", paymentId, "order_id:", data.orderID);
+
+                        const res = await paypalCapture(paymentId, data.orderID, authHeaders);
+                        console.log("✅ PayPal capture response:", res);
+
                         // Expected: { payment_id, status: "COMPLETED" } (or paid)
-                        const paymentId = res.payment_id ?? res.paymentId;
-                        onPaid(paymentId);
+                        const finalPaymentId = res.payment_id ?? res.paymentId;
+                        onPaid(finalPaymentId);
                     } catch (e) {
+                        console.error("❌ PayPal capture error:", e);
                         setErr(e.message);
                     }
                 }}
