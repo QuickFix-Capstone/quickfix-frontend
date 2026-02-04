@@ -4,6 +4,8 @@ import { useAuth } from "react-oidc-context";
 import { useNavigate } from "react-router-dom";
 import Card from "../../components/UI/Card";
 import Button from "../../components/UI/Button";
+import JobImageUpload from "../../components/job/JobImageUpload";
+import { uploadJobImage } from "../../api/jobImages";
 import { ArrowLeft, Calendar, Clock, MapPin, FileText, DollarSign, Briefcase } from "lucide-react";
 
 export default function PostJob() {
@@ -24,6 +26,8 @@ export default function PostJob() {
         budget_max: "",
     });
     const [submitting, setSubmitting] = useState(false);
+    const [selectedImages, setSelectedImages] = useState([]);
+    const [uploadingImages, setUploadingImages] = useState(false);
 
     const categories = [
         "plumber",
@@ -81,8 +85,37 @@ export default function PostJob() {
             if (res.ok) {
                 const data = await res.json();
                 console.log("Job posted successfully:", data);
-                alert("Job posted successfully! Service providers can now apply.");
-                navigate("/customer/jobs"); // Navigate to jobs list (we'll create this next)
+
+                // Get job_id from the response (nested in job object)
+                const jobId = data.job?.job_id || data.job_id;
+
+                // Upload images if any were selected
+                if (selectedImages.length > 0) {
+                    setUploadingImages(true);
+                    console.log(`Uploading ${selectedImages.length} images for job ${jobId}...`);
+
+                    try {
+                        const uploadPromises = selectedImages.map((file, index) =>
+                            uploadJobImage(jobId, file, auth, {
+                                order: index + 1,
+                                description: null
+                            })
+                        );
+
+                        await Promise.all(uploadPromises);
+                        console.log("All images uploaded successfully");
+                        alert(`Job posted successfully with ${selectedImages.length} image(s)! Service providers can now apply.`);
+                    } catch (imageError) {
+                        console.error("Image upload failed:", imageError);
+                        alert("Job posted successfully, but some images failed to upload. You can add them later.");
+                    } finally {
+                        setUploadingImages(false);
+                    }
+                } else {
+                    alert("Job posted successfully! Service providers can now apply.");
+                }
+
+                navigate("/customer/jobs");
             } else {
                 const error = await res.text();
                 console.error("Job posting failed:", error);
@@ -310,6 +343,12 @@ export default function PostJob() {
                             </p>
                         </div>
 
+                        {/* Job Images Upload */}
+                        <JobImageUpload
+                            onFilesSelected={setSelectedImages}
+                            disabled={submitting || uploadingImages}
+                        />
+
                         {/* Submit Button */}
                         <div className="flex gap-4">
                             <Button
@@ -322,10 +361,14 @@ export default function PostJob() {
                             </Button>
                             <Button
                                 type="submit"
-                                disabled={submitting}
+                                disabled={submitting || uploadingImages}
                                 className="flex-1 bg-neutral-900 hover:bg-neutral-800"
                             >
-                                {submitting ? "Posting Job..." : "Post Job"}
+                                {uploadingImages
+                                    ? "Uploading Images..."
+                                    : submitting
+                                    ? "Posting Job..."
+                                    : "Post Job"}
                             </Button>
                         </div>
                     </form>
