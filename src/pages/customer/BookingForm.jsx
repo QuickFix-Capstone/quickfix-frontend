@@ -6,6 +6,7 @@ import { useLocation as useUserLocation } from "../../context/LocationContext";
 import Card from "../../components/UI/Card";
 import Button from "../../components/UI/Button";
 import { ArrowLeft, Calendar, Clock, MapPin, FileText } from "lucide-react";
+import { API_BASE } from "../../api/config";
 
 export default function BookingForm() {
     const auth = useAuth();
@@ -75,7 +76,7 @@ export default function BookingForm() {
             console.log("Submitting booking:", bookingData);
 
             const res = await fetch(
-                `${import.meta.env.VITE_API_BASE_URL}/booking`,
+                `${API_BASE}/booking`,
                 {
                     method: "POST",
                     headers: {
@@ -90,16 +91,6 @@ export default function BookingForm() {
                 const data = await res.json();
                 console.log("Booking created:", data);
 
-                // 1) Compute amount in cents (Stripe needs cents)
-                const amountCents = Math.round(Number(service.price) * 100);
-                const _providerId = service.provider_id || 2; // Fallback if missing
-
-                // 2) Store payment context for Payment.jsx
-                // 2) Store payment context for Payment.jsx
-                localStorage.setItem("quote_amount_cents", String(amountCents));
-                // Use service.id (or service_offering_id if available on object)
-                localStorage.setItem("selected_service_offering_id", String(service.id || service.service_offering_id));
-
                 const bookingId = data.booking_id || data.id || data.booking?.booking_id;
 
                 if (!bookingId) {
@@ -108,11 +99,11 @@ export default function BookingForm() {
                     return;
                 }
 
-                // Optional (good for future linking)
-                localStorage.setItem("booking_id", String(bookingId));
+                // Show success message
+                alert(`Booking created successfully! Booking ID: ${bookingId}`);
 
-                // 3) Go to payment
-                navigate("/payment");
+                // Redirect to bookings list page
+                navigate("/customer/bookings");
             } else {
                 const error = await res.text();
                 console.error("Booking failed:", error);
