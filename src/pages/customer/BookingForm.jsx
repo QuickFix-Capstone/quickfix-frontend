@@ -7,6 +7,7 @@ import Button from "../../components/UI/Button";
 import { ArrowLeft, Calendar, Clock, MapPin, FileText, DollarSign, Camera, Upload } from "lucide-react";
 import FileInput from "../../components/UI/FileInput";
 import { uploadBookingImage } from "../../api/bookingImages";
+import { API_BASE } from "../../api/config";
 
 export default function BookingForm() {
     const auth = useAuth();
@@ -72,7 +73,7 @@ export default function BookingForm() {
             console.log("Submitting booking:", bookingData);
 
             const res = await fetch(
-                `${import.meta.env.VITE_API_BASE_URL}/booking`,
+                `${API_BASE}/booking`,
                 {
                     method: "POST",
                     headers: {
@@ -102,16 +103,11 @@ export default function BookingForm() {
                     await uploadImagesToBooking(bookingId);
                 }
 
-                // Compute amount in cents (Stripe needs cents)
-                const amountCents = Math.round(Number(service.price) * 100);
+                // Show success message
+                alert(`Booking created successfully! Booking ID: ${bookingId}`);
 
-                // Store payment context for Payment.jsx
-                localStorage.setItem("quote_amount_cents", String(amountCents));
-                localStorage.setItem("selected_service_offering_id", String(service.id || service.service_offering_id));
-                localStorage.setItem("booking_id", String(bookingId));
-
-                // Go to payment
-                navigate("/payment");
+                // Redirect to bookings list page
+                navigate("/customer/bookings");
             } else {
                 const error = await res.text();
                 console.error("Booking failed:", error);
