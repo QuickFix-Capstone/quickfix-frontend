@@ -70,6 +70,10 @@ export default function AdminServiceProviders() {
         icon: CheckCircle,
         bg: "bg-emerald-50 text-emerald-700 border-emerald-200",
       },
+      VERIFIED: {
+        icon: CheckCircle,
+        bg: "bg-emerald-50 text-emerald-700 border-emerald-200",
+      },
       PENDING: {
         icon: Clock,
         bg: "bg-amber-50 text-amber-700 border-amber-200",
@@ -80,15 +84,19 @@ export default function AdminServiceProviders() {
       },
     };
 
-    const cfg = map[status] || map.PENDING;
+    const cfg = map[status?.toUpperCase()] || map.PENDING;
     const Icon = cfg.icon;
+    const isApprovedOrVerified =
+      status?.toUpperCase() === "APPROVED" ||
+      status?.toUpperCase() === "VERIFIED";
+    const displayStatus = isApprovedOrVerified ? "Verified" : status;
 
     return (
       <div
         className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-sm ${cfg.bg}`}
       >
         <Icon className="w-3.5 h-3.5" />
-        <span className="font-medium">{status}</span>
+        <span className="font-medium">{displayStatus}</span>
       </div>
     );
   };
@@ -100,19 +108,28 @@ export default function AdminServiceProviders() {
       p.city?.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesStatus =
-      statusFilter === "ALL" || p.verification_status === statusFilter;
+      statusFilter === "ALL" ||
+      (statusFilter === "APPROVED"
+        ? p.verification_status?.toUpperCase() === "APPROVED" ||
+          p.verification_status?.toUpperCase() === "VERIFIED"
+        : p.verification_status?.toUpperCase() === statusFilter);
 
     return matchesSearch && matchesStatus;
   });
 
   const stats = {
     total: providers.length,
-    approved: providers.filter((p) => p.verification_status === "APPROVED")
-      .length,
-    pending: providers.filter((p) => p.verification_status === "PENDING")
-      .length,
-    rejected: providers.filter((p) => p.verification_status === "REJECTED")
-      .length,
+    approved: providers.filter(
+      (p) =>
+        p.verification_status?.toUpperCase() === "APPROVED" ||
+        p.verification_status?.toUpperCase() === "VERIFIED",
+    ).length,
+    pending: providers.filter(
+      (p) => p.verification_status?.toUpperCase() === "PENDING",
+    ).length,
+    rejected: providers.filter(
+      (p) => p.verification_status?.toUpperCase() === "REJECTED",
+    ).length,
   };
 
   if (loading) {
@@ -140,7 +157,9 @@ export default function AdminServiceProviders() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">Service Providers</h1>
-          <p className="text-gray-500">Manage and review all service providers</p>
+          <p className="text-gray-500">
+            Manage and review all service providers
+          </p>
         </div>
         <div className="flex items-center gap-2 text-gray-500">
           <Users className="w-5 h-5" />
@@ -158,7 +177,7 @@ export default function AdminServiceProviders() {
         </div>
         <div className="bg-emerald-50 border-2 border-emerald-100 rounded-xl p-4">
           <p className="text-xs text-emerald-600 font-semibold uppercase tracking-wide">
-            Approved
+            Verified
           </p>
           <p className="text-2xl font-bold text-emerald-700 mt-1">
             {stats.approved}
@@ -200,7 +219,7 @@ export default function AdminServiceProviders() {
           className="px-4 py-2 border-2 border-gray-100 rounded-lg focus:border-blue-500 focus:outline-none"
         >
           <option value="ALL">All Status</option>
-          <option value="APPROVED">Approved</option>
+          <option value="APPROVED">Verified</option>
           <option value="PENDING">Pending</option>
           <option value="REJECTED">Rejected</option>
         </select>
@@ -211,7 +230,9 @@ export default function AdminServiceProviders() {
         {filteredProviders.map((p) => (
           <div
             key={p.provider_id}
-            onClick={() => navigate(`/admin/service-providers-details/${p.provider_id}`)}
+            onClick={() =>
+              navigate(`/admin/service-providers-details/${p.provider_id}`)
+            }
             className="bg-white border-2 border-gray-100 rounded-xl p-5 hover:shadow-lg hover:border-blue-200 transition cursor-pointer group"
           >
             {/* Card Header */}
@@ -263,7 +284,9 @@ export default function AdminServiceProviders() {
               >
                 {p.is_active ? "Active" : "Inactive"}
               </span>
-              <span className="text-xs text-gray-400">Click to view details</span>
+              <span className="text-xs text-gray-400">
+                Click to view details
+              </span>
             </div>
           </div>
         ))}

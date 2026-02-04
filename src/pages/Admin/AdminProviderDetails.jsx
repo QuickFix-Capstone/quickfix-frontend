@@ -75,8 +75,8 @@ export default function AdminServiceProviderDetails() {
 
   /* ===================== VERIFIED CHECK ===================== */
   const isVerified =
-    data?.provider?.verification_status === "APPROVED" ||
-    data?.provider?.verification_status === "VERIFIED";
+    data?.provider?.verification_status?.toUpperCase() === "APPROVED" ||
+    data?.provider?.verification_status?.toUpperCase() === "VERIFIED";
 
   useEffect(() => {
     if (isVerified) {
@@ -238,7 +238,7 @@ export default function AdminServiceProviderDetails() {
             disabled={!can_approve || approving}
             className="px-4 py-2 bg-green-600 text-white rounded-lg"
           >
-            {approving ? "Approving..." : "Approve"}
+            {approving ? "Verifying..." : "Verify"}
           </button>
         </div>
       )}

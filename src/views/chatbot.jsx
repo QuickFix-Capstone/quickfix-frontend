@@ -9,6 +9,7 @@ import React, {
   useContext,
 } from "react";
 import ReactDOM from "react-dom";
+import { useLocation } from "react-router-dom";
 import {
   X,
   Send,
@@ -41,7 +42,8 @@ const getUserAuth = () => {
     const userGroupsStr = localStorage.getItem("quickfix_user_groups");
 
     // Also check OIDC storage for customer login
-    const oidcKey = "oidc.user:https://cognito-idp.us-east-2.amazonaws.com/us-east-2_45z5OMePi:p2u5qdegml3hp60n6ohu52n2b";
+    const oidcKey =
+      "oidc.user:https://cognito-idp.us-east-2.amazonaws.com/us-east-2_45z5OMePi:p2u5qdegml3hp60n6ohu52n2b";
     const oidcDataStr = localStorage.getItem(oidcKey);
     const oidcData = oidcDataStr ? JSON.parse(oidcDataStr) : null;
 
@@ -49,7 +51,8 @@ const getUserAuth = () => {
     const token = idToken || oidcData?.id_token;
 
     // Validate token format (should be a JWT)
-    const isValidToken = token && typeof token === 'string' && token.split('.').length === 3;
+    const isValidToken =
+      token && typeof token === "string" && token.split(".").length === 3;
 
     if (!token || !isValidToken) {
       console.log("🔓 No valid authentication token found for chatbot");
@@ -64,12 +67,20 @@ const getUserAuth = () => {
     console.log("🔑 Valid authentication token found for chatbot");
 
     const userData = userDataStr ? JSON.parse(userDataStr) : {};
-    const userGroupsFromStorage = userGroupsStr ? JSON.parse(userGroupsStr) : [];
+    const userGroupsFromStorage = userGroupsStr
+      ? JSON.parse(userGroupsStr)
+      : [];
     const cognitoGroups = userData["cognito:groups"] || [];
     const oidcProfileGroups = oidcData?.profile?.["cognito:groups"] || [];
 
     // Combine all sources of groups (use any if one exists)
-    const userGroups = [...new Set([...userGroupsFromStorage, ...cognitoGroups, ...oidcProfileGroups])];
+    const userGroups = [
+      ...new Set([
+        ...userGroupsFromStorage,
+        ...cognitoGroups,
+        ...oidcProfileGroups,
+      ]),
+    ];
 
     // Debug logging
     console.log("🔍 Raw userGroupsStr:", userGroupsStr);
@@ -78,7 +89,10 @@ const getUserAuth = () => {
     console.log("🔍 Combined userGroups:", userGroups);
     console.log("🔍 Type of userGroups:", typeof userGroups);
     console.log("🔍 Is Array:", Array.isArray(userGroups));
-    console.log("🔍 Includes ServiceProviders:", userGroups.includes?.("ServiceProviders"));
+    console.log(
+      "🔍 Includes ServiceProviders:",
+      userGroups.includes?.("ServiceProviders"),
+    );
 
     // Determine role from groups (same logic as backend)
     let role = "customer";
@@ -134,7 +148,7 @@ const sendChatMessage = async (
     };
 
     // Only send token if it exists and is valid (non-empty string)
-    if (token && typeof token === 'string' && token.trim()) {
+    if (token && typeof token === "string" && token.trim()) {
       headers["Authorization"] = `Bearer ${token}`;
       console.log("🔐 Sending message with authentication token");
     } else {
@@ -651,6 +665,9 @@ export const ChatbotProvider = ({ children }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [userAuth, setUserAuth] = useState(getUserAuth());
+  const location = useLocation();
+
+  const isAdminRoute = location.pathname.startsWith("/admin");
 
   // Re-check auth when chatbot opens (in case user logged in/out)
   useEffect(() => {
@@ -680,21 +697,22 @@ export const ChatbotProvider = ({ children }) => {
       value={{ isOpen, openChatbot, closeChatbot, toggleChatbot }}
     >
       {children}
-      {ReactDOM.createPortal(
-        <>
-          <ChatbotButton
-            isOpen={isOpen}
-            onClick={toggleChatbot}
-            unreadCount={unreadCount}
-          />
-          <ChatbotPopup
-            isOpen={isOpen}
-            onClose={closeChatbot}
-            userAuth={userAuth}
-          />
-        </>,
-        document.body,
-      )}
+      {!isAdminRoute &&
+        ReactDOM.createPortal(
+          <>
+            <ChatbotButton
+              isOpen={isOpen}
+              onClick={toggleChatbot}
+              unreadCount={unreadCount}
+            />
+            <ChatbotPopup
+              isOpen={isOpen}
+              onClose={closeChatbot}
+              userAuth={userAuth}
+            />
+          </>,
+          document.body,
+        )}
     </ChatbotContext.Provider>
   );
 };
