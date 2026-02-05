@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { Star, Search, Filter, Upload } from "lucide-react";
 import Card from "../components/UI/Card";
 import Button from "../components/UI/Button";
-import { useLocation as useUserLocation } from "../context/LocationContext";
 
 /* ================= CONFIG ================= */
 const S3_BASE_URL = "https://quickfix-app-files.s3.us-east-2.amazonaws.com";
@@ -16,19 +15,11 @@ const resolveImageUrl = (url) => {
   return `${S3_BASE_URL}/${url}`;
 };
 
-export default function ServiceList() {
+export default function Home() {
   const auth = useAuth();
   const navigate = useNavigate();
-  const { location: userLocation, getLocation } = useUserLocation();
 
   const [services, setServices] = useState([]);
-
-  // Get user location on mount
-  useEffect(() => {
-    if (!userLocation) {
-      getLocation();
-    }
-  }, [userLocation, getLocation]);
   const [filteredServices, setFilteredServices] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -160,11 +151,10 @@ export default function ServiceList() {
             <button
               key={c.value}
               onClick={() => setSelectedCategory(c.value)}
-              className={`rounded-full px-4 py-2 text-sm font-medium transition ${
-                selectedCategory === c.value
+              className={`rounded-full px-4 py-2 text-sm font-medium transition ${selectedCategory === c.value
                   ? "bg-gradient-to-r from-indigo-500 to-emerald-500 text-white shadow"
                   : "bg-white border hover:bg-indigo-50"
-              }`}
+                }`}
             >
               {c.label}
             </button>
@@ -220,9 +210,8 @@ export default function ServiceList() {
                   <div className="mt-2 flex justify-between items-center">
                     {renderStars(service.rating)}
                     <span
-                      className={`text-xs px-2 py-1 rounded-full font-medium ${
-                        categoryColors[service.category]
-                      }`}
+                      className={`text-xs px-2 py-1 rounded-full font-medium ${categoryColors[service.category]
+                        }`}
                     >
                       {service.category.split("_").join(" ")}
                     </span>
@@ -263,11 +252,10 @@ export default function ServiceList() {
               <button
                 key={p}
                 onClick={() => setCurrentPage(p)}
-                className={`px-4 py-2 rounded-lg transition ${
-                  p === currentPage
+                className={`px-4 py-2 rounded-lg transition ${p === currentPage
                     ? "bg-gradient-to-r from-indigo-500 to-emerald-500 text-white"
                     : "bg-white border hover:bg-indigo-50"
-                }`}
+                  }`}
               >
                 {p}
               </button>
