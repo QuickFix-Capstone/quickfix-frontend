@@ -102,8 +102,8 @@ export default function BookingForm() {
                 // NEW: Also store as order_id for Payment.jsx to pick up correctly
                 localStorage.setItem("order_id", String(bookingId));
 
-                // 3) Go to payment
-                navigate("/payment");
+                // 3) Go to new checkout page with job_id
+                navigate(`/checkout/${bookingId}`);
             } else {
                 const error = await res.text();
                 console.error("Booking failed:", error);

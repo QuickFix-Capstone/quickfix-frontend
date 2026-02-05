@@ -13,7 +13,7 @@ export default function StripeReturn() {
             return;
         }
         // Give webhook a moment if needed:
-        setTimeout(() => nav(`/receipt/${paymentId}`), 800);
+        setTimeout(() => nav(`/receipt-new/${paymentId}`), 800);
     }, [params, nav]);
 
     return (

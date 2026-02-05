@@ -5,10 +5,10 @@ import { PayPalScriptProvider } from "@paypal/react-paypal-js";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 
-import { getQuote, stripeCreateIntent, getAuthHeaders } from "../api/payments";
-import PayPalCheckout from "../components/payments/PayPalCheckout";
-import StripeCheckoutForm from "../components/payments/StripeCheckoutForm";
-import Card from "../components/UI/Card";
+import { getQuote, stripeCreateIntent, getAuthHeaders } from "../../api/payments";
+import PayPalCheckout from "../../components/payments/PayPalCheckout";
+import StripeCheckoutForm from "../../components/payments/StripeCheckoutForm";
+import Card from "../../components/UI/Card";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
