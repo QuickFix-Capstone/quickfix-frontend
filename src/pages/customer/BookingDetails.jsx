@@ -74,7 +74,7 @@ export default function BookingDetails() {
             const token = auth.user?.id_token || auth.user?.access_token;
 
             const res = await fetch(
-                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/customer/bookings/${bookingId}`,
+                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/customer/bookings/${bookingId}`,
                 {
                     method: "GET",
                     headers: {
@@ -129,7 +129,7 @@ export default function BookingDetails() {
         try {
             const token = auth.user?.id_token || auth.user?.access_token;
             const res = await fetch(
-                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/customer/bookings/${bookingId}`,
+                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/customer/bookings/${bookingId}`,
                 {
                     method: "PUT",
                     headers: {
@@ -164,7 +164,7 @@ export default function BookingDetails() {
         try {
             const token = auth.user?.id_token || auth.user?.access_token;
             const res = await fetch(
-                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/customer/bookings/${bookingId}`,
+                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/customer/bookings/${bookingId}`,
                 {
                     method: "PUT",
                     headers: {
@@ -205,7 +205,7 @@ export default function BookingDetails() {
         try {
             const token = auth.user?.id_token || auth.user?.access_token;
             const res = await fetch(
-                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/customer/bookings/${bookingId}`,
+                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/customer/bookings/${bookingId}`,
                 {
                     method: "PUT",
                     headers: {
@@ -242,7 +242,7 @@ export default function BookingDetails() {
         try {
             const token = auth.user?.id_token || auth.user?.access_token;
             const res = await fetch(
-                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/customer/bookings/${bookingId}`,
+                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/customer/bookings/${bookingId}`,
                 {
                     method: "PUT",
                     headers: {

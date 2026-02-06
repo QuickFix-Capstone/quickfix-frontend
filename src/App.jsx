@@ -20,6 +20,7 @@ import EditProfile from "./pages/customer/EditProfile";
 import ServiceList from "./pages/customer/ServiceList";
 import Bookings from "./pages/customer/Bookings";
 import BookingForm from "./pages/customer/BookingForm";
+import BookingDetails from "./pages/customer/BookingDetails";
 import PostJob from "./pages/customer/PostJob";
 import MyJobs from "./pages/customer/MyJobs";
 import JobDetails from "./pages/customer/JobDetails";
@@ -92,10 +93,10 @@ export default function App() {
   // ================= OIDC USER =================
   const oidcUser = auth.user
     ? {
-        name: auth.user.profile.name || auth.user.profile.email,
-        email: auth.user.profile.email,
-        role: "customer",
-      }
+      name: auth.user.profile.name || auth.user.profile.email,
+      email: auth.user.profile.email,
+      role: "customer",
+    }
     : null;
 
   const currentUser = oidcUser || localUser;
@@ -247,6 +248,7 @@ export default function App() {
           <Route path="/customer/edit" element={<EditProfile />} />
           <Route path="/customer/services" element={<ServiceList />} />
           <Route path="/customer/bookings" element={<Bookings />} />
+          <Route path="/customer/bookings/:bookingId" element={<BookingDetails />} />
           <Route path="/customer/book" element={<BookingForm />} />
           <Route path="/customer/post-job" element={<PostJob />} />
           <Route path="/customer/jobs" element={<MyJobs />} />
