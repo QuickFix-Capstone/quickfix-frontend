@@ -1,5 +1,5 @@
 // src/pages/customer/Dashboard.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useAuth } from "react-oidc-context";
 import { useNavigate } from "react-router-dom";
 import Card from "../../components/UI/Card";
@@ -18,6 +18,32 @@ export default function CustomerDashboard() {
     const [totalUnread, setTotalUnread] = useState(0);
     const [pendingReviews, setPendingReviews] = useState([]);
     const [myReviews, setMyReviews] = useState([]);
+    const [jobs] = useState([]);
+
+    const jobStatusCounts = useMemo(() => {
+        const counts = {
+            pending: 0,
+            active: 0,
+            completed: 0,
+            cancelled: 0,
+        };
+
+        jobs.forEach((job) => {
+            const status = (job.status || "").toLowerCase();
+
+            if (status === "open" || status === "assigned") {
+                counts.pending += 1;
+            } else if (status === "confirmed" || status === "in_progress") {
+                counts.active += 1;
+            } else if (status === "completed") {
+                counts.completed += 1;
+            } else if (status === "cancelled") {
+                counts.cancelled += 1;
+            }
+        });
+
+        return counts;
+    }, [jobs]);
 
     useEffect(() => {
         if (!auth.isAuthenticated) {
@@ -301,7 +327,7 @@ export default function CustomerDashboard() {
                 </div>
 
                 {/* Activity Overview */}
-                <div className="grid gap-6 md:grid-cols-3">
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
                     {/* Stats Card 1 */}
                     <Card className="border-0 bg-white p-6 shadow-lg">
                         <div className="flex items-center gap-4">
@@ -309,8 +335,8 @@ export default function CustomerDashboard() {
                                 <TrendingUp className="h-6 w-6 text-blue-600" />
                             </div>
                             <div>
-                                <p className="text-sm text-neutral-600">Total Bookings</p>
-                                <p className="text-2xl font-bold text-neutral-900">0</p>
+                                <p className="text-sm text-neutral-600">Completed</p>
+                                <p className="text-2xl font-bold text-neutral-900">{jobStatusCounts.completed}</p>
                             </div>
                         </div>
                     </Card>
@@ -323,7 +349,7 @@ export default function CustomerDashboard() {
                             </div>
                             <div>
                                 <p className="text-sm text-neutral-600">Active Jobs</p>
-                                <p className="text-2xl font-bold text-neutral-900">0</p>
+                                <p className="text-2xl font-bold text-neutral-900">{jobStatusCounts.active}</p>
                             </div>
                         </div>
                     </Card>
@@ -336,7 +362,20 @@ export default function CustomerDashboard() {
                             </div>
                             <div>
                                 <p className="text-sm text-neutral-600">Pending</p>
-                                <p className="text-2xl font-bold text-neutral-900">0</p>
+                                <p className="text-2xl font-bold text-neutral-900">{jobStatusCounts.pending}</p>
+                            </div>
+                        </div>
+                    </Card>
+
+                    {/* Stats Card 4 */}
+                    <Card className="border-0 bg-white p-6 shadow-lg">
+                        <div className="flex items-center gap-4">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-red-100">
+                                <Calendar className="h-6 w-6 text-red-600" />
+                            </div>
+                            <div>
+                                <p className="text-sm text-neutral-600">Cancelled</p>
+                                <p className="text-2xl font-bold text-neutral-900">{jobStatusCounts.cancelled}</p>
                             </div>
                         </div>
                     </Card>
