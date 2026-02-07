@@ -369,6 +369,8 @@
 import { useEffect, useState } from "react";
 import { fetchAuthSession } from "aws-amplify/auth";
 import { useNavigate } from "react-router-dom";
+import { Calendar } from "lucide-react";
+import { API_BASE } from "../../api/config";
 
 import OfferingCard from "../../components/UI/OfferingCards";
 import CreateServiceCard from "../../components/UI/CreateServiceCardStyle";
@@ -379,6 +381,7 @@ export default function ServiceProviderDashboard() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [pendingCount, setPendingCount] = useState(0);
 
   const navigate = useNavigate();
 
@@ -417,6 +420,32 @@ export default function ServiceProviderDashboard() {
     };
 
     fetchProfile();
+  }, []);
+
+  /* ================= Load Pending Bookings Count ================= */
+  useEffect(() => {
+    const fetchPendingCount = async () => {
+      try {
+        const session = await fetchAuthSession();
+        const idToken = session.tokens?.idToken?.toString();
+        if (!idToken) return;
+
+        const res = await fetch(`${API_BASE}/service-provider/pending-booking`, {
+          headers: { Authorization: `Bearer ${idToken}` },
+        });
+
+        if (!res.ok) return;
+        const data = await res.json();
+        const pending = (data.bookings || []).filter(
+          (b) => b.status === "pending" || b.status === "pending_confirmation",
+        );
+        setPendingCount(pending.length);
+      } catch (err) {
+        console.error("Failed to load pending bookings count", err);
+      }
+    };
+
+    fetchPendingCount();
   }, []);
 
   /* ================= Load Offerings ================= */
@@ -517,6 +546,31 @@ export default function ServiceProviderDashboard() {
               </button>
             </div>
           </div>
+        )}
+
+        {/* ================= Pending Bookings Widget ================= */}
+        {pendingCount > 0 && (
+          <button
+            onClick={() => navigate("/service-provider/bookings")}
+            className="mb-8 w-full rounded-2xl border border-red-300 bg-red-50 p-5 shadow-sm hover:shadow-md transition cursor-pointer animate-pulse"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-600 text-white">
+                  <Calendar className="h-6 w-6" />
+                </div>
+                <div className="text-left">
+                  <p className="text-lg font-bold text-red-700">
+                    {pendingCount} Pending Booking{pendingCount !== 1 && "s"}
+                  </p>
+                  <p className="text-sm text-red-500">
+                    Requires your attention — tap to review
+                  </p>
+                </div>
+              </div>
+              <span className="text-2xl font-bold text-red-600">→</span>
+            </div>
+          </button>
         )}
 
         {/* ================= Job Applications ================= */}

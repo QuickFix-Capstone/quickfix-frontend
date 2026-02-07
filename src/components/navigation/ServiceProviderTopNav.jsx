@@ -11,6 +11,7 @@ import {
   Menu,
   X,
   MessageCircle,
+  Calendar,
 } from "lucide-react";
 import GhostButton from "../UI/GhostButton";
 
@@ -82,6 +83,12 @@ export default function TopNav({ currentUser, onLogout }) {
             icon={MessageCircle}
             label="Messages"
             path="/service-provider/messages"
+          />
+
+          <NavItem
+            icon={Calendar}
+            label="Bookings"
+            path="/service-provider/bookings"
           />
 
           <div className="mx-2 h-6 w-px bg-neutral-200" />
@@ -157,6 +164,12 @@ export default function TopNav({ currentUser, onLogout }) {
               icon={MessageCircle}
               label="Messages"
               path="/service-provider/messages"
+            />
+
+            <NavItem
+              icon={Calendar}
+              label="Bookings"
+              path="/service-provider/bookings"
             />
 
             <div className="my-2 h-px bg-neutral-200" />

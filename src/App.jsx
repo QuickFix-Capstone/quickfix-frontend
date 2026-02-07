@@ -42,6 +42,8 @@ import ServiceProviderProfile from "./pages/ServiceProvider/ServiceProviderProfi
 import ServiceProviderEntry from "./pages/ServiceProviderEntry";
 import ServiceProviderMessages from "./pages/ServiceProvider/Messages";
 import ProviderDocuments from "./pages/ServiceProvider/ProviderDocuments";
+import PendingBookings from "./pages/ServiceProvider/PendingBookings";
+import SPBookingDetails from "./pages/ServiceProvider/BookingDetails";
 
 // ================= AUTH PAGES =================
 import Login from "./pages/Login";
@@ -93,10 +95,10 @@ export default function App() {
   // ================= OIDC USER =================
   const oidcUser = auth.user
     ? {
-      name: auth.user.profile.name || auth.user.profile.email,
-      email: auth.user.profile.email,
-      role: "customer",
-    }
+        name: auth.user.profile.name || auth.user.profile.email,
+        email: auth.user.profile.email,
+        role: "customer",
+      }
     : null;
 
   const currentUser = oidcUser || localUser;
@@ -248,7 +250,10 @@ export default function App() {
           <Route path="/customer/edit" element={<EditProfile />} />
           <Route path="/customer/services" element={<ServiceList />} />
           <Route path="/customer/bookings" element={<Bookings />} />
-          <Route path="/customer/bookings/:bookingId" element={<BookingDetails />} />
+          <Route
+            path="/customer/bookings/:bookingId"
+            element={<BookingDetails />}
+          />
           <Route path="/customer/book" element={<BookingForm />} />
           <Route path="/customer/post-job" element={<PostJob />} />
           <Route path="/customer/jobs" element={<MyJobs />} />
@@ -294,6 +299,8 @@ export default function App() {
             <Route path="profile" element={<ServiceProviderProfile />} />
             <Route path="messages" element={<ServiceProviderMessages />} />
             <Route path="documents" element={<ProviderDocuments />} />
+            <Route path="bookings" element={<PendingBookings />} />
+            <Route path="bookings/:bookingId" element={<SPBookingDetails />} />
           </Route>
 
           {/* ---------- ADMIN ---------- */}
