@@ -323,6 +323,9 @@ export default function CreateServiceOffering({ onCancel, onSuccess }) {
     getLocation,
     loading: locationLoading,
     error: locationError,
+    address,
+    addressLoading,
+    addressError,
   } = useLocation();
 
   useEffect(() => {
@@ -466,9 +469,9 @@ export default function CreateServiceOffering({ onCancel, onSuccess }) {
           </div>
         )}
 
-        {locationLoading && (
+        {(locationLoading || addressLoading) && (
           <div className="rounded-xl bg-blue-100 px-4 py-3 text-sm text-blue-700">
-            Getting your location…
+            Getting your location...
           </div>
         )}
 
@@ -476,6 +479,18 @@ export default function CreateServiceOffering({ onCancel, onSuccess }) {
           <div className="rounded-xl bg-green-100 px-4 py-3 text-sm text-green-700">
             Location detected ({location.latitude.toFixed(4)},{" "}
             {location.longitude.toFixed(4)})
+          </div>
+        )}
+
+        {address && (
+          <div className="rounded-xl bg-slate-100 px-4 py-3 text-sm text-slate-700">
+            Detected address: {address.formatted || "Unavailable"}
+          </div>
+        )}
+
+        {addressError && (
+          <div className="rounded-xl bg-yellow-100 px-4 py-3 text-sm text-yellow-700">
+            {addressError}
           </div>
         )}
 

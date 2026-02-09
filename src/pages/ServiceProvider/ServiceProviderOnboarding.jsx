@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { fetchAuthSession, getCurrentUser } from "aws-amplify/auth";
 import { useNavigate } from "react-router-dom";
+import { useLocation } from "../../context/LocationContext";
 
 // ===============================
 // API ENDPOINTS
@@ -13,6 +14,15 @@ const ONBOARD_PROVIDER_API =
 
 export default function ServiceProviderOnboarding() {
   const navigate = useNavigate();
+  const {
+    location,
+    getLocation,
+    loading: locationLoading,
+    error: locationError,
+    address,
+    addressLoading,
+    addressError,
+  } = useLocation();
 
   // ===============================
   // AUTH GUARD
@@ -48,6 +58,23 @@ export default function ServiceProviderOnboarding() {
   const [status, setStatus] = useState("");
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    if (!location) {
+      getLocation();
+    }
+  }, [location, getLocation]);
+
+  useEffect(() => {
+    if (!address) return;
+    setForm((prev) => ({
+      ...prev,
+      address_line: prev.address_line || address.address_line || "",
+      city: prev.city || address.city || "",
+      province: prev.province || address.province || "",
+      postal_code: prev.postal_code || address.postal_code || "",
+    }));
+  }, [address]);
+
   // ===============================
   // INPUT HANDLER
   // ===============================
@@ -77,7 +104,7 @@ export default function ServiceProviderOnboarding() {
       const token = session.tokens?.idToken?.toString();
       if (!token) throw new Error("User not authenticated");
 
-      setStatus(`Uploading ${documentType.replace("_", " ")}…`);
+      setStatus(`Uploading ${documentType.replace("_", " ")}...`);
 
       // 🔹 Request presigned URL
       const res = await fetch(UPLOAD_DOC_API, {
@@ -202,6 +229,28 @@ export default function ServiceProviderOnboarding() {
       )}
 
       <div className="card p-6 space-y-6">
+        {(locationLoading || addressLoading) && (
+          <div className="rounded-xl bg-blue-100 px-4 py-3 text-sm text-blue-700">
+            Detecting your location...
+          </div>
+        )}
+
+        {(locationError || addressError) && (
+          <div className="rounded-xl bg-yellow-100 px-4 py-3 text-sm text-yellow-700">
+            {locationError || addressError}
+          </div>
+        )}
+
+        {!location && (
+          <button
+            type="button"
+            onClick={getLocation}
+            className="rounded-lg border px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50"
+          >
+            Use my current location
+          </button>
+        )}
+
         <input
           name="name"
           placeholder="Full Name"
@@ -317,7 +366,7 @@ export default function ServiceProviderOnboarding() {
           }
           className="btn-primary w-full"
         >
-          {loading ? "Submitting…" : "Complete Onboarding"}
+          {loading ? "Submitting..." : "Complete Onboarding"}
         </button>
       </div>
     </div>

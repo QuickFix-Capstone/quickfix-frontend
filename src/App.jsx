@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "react-oidc-context";
+import { signOut } from "aws-amplify/auth";
 
 // ================= LAYOUTS =================
 import CustomerNav from "./components/navigation/CustomerNav";
@@ -89,7 +90,17 @@ export default function App() {
   // ================= LOAD LOCAL USER =================
   useEffect(() => {
     const user = getCurrentUser();
-    if (user) setLocalUser(user);
+    if (user) {
+      setLocalUser(user);
+    } else {
+      // Fallback: check Cognito/Amplify localStorage (service provider login)
+      try {
+        const raw = localStorage.getItem("quickfix_user");
+        if (raw) setLocalUser(JSON.parse(raw));
+      } catch {
+        // ignore
+      }
+    }
   }, []);
 
   // ================= OIDC USER =================
@@ -149,7 +160,18 @@ export default function App() {
 
   const handleLogout = async () => {
     if (auth.user) await auth.removeUser();
+    // Clear Amplify/Cognito session (removes all CognitoIdentityServiceProvider.* keys)
+    try {
+      await signOut();
+    } catch {
+      // ignore if no Amplify session
+    }
     await logoutUser();
+    // Also clear custom Cognito localStorage keys
+    localStorage.removeItem("quickfix_user");
+    localStorage.removeItem("quickfix_access_token");
+    localStorage.removeItem("quickfix_id_token");
+    localStorage.removeItem("quickfix_user_groups");
     setLocalUser(null);
     navigate("/login");
   };
@@ -288,7 +310,7 @@ export default function App() {
           />
 
           {/* ---------- PROVIDER AREA (NESTED) ---------- */}
-          <Route path="/service-provider" element={<ServiceProviderLayout />}>
+          <Route path="/service-provider" element={<ServiceProviderLayout currentUser={currentUser} onLogout={handleLogout} />}>
             <Route path="home" element={<ServiceProviderHomePage />} />
             <Route path="dashboard" element={<ServiceProviderDashboard />} />
             <Route
