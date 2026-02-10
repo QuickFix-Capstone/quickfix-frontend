@@ -1,10 +1,8 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useAuth } from "react-oidc-context";
-import { getReceipt, getAuthHeaders } from "../../api/payments";
+import { getReceipt, ensureInvoice, getAuthHeaders } from "../../api/payments";
 import Card from "../../components/UI/Card";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
 
 const money = (cents) => `$${(Number(cents || 0) / 100).toFixed(2)}`;
 
@@ -14,9 +12,13 @@ export default function ReceiptNew() {
     const [data, setData] = useState(null);
     const [err, setErr] = useState("");
     const [loading, setLoading] = useState(true);
-    const [downloading, setDownloading] = useState(false);
-    const invoiceRef = useRef(null);
 
+    // Invoice state
+    const [invoiceUrl, setInvoiceUrl] = useState(null);
+    const [invoiceStatus, setInvoiceStatus] = useState("checking"); // checking, queued, available, error
+    const [pollingCount, setPollingCount] = useState(0);
+
+    // Fetch receipt data
     useEffect(() => {
         (async () => {
             try {
@@ -36,37 +38,56 @@ export default function ReceiptNew() {
         })();
     }, [paymentId, auth.isLoading, auth.user]);
 
-    const downloadPDF = async () => {
-        if (!invoiceRef.current) return;
+    // Ensure invoice exists (check S3, generate if needed)
+    useEffect(() => {
+        if (!data || auth.isLoading) return;
 
-        setDownloading(true);
-        try {
-            const element = invoiceRef.current;
-            const canvas = await html2canvas(element, {
-                scale: 2,
-                useCORS: true,
-                logging: false,
-                backgroundColor: '#ffffff'
-            });
+        (async () => {
+            try {
+                const authHeaders = getAuthHeaders(auth.user);
+                const result = await ensureInvoice(paymentId, authHeaders);
 
-            const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF('p', 'mm', 'a4');
+                if (result.invoice_available && result.invoice_url) {
+                    setInvoiceUrl(result.invoice_url);
+                    setInvoiceStatus("available");
+                } else if (result.status === "queued") {
+                    setInvoiceStatus("queued");
+                    // Start polling
+                }
+            } catch (e) {
+                console.error("Invoice ensure error:", e);
+                setInvoiceStatus("error");
+            }
+        })();
+    }, [data, paymentId, auth.isLoading, auth.user]);
 
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = pdf.internal.pageSize.getHeight();
-            const imgWidth = canvas.width;
-            const imgHeight = canvas.height;
-            const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-            const imgX = (pdfWidth - imgWidth * ratio) / 2;
-            const imgY = 10;
+    // Poll for invoice when queued
+    useEffect(() => {
+        if (invoiceStatus !== "queued" || pollingCount >= 20) return; // Max 20 polls (60 seconds)
 
-            pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
-            pdf.save(`QuickFix-Invoice-${paymentId}.pdf`);
-        } catch (error) {
-            console.error('PDF generation error:', error);
-            alert('Failed to generate PDF. Please try again.');
-        } finally {
-            setDownloading(false);
+        const pollTimer = setTimeout(async () => {
+            try {
+                const authHeaders = getAuthHeaders(auth.user);
+                const result = await ensureInvoice(paymentId, authHeaders);
+
+                if (result.invoice_available && result.invoice_url) {
+                    setInvoiceUrl(result.invoice_url);
+                    setInvoiceStatus("available");
+                } else {
+                    setPollingCount(prev => prev + 1);
+                }
+            } catch (e) {
+                console.error("Invoice polling error:", e);
+                setInvoiceStatus("error");
+            }
+        }, 3000); // Poll every 3 seconds
+
+        return () => clearTimeout(pollTimer);
+    }, [invoiceStatus, pollingCount, paymentId, auth.user]);
+
+    const downloadInvoice = () => {
+        if (invoiceUrl) {
+            window.open(invoiceUrl, '_blank');
         }
     };
 
@@ -119,17 +140,33 @@ export default function ReceiptNew() {
                         ← Back to Dashboard
                     </Link>
                     <button
-                        onClick={downloadPDF}
-                        disabled={downloading}
-                        className="rounded-lg bg-blue-600 px-6 py-2.5 font-semibold text-white hover:bg-blue-700 disabled:opacity-50 transition-colors shadow-sm"
+                        onClick={downloadInvoice}
+                        disabled={invoiceStatus !== "available"}
+                        className="rounded-lg bg-blue-600 px-6 py-2.5 font-semibold text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
                     >
-                        {downloading ? "Generating PDF..." : "📥 Download Invoice"}
+                        {invoiceStatus === "checking" && "⏳ Checking Invoice..."}
+                        {invoiceStatus === "queued" && "⏳ Generating Invoice..."}
+                        {invoiceStatus === "available" && "📥 Download Invoice"}
+                        {invoiceStatus === "error" && "❌ Invoice Unavailable"}
                     </button>
                 </div>
 
+                {/* Invoice Status Message */}
+                {invoiceStatus === "queued" && (
+                    <div className="mb-4 rounded-lg bg-blue-50 border border-blue-200 p-4 text-sm text-blue-800">
+                        🔄 Your invoice is being generated and will be emailed to both you and the service provider. This usually takes a few seconds...
+                    </div>
+                )}
+
+                {invoiceStatus === "available" && (
+                    <div className="mb-4 rounded-lg bg-green-50 border border-green-200 p-4 text-sm text-green-800">
+                        ✅ Invoice ready! A copy has been emailed to you and the service provider.
+                    </div>
+                )}
+
                 {/* Invoice Card */}
                 <Card className="border-neutral-200 bg-white shadow-xl">
-                    <div ref={invoiceRef} className="p-8">
+                    <div className="p-8">
                         {/* Header */}
                         <div className="flex items-start justify-between border-b-2 border-neutral-200 pb-6 mb-6">
                             <div className="flex items-center gap-3">
@@ -147,8 +184,8 @@ export default function ReceiptNew() {
                                 <h2 className="text-2xl font-bold text-neutral-900">INVOICE</h2>
                                 <p className="mt-1 text-sm text-neutral-600">#{paymentId}</p>
                                 <span className={`mt-2 inline-block rounded-full px-3 py-1 text-xs font-bold ${isPaid
-                                        ? "bg-green-100 text-green-800 border border-green-300"
-                                        : "bg-yellow-100 text-yellow-800 border border-yellow-300"
+                                    ? "bg-green-100 text-green-800 border border-green-300"
+                                    : "bg-yellow-100 text-yellow-800 border border-yellow-300"
                                     }`}>
                                     {isPaid ? "PAID" : status || "PENDING"}
                                 </span>

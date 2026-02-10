@@ -69,3 +69,10 @@ export const getReceipt = (paymentId, authHeaders) =>
     api(`/payments/${encodeURIComponent(paymentId)}`, {
         headers: authHeaders,
     });
+
+// ✅ Ensure Invoice: POST /payments/{payment_id}/invoice/ensure
+export const ensureInvoice = (paymentId, authHeaders) =>
+    api(`/payments/${encodeURIComponent(paymentId)}/invoice/ensure`, {
+        method: "POST",
+        headers: authHeaders,
+    });
