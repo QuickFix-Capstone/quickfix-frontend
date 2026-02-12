@@ -27,6 +27,9 @@ export default function JobApplications() {
     const [jobTitle, setJobTitle] = useState("");
     const [loading, setLoading] = useState(true);
     const [processingId, setProcessingId] = useState(null);
+    const [editingApplicationId, setEditingApplicationId] = useState(null);
+    const [editPrice, setEditPrice] = useState("");
+    const [editMessage, setEditMessage] = useState("");
 
     const getErrorMessage = async (response, fallback) => {
         try {
@@ -48,6 +51,33 @@ export default function JobApplications() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [job_id]);
 
+    const normalizeApplication = (application) => {
+        const provider = application?.provider || {};
+        const rawRating =
+            provider.rating ??
+            application.provider_rating ??
+            application.average_rating ??
+            null;
+        const normalizedRating =
+            rawRating === null || rawRating === undefined
+                ? null
+                : Number(rawRating);
+
+        return {
+            ...application,
+            provider_name:
+                application.provider_name ||
+                provider.name ||
+                provider.provider_name ||
+                "Service Provider",
+            provider_email: application.provider_email || provider.email || null,
+            provider_phone: application.provider_phone || provider.phone || null,
+            provider_rating: Number.isNaN(normalizedRating)
+                ? null
+                : normalizedRating,
+        };
+    };
+
     const fetchApplications = async () => {
         setLoading(true);
         try {
@@ -67,7 +97,7 @@ export default function JobApplications() {
             if (res.ok) {
                 const data = await res.json();
                 console.log("Applications fetched:", data);
-                setApplications(data.applications || []);
+                setApplications((data.applications || []).map(normalizeApplication));
                 setJobTitle(data.job_title || "Job");
             } else {
                 const errorMessage = await getErrorMessage(
@@ -127,6 +157,72 @@ export default function JobApplications() {
             }
         } catch (err) {
             console.error("Error updating application:", err);
+            alert("Error updating application. Please try again.");
+        } finally {
+            setProcessingId(null);
+        }
+    };
+
+    const startEditing = (application) => {
+        setEditingApplicationId(application.application_id);
+        setEditPrice(
+            application.proposed_price !== null &&
+                application.proposed_price !== undefined
+                ? String(application.proposed_price)
+                : ""
+        );
+        setEditMessage(application.cover_letter || application.message || "");
+    };
+
+    const cancelEditing = () => {
+        setEditingApplicationId(null);
+        setEditPrice("");
+        setEditMessage("");
+    };
+
+    const handleUpdateApplication = async (applicationId) => {
+        const parsedPrice = Number(editPrice);
+        if (!Number.isFinite(parsedPrice) || parsedPrice <= 0) {
+            alert("Please enter a valid proposed price.");
+            return;
+        }
+        if (!editMessage.trim()) {
+            alert("Please enter application details.");
+            return;
+        }
+
+        setProcessingId(`edit-${applicationId}`);
+        try {
+            const token = auth.user?.id_token || auth.user?.access_token;
+            const res = await fetch(
+                `${API_BASE}/job/${job_id}/applications/${applicationId}/update`,
+                {
+                    method: "PUT",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        proposed_price: parsedPrice,
+                        message: editMessage.trim(),
+                    }),
+                }
+            );
+
+            if (res.ok) {
+                const data = await res.json();
+                alert(data?.message || "Application updated successfully.");
+                cancelEditing();
+                await fetchApplications();
+            } else {
+                const errorMessage = await getErrorMessage(
+                    res,
+                    "Failed to update application. Please try again."
+                );
+                alert(errorMessage);
+            }
+        } catch (err) {
+            console.error("Error updating application details:", err);
             alert("Error updating application. Please try again.");
         } finally {
             setProcessingId(null);
@@ -332,25 +428,83 @@ export default function JobApplications() {
                                         </div>
 
                                         {/* Application Details */}
-                                        {app.cover_letter && (
-                                            <div className="mb-4">
-                                                <h4 className="mb-2 text-sm font-semibold uppercase tracking-wide text-neutral-500">
-                                                    Cover Letter
+                                        {editingApplicationId === app.application_id ? (
+                                            <div className="mb-4 space-y-3 rounded-lg border border-neutral-200 bg-neutral-50 p-4">
+                                                <h4 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">
+                                                    Edit Application
                                                 </h4>
-                                                <p className="whitespace-pre-wrap text-neutral-700">
-                                                    {app.cover_letter}
-                                                </p>
+                                                <div>
+                                                    <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                                                        Proposed Price
+                                                    </label>
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        step="0.01"
+                                                        value={editPrice}
+                                                        onChange={(e) => setEditPrice(e.target.value)}
+                                                        className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 focus:border-neutral-500 focus:outline-none"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                                                        Message
+                                                    </label>
+                                                    <textarea
+                                                        value={editMessage}
+                                                        onChange={(e) => setEditMessage(e.target.value)}
+                                                        rows={4}
+                                                        className="w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 focus:border-neutral-500 focus:outline-none"
+                                                    />
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <Button
+                                                        onClick={() =>
+                                                            handleUpdateApplication(
+                                                                app.application_id
+                                                            )
+                                                        }
+                                                        disabled={
+                                                            processingId ===
+                                                            `edit-${app.application_id}`
+                                                        }
+                                                        className="bg-green-600 hover:bg-green-700"
+                                                    >
+                                                        {processingId ===
+                                                        `edit-${app.application_id}`
+                                                            ? "Saving..."
+                                                            : "Save Changes"}
+                                                    </Button>
+                                                    <Button
+                                                        onClick={cancelEditing}
+                                                        variant="outline"
+                                                    >
+                                                        Cancel
+                                                    </Button>
+                                                </div>
                                             </div>
+                                        ) : (
+                                            app.cover_letter && (
+                                                <div className="mb-4">
+                                                    <h4 className="mb-2 text-sm font-semibold uppercase tracking-wide text-neutral-500">
+                                                        Cover Letter
+                                                    </h4>
+                                                    <p className="whitespace-pre-wrap text-neutral-700">
+                                                        {app.cover_letter}
+                                                    </p>
+                                                </div>
+                                            )
                                         )}
 
                                         {/* Proposed Price */}
-                                        {app.proposed_price && (
+                                        {app.proposed_price !== null &&
+                                            app.proposed_price !== undefined && (
                                             <div className="mb-4">
                                                 <h4 className="mb-2 text-sm font-semibold uppercase tracking-wide text-neutral-500">
                                                     Proposed Price
                                                 </h4>
                                                 <p className="text-2xl font-bold text-green-600">
-                                                    ${app.proposed_price.toFixed(2)}
+                                                    ${Number(app.proposed_price).toFixed(2)}
                                                 </p>
                                             </div>
                                         )}
@@ -374,6 +528,14 @@ export default function JobApplications() {
                                     {/* Action Buttons */}
                                     {app.status === "pending" && (
                                         <div className="ml-4 flex flex-col gap-2">
+                                            <Button
+                                                onClick={() => startEditing(app)}
+                                                disabled={processingId === app.application_id}
+                                                variant="outline"
+                                                className="gap-2"
+                                            >
+                                                Edit Price/Message
+                                            </Button>
                                             <Button
                                                 onClick={() =>
                                                     handleUpdateStatus(
