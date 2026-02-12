@@ -29,6 +29,7 @@ import JobApplications from "./pages/customer/JobApplications";
 import CustomerEntry from "./pages/customer/CustomerEntry";
 import TestMessagingAPI from "./pages/customer/TestMessagingAPI"; // TEMPORARY TEST PAGE
 import CustomerMessages from "./pages/customer/Messages";
+import PaymentHistory from "./pages/customer/PaymentHistory";
 
 // ================= PROVIDER PAGES =================
 import ServiceProviderSignUp from "./pages/ServiceProvider/ServiceProviderSignUp";
@@ -245,6 +246,9 @@ export default function App() {
 
         {/* Messages */}
         <Route path="/customer/messages" element={<CustomerMessages />} />
+
+        {/* Payment History */}
+        <Route path="/customer/payment-history" element={<PaymentHistory />} />
 
         {/* TEMPORARY TEST ROUTE - DELETE AFTER TESTING */}
         <Route path="/customer/test-messaging" element={<TestMessagingAPI />} />

@@ -76,3 +76,9 @@ export const ensureInvoice = (paymentId, authHeaders) =>
         method: "POST",
         headers: authHeaders,
     });
+
+// ✅ Payment History: GET /payments/history/customer?limit=20&offset=0
+export const getPaymentHistory = (limit = 20, offset = 0, authHeaders) =>
+    api(`/payments/history/customer?limit=${limit}&offset=${offset}`, {
+        headers: authHeaders,
+    });
