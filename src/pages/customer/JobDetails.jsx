@@ -44,7 +44,7 @@ export default function JobDetails() {
             const token = auth.user?.id_token || auth.user?.access_token;
 
             const res = await fetch(
-                `${API_BASE}/job/${job_id}`,
+                `${API_BASE}/customer/jobs?limit=100&offset=0`,
                 {
                     method: "GET",
                     cache: "no-store",
@@ -56,8 +56,16 @@ export default function JobDetails() {
 
             if (res.ok) {
                 const data = await res.json();
-                console.log("Job details fetched:", data);
-                const jobData = data.job || data;
+                console.log("Jobs list fetched:", data);
+                const jobData = (data.jobs || []).find(
+                    (j) => String(j.job_id) === String(job_id)
+                );
+                if (!jobData) {
+                    console.error("Job not found in list");
+                    alert("Job not found. It may have been deleted.");
+                    navigate("/customer/jobs");
+                    return;
+                }
                 setJob({
                     ...jobData,
                     status: normalizeJobStatus(jobData?.status),
