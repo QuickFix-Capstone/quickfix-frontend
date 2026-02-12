@@ -4,6 +4,8 @@ import { useAuth } from "react-oidc-context";
 import { useNavigate, useParams } from "react-router-dom";
 import Card from "../../components/UI/Card";
 import Button from "../../components/UI/Button";
+import { API_BASE } from "../../api/config";
+import { cancelJob } from "../../api/jobs";
 import {
     ArrowLeft,
     Briefcase,
@@ -23,6 +25,13 @@ export default function JobDetails() {
     const { job_id } = useParams();
     const [job, setJob] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [cancelling, setCancelling] = useState(false);
+
+    const normalizeJobStatus = (status) => {
+        const value = (status || "").toLowerCase();
+        if (value === "canceled" || value === "cancel") return "cancelled";
+        return value;
+    };
 
     useEffect(() => {
         fetchJobDetails();
@@ -35,9 +44,10 @@ export default function JobDetails() {
             const token = auth.user?.id_token || auth.user?.access_token;
 
             const res = await fetch(
-                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/job/${job_id}`,
+                `${API_BASE}/job/${job_id}`,
                 {
                     method: "GET",
+                    cache: "no-store",
                     headers: {
                         Authorization: `Bearer ${token}`,
                     },
@@ -47,7 +57,11 @@ export default function JobDetails() {
             if (res.ok) {
                 const data = await res.json();
                 console.log("Job details fetched:", data);
-                setJob(data.job || data);
+                const jobData = data.job || data;
+                setJob({
+                    ...jobData,
+                    status: normalizeJobStatus(jobData?.status),
+                });
             } else {
                 console.error("Failed to fetch job details");
                 alert("Failed to load job details. Please try again.");
@@ -62,38 +76,26 @@ export default function JobDetails() {
         }
     };
 
-    const handleDelete = async () => {
-        if (!confirm("Are you sure you want to delete this job? This action cannot be undone.")) {
+    const handleCancelJob = async () => {
+        if (!confirm("Are you sure you want to cancel this job?")) {
             return;
         }
 
+        setCancelling(true);
         try {
-            const token = auth.user?.id_token || auth.user?.access_token;
-
-            const res = await fetch(
-                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/job/${job_id}`,
-                {
-                    method: "DELETE",
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
-
-            if (res.ok) {
-                alert("Job deleted successfully!");
-                navigate("/customer/jobs");
-            } else {
-                alert("Failed to delete job. Please try again.");
-            }
+            await cancelJob(job_id, auth);
+            alert("Job cancelled successfully.");
+            navigate("/customer/jobs");
         } catch (err) {
-            console.error("Error deleting job:", err);
-            alert("Error deleting job. Please try again.");
+            console.error("Error cancelling job:", err);
+            alert(err.message || "Error cancelling job. Please try again.");
+        } finally {
+            setCancelling(false);
         }
     };
 
     const getStatusColor = (status) => {
-        switch (status) {
+        switch (normalizeJobStatus(status)) {
             case "open":
                 return "bg-green-100 text-green-800 border-green-200";
             case "assigned":
@@ -178,10 +180,10 @@ export default function JobDetails() {
                                     job.status
                                 )}`}
                             >
-                                {job.status.replace("_", " ").toUpperCase()}
+                                {(job.status || "unknown").replace("_", " ").toUpperCase()}
                             </span>
                         </div>
-                        {job.status === "open" && (
+                        {normalizeJobStatus(job.status) === "open" && (
                             <div className="flex gap-2">
                                 <Button
                                     onClick={() => navigate(`/customer/jobs/${job_id}/edit`)}
@@ -192,12 +194,13 @@ export default function JobDetails() {
                                     Edit
                                 </Button>
                                 <Button
-                                    onClick={handleDelete}
+                                    onClick={handleCancelJob}
+                                    disabled={cancelling}
                                     variant="outline"
                                     className="gap-2 border-red-300 text-red-600 hover:bg-red-50"
                                 >
                                     <Trash2 className="h-4 w-4" />
-                                    Delete
+                                    Cancel Job
                                 </Button>
                             </div>
                         )}

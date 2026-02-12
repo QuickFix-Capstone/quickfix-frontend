@@ -20,7 +20,14 @@ export default function CustomerDashboard() {
     const [myReviews, setMyReviews] = useState([]);
     const [jobs, setJobs] = useState([]);
     const [showPendingList, setShowPendingList] = useState(false);
+    const [showCancelledList, setShowCancelledList] = useState(false);
     const hasFetchedJobs = useRef(false);
+
+    const normalizeJobStatus = (status) => {
+        const value = (status || "").toLowerCase();
+        if (value === "canceled" || value === "cancel") return "cancelled";
+        return value;
+    };
 
     const jobStatusCounts = useMemo(() => {
         const counts = {
@@ -31,7 +38,7 @@ export default function CustomerDashboard() {
         };
 
         jobs.forEach((job) => {
-            const status = (job.status || "").toLowerCase();
+            const status = normalizeJobStatus(job.status);
 
             if (status === "open" || status === "assigned") {
                 counts.pending += 1;
@@ -49,9 +56,13 @@ export default function CustomerDashboard() {
 
     const pendingJobs = useMemo(() => {
         return jobs.filter((job) => {
-            const status = (job.status || "").toLowerCase();
+            const status = normalizeJobStatus(job.status);
             return status === "open" || status === "assigned";
         });
+    }, [jobs]);
+
+    const cancelledJobs = useMemo(() => {
+        return jobs.filter((job) => normalizeJobStatus(job.status) === "cancelled");
     }, [jobs]);
 
     useEffect(() => {
@@ -102,6 +113,7 @@ export default function CustomerDashboard() {
                     "https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/customer/jobs?limit=10&offset=0",
                     {
                         method: "GET",
+                        cache: "no-store",
                         headers: {
                             Authorization: `Bearer ${token}`,
                             "Content-Type": "application/json",
@@ -111,7 +123,12 @@ export default function CustomerDashboard() {
 
                 if (res.ok) {
                     const data = await res.json();
-                    setJobs(data.jobs || []);
+                    setJobs(
+                        (data.jobs || []).map((job) => ({
+                            ...job,
+                            status: normalizeJobStatus(job.status),
+                        }))
+                    );
                     return;
                 }
 
@@ -414,7 +431,10 @@ export default function CustomerDashboard() {
                     </Card>
 
                     {/* Stats Card 4 */}
-                    <Card className="border-0 bg-white p-6 shadow-lg">
+                    <Card
+                        className={`border-0 bg-white p-6 shadow-lg transition ${showCancelledList ? "ring-2 ring-red-500" : "hover:shadow-xl"} cursor-pointer`}
+                        onClick={() => setShowCancelledList((prev) => !prev)}
+                    >
                         <div className="flex items-center gap-4">
                             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-red-100">
                                 <Calendar className="h-6 w-6 text-red-600" />
@@ -449,6 +469,57 @@ export default function CustomerDashboard() {
                         ) : (
                             <div className="grid gap-3">
                                 {pendingJobs.map((job) => (
+                                    <Card
+                                        key={job.job_id}
+                                        className="border border-neutral-200 bg-white p-4"
+                                    >
+                                        <div className="flex items-center justify-between gap-4">
+                                            <div>
+                                                <p className="font-semibold text-neutral-900">
+                                                    {job.title}
+                                                </p>
+                                                <p className="text-sm text-neutral-600">
+                                                    Status: {(job.status || "").replace("_", " ")}
+                                                </p>
+                                            </div>
+                                            <Button
+                                                variant="outline"
+                                                onClick={() =>
+                                                    navigate(`/customer/jobs/${job.job_id}`)
+                                                }
+                                            >
+                                                View Details
+                                            </Button>
+                                        </div>
+                                    </Card>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {showCancelledList && (
+                    <div className="mt-6">
+                        <div className="mb-3 flex items-center justify-between">
+                            <h2 className="text-xl font-bold text-neutral-900">
+                                Cancelled Jobs
+                            </h2>
+                            <Button
+                                variant="outline"
+                                className="text-sm"
+                                onClick={() => navigate("/customer/jobs")}
+                            >
+                                View All Jobs
+                            </Button>
+                        </div>
+
+                        {cancelledJobs.length === 0 ? (
+                            <Card className="border border-neutral-200 bg-white p-6 text-neutral-600">
+                                No cancelled jobs found in this page of results.
+                            </Card>
+                        ) : (
+                            <div className="grid gap-3">
+                                {cancelledJobs.map((job) => (
                                     <Card
                                         key={job.job_id}
                                         className="border border-neutral-200 bg-white p-4"

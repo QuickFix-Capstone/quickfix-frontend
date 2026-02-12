@@ -4,6 +4,8 @@ import { useAuth } from "react-oidc-context";
 import { useNavigate, useParams } from "react-router-dom";
 import Card from "../../components/UI/Card";
 import Button from "../../components/UI/Button";
+import { API_BASE } from "../../api/config";
+import { cancelJob } from "../../api/jobs";
 import {
     ArrowLeft,
     User,
@@ -26,6 +28,21 @@ export default function JobApplications() {
     const [loading, setLoading] = useState(true);
     const [processingId, setProcessingId] = useState(null);
 
+    const getErrorMessage = async (response, fallback) => {
+        try {
+            const text = await response.text();
+            if (!text) return fallback;
+            try {
+                const data = JSON.parse(text);
+                return data?.message || fallback;
+            } catch {
+                return text;
+            }
+        } catch {
+            return fallback;
+        }
+    };
+
     useEffect(() => {
         fetchApplications();
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -37,7 +54,7 @@ export default function JobApplications() {
             const token = auth.user?.id_token || auth.user?.access_token;
 
             const res = await fetch(
-                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/job/${job_id}/applications`,
+                `${API_BASE}/job/${job_id}/applications`,
                 {
                     method: "GET",
                     headers: {
@@ -53,9 +70,12 @@ export default function JobApplications() {
                 setApplications(data.applications || []);
                 setJobTitle(data.job_title || "Job");
             } else {
-                const errorText = await res.text();
-                console.error("Failed to fetch applications:", res.status, errorText);
-                alert("Failed to load applications. Please try again.");
+                const errorMessage = await getErrorMessage(
+                    res,
+                    "Failed to load applications. Please try again."
+                );
+                console.error("Failed to fetch applications:", res.status, errorMessage);
+                alert(errorMessage);
                 navigate("/customer/jobs");
             }
         } catch (err) {
@@ -67,10 +87,10 @@ export default function JobApplications() {
         }
     };
 
-    const handleUpdateStatus = async (applicationId, newStatus) => {
+    const handleUpdateStatus = async (applicationId, action) => {
         if (
             !confirm(
-                `Are you sure you want to ${newStatus} this application?`
+                `Are you sure you want to ${action} this application?`
             )
         ) {
             return;
@@ -81,25 +101,29 @@ export default function JobApplications() {
             const token = auth.user?.id_token || auth.user?.access_token;
 
             const res = await fetch(
-                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/job/${job_id}/applications/${applicationId}`,
+                `${API_BASE}/job/${job_id}/applications/${applicationId}`,
                 {
                     method: "PUT",
                     headers: {
                         Authorization: `Bearer ${token}`,
                         "Content-Type": "application/json",
                     },
-                    body: JSON.stringify({ action: newStatus }),
+                    body: JSON.stringify({ action }),
                 }
             );
 
             if (res.ok) {
-                alert(`Application ${newStatus} successfully!`);
+                const data = await res.json();
+                alert(data?.message || `Application ${action}ed successfully!`);
                 // Refresh applications list
                 await fetchApplications();
             } else {
-                const errorText = await res.text();
-                console.error("Failed to update application:", errorText);
-                alert("Failed to update application. Please try again.");
+                const errorMessage = await getErrorMessage(
+                    res,
+                    "Failed to update application. Please try again."
+                );
+                console.error("Failed to update application:", errorMessage);
+                alert(errorMessage);
             }
         } catch (err) {
             console.error("Error updating application:", err);
@@ -123,7 +147,7 @@ export default function JobApplications() {
             const token = auth.user?.id_token || auth.user?.access_token;
 
             const res = await fetch(
-                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/job/${job_id}/unassign`,
+                `${API_BASE}/job/${job_id}/unassign`,
                 {
                     method: "PUT",
                     headers: {
@@ -138,13 +162,34 @@ export default function JobApplications() {
                 // Navigate back to jobs list page
                 navigate("/customer/jobs");
             } else {
-                const errorText = await res.text();
-                console.error("Failed to unassign job:", errorText);
-                alert("Failed to unassign job. Please try again.");
+                const errorMessage = await getErrorMessage(
+                    res,
+                    "Failed to unassign job. Please try again."
+                );
+                console.error("Failed to unassign job:", errorMessage);
+                alert(errorMessage);
             }
         } catch (err) {
             console.error("Error unassigning job:", err);
             alert("Error unassigning job. Please try again.");
+        } finally {
+            setProcessingId(null);
+        }
+    };
+
+    const handleCancelJob = async () => {
+        if (!confirm("Are you sure you want to cancel this job?")) {
+            return;
+        }
+
+        setProcessingId("cancel-job");
+        try {
+            await cancelJob(job_id, auth);
+            alert("Job cancelled successfully.");
+            navigate("/customer/jobs");
+        } catch (err) {
+            console.error("Error cancelling job:", err);
+            alert(err.message || "Error cancelling job. Please try again.");
         } finally {
             setProcessingId(null);
         }
@@ -205,12 +250,22 @@ export default function JobApplications() {
                                 Review and manage service provider applications
                             </p>
                         </div>
-                        <Button
-                            onClick={() => navigate(`/customer/jobs/${job_id}`)}
-                            variant="outline"
-                        >
-                            View Job Details
-                        </Button>
+                        <div className="flex gap-2">
+                            <Button
+                                onClick={() => navigate(`/customer/jobs/${job_id}`)}
+                                variant="outline"
+                            >
+                                View Job Details
+                            </Button>
+                            <Button
+                                onClick={handleCancelJob}
+                                disabled={processingId === "cancel-job"}
+                                variant="outline"
+                                className="border-red-300 text-red-600 hover:bg-red-50"
+                            >
+                                Cancel Job
+                            </Button>
+                        </div>
                     </div>
                 </div>
 
@@ -304,7 +359,7 @@ export default function JobApplications() {
                                         <div className="flex items-center gap-6 text-sm text-neutral-600">
                                             <div className="flex items-center gap-2">
                                                 <Clock className="h-4 w-4" />
-                                                <span>Applied: {formatDate(app.applied_at)}</span>
+                                                <span>Applied: {formatDate(app.applied_at || app.created_at)}</span>
                                             </div>
                                             <span
                                                 className={`inline-block rounded-full border px-3 py-1 text-xs font-semibold ${getStatusColor(
