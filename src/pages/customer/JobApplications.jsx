@@ -5,7 +5,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import Card from "../../components/UI/Card";
 import Button from "../../components/UI/Button";
 import { API_BASE } from "../../api/config";
-import { cancelJob } from "../../api/jobs";
+import { cancelJob, updateJobApplicationStatus } from "../../api/jobs";
 import {
     ArrowLeft,
     User,
@@ -30,6 +30,7 @@ export default function JobApplications() {
     const [editingApplicationId, setEditingApplicationId] = useState(null);
     const [editPrice, setEditPrice] = useState("");
     const [editMessage, setEditMessage] = useState("");
+    const [actionError, setActionError] = useState("");
 
     const getErrorMessage = async (response, fallback) => {
         try {
@@ -53,6 +54,9 @@ export default function JobApplications() {
 
     const normalizeApplication = (application) => {
         const provider = application?.provider || {};
+        const normalizedStatus = (application.status || "pending")
+            .toString()
+            .toLowerCase();
         const rawRating =
             provider.rating ??
             application.provider_rating ??
@@ -65,6 +69,8 @@ export default function JobApplications() {
 
         return {
             ...application,
+            application_id: application.application_id || application.id || null,
+            status: normalizedStatus,
             provider_name:
                 application.provider_name ||
                 provider.name ||
@@ -118,46 +124,32 @@ export default function JobApplications() {
     };
 
     const handleUpdateStatus = async (applicationId, action) => {
-        if (
-            !confirm(
-                `Are you sure you want to ${action} this application?`
-            )
-        ) {
+        if (!applicationId) {
+            setActionError("Unable to update this application: missing application ID.");
             return;
         }
+        const normalizedAction = action === "accept" ? "accept" : "reject";
+        setActionError("");
 
-        setProcessingId(applicationId);
+        setProcessingId(`status-${applicationId}`);
         try {
-            const token = auth.user?.id_token || auth.user?.access_token;
-
-            const res = await fetch(
-                `${API_BASE}/job/${job_id}/applications/${applicationId}`,
-                {
-                    method: "PUT",
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({ action }),
-                }
+            const data = await updateJobApplicationStatus(
+                job_id,
+                applicationId,
+                normalizedAction,
+                auth
             );
 
-            if (res.ok) {
-                const data = await res.json();
-                alert(data?.message || `Application ${action}ed successfully!`);
-                // Refresh applications list
-                await fetchApplications();
-            } else {
-                const errorMessage = await getErrorMessage(
-                    res,
-                    "Failed to update application. Please try again."
-                );
-                console.error("Failed to update application:", errorMessage);
-                alert(errorMessage);
-            }
+            navigate("/customer/jobs", { replace: true });
+            // Fallback in case router navigation is interrupted by app state issues
+            setTimeout(() => {
+                if (window.location.pathname !== "/customer/jobs") {
+                    window.location.assign("/customer/jobs");
+                }
+            }, 50);
         } catch (err) {
             console.error("Error updating application:", err);
-            alert("Error updating application. Please try again.");
+            setActionError(err.message || "Error updating application. Please try again.");
         } finally {
             setProcessingId(null);
         }
@@ -363,6 +355,11 @@ export default function JobApplications() {
                             </Button>
                         </div>
                     </div>
+                    {actionError && (
+                        <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                            {actionError}
+                        </div>
+                    )}
                 </div>
 
                 {/* Applications List */}
@@ -387,7 +384,7 @@ export default function JobApplications() {
                     <div className="space-y-4">
                         {applications.map((app) => (
                             <Card
-                                key={app.application_id}
+                                key={app.application_id || `${app.provider_email}-${app.created_at}`}
                                 className="border-neutral-200 bg-white p-6 shadow-lg transition-shadow hover:shadow-xl"
                             >
                                 <div className="flex items-start justify-between">
@@ -520,7 +517,7 @@ export default function JobApplications() {
                                                     app.status
                                                 )}`}
                                             >
-                                                {app.status.toUpperCase()}
+                                                {(app.status || "pending").toUpperCase()}
                                             </span>
                                         </div>
                                     </div>
@@ -529,34 +526,37 @@ export default function JobApplications() {
                                     {app.status === "pending" && (
                                         <div className="ml-4 flex flex-col gap-2">
                                             <Button
+                                                type="button"
                                                 onClick={() => startEditing(app)}
-                                                disabled={processingId === app.application_id}
+                                                disabled={processingId === `status-${app.application_id}`}
                                                 variant="outline"
                                                 className="gap-2"
                                             >
                                                 Edit Price/Message
                                             </Button>
                                             <Button
+                                                type="button"
                                                 onClick={() =>
                                                     handleUpdateStatus(
                                                         app.application_id,
                                                         "accept"
                                                     )
                                                 }
-                                                disabled={processingId === app.application_id}
+                                                disabled={processingId === `status-${app.application_id}`}
                                                 className="gap-2 bg-green-600 hover:bg-green-700"
                                             >
                                                 <CheckCircle className="h-4 w-4" />
                                                 Accept
                                             </Button>
                                             <Button
+                                                type="button"
                                                 onClick={() =>
                                                     handleUpdateStatus(
                                                         app.application_id,
                                                         "reject"
                                                     )
                                                 }
-                                                disabled={processingId === app.application_id}
+                                                disabled={processingId === `status-${app.application_id}`}
                                                 variant="outline"
                                                 className="gap-2 border-red-300 text-red-600 hover:bg-red-50"
                                             >
@@ -568,6 +568,7 @@ export default function JobApplications() {
                                     {app.status === "accepted" && (
                                         <div className="ml-4 flex flex-col gap-2">
                                             <Button
+                                                type="button"
                                                 onClick={handleUnassignJob}
                                                 disabled={processingId === "unassign"}
                                                 variant="outline"
@@ -577,13 +578,14 @@ export default function JobApplications() {
                                                 Unassign Job
                                             </Button>
                                             <Button
+                                                type="button"
                                                 onClick={() =>
                                                     handleUpdateStatus(
                                                         app.application_id,
                                                         "reject"
                                                     )
                                                 }
-                                                disabled={processingId === app.application_id}
+                                                disabled={processingId === `status-${app.application_id}`}
                                                 variant="outline"
                                                 className="gap-2 border-red-300 text-red-600 hover:bg-red-50"
                                             >

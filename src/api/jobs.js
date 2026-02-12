@@ -37,3 +37,52 @@ export const cancelJob = async (jobId, auth) => {
 
   return response.json();
 };
+
+export const updateJobApplicationStatus = async (
+  jobId,
+  applicationId,
+  action,
+  auth
+) => {
+  const token = getAuthToken(auth);
+  const normalizedAction = String(action || "").toLowerCase();
+
+  if (!token) {
+    throw new Error("Authentication required. Please sign in again.");
+  }
+  if (!jobId || !applicationId) {
+    throw new Error("Missing job or application ID.");
+  }
+  if (!["accept", "reject"].includes(normalizedAction)) {
+    throw new Error("Invalid application action.");
+  }
+
+  const response = await fetch(
+    `${API_BASE}/job/${jobId}/applications/${applicationId}`,
+    {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ action: normalizedAction }),
+    }
+  );
+
+  if (!response.ok) {
+    const errorMessage = await parseErrorMessage(
+      response,
+      "Failed to update application. Please try again."
+    );
+    throw new Error(errorMessage);
+  }
+
+  const text = await response.text();
+  if (!text) return {};
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { message: text };
+  }
+};
