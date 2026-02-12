@@ -1,5 +1,5 @@
 // src/pages/customer/Dashboard.jsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "react-oidc-context";
 import { useNavigate } from "react-router-dom";
 import Card from "../../components/UI/Card";
@@ -18,7 +18,9 @@ export default function CustomerDashboard() {
     const [totalUnread, setTotalUnread] = useState(0);
     const [pendingReviews, setPendingReviews] = useState([]);
     const [myReviews, setMyReviews] = useState([]);
-    const [jobs] = useState([]);
+    const [jobs, setJobs] = useState([]);
+    const [showPendingList, setShowPendingList] = useState(false);
+    const hasFetchedJobs = useRef(false);
 
     const jobStatusCounts = useMemo(() => {
         const counts = {
@@ -43,6 +45,13 @@ export default function CustomerDashboard() {
         });
 
         return counts;
+    }, [jobs]);
+
+    const pendingJobs = useMemo(() => {
+        return jobs.filter((job) => {
+            const status = (job.status || "").toLowerCase();
+            return status === "open" || status === "assigned";
+        });
     }, [jobs]);
 
     useEffect(() => {
@@ -80,6 +89,40 @@ export default function CustomerDashboard() {
 
         fetchProfile();
     }, [auth.isAuthenticated, auth.user, navigate]);
+
+    useEffect(() => {
+        if (!auth.isAuthenticated) return;
+        if (hasFetchedJobs.current) return;
+        hasFetchedJobs.current = true;
+
+        const fetchJobs = async () => {
+            try {
+                const token = auth.user?.id_token || auth.user?.access_token;
+                const res = await fetch(
+                    "https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/customer/jobs?limit=10&offset=0",
+                    {
+                        method: "GET",
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                            "Content-Type": "application/json",
+                        },
+                    }
+                );
+
+                if (res.ok) {
+                    const data = await res.json();
+                    setJobs(data.jobs || []);
+                    return;
+                }
+
+                console.error("Failed to fetch jobs for dashboard:", res.status);
+            } catch (error) {
+                console.error("Error fetching jobs for dashboard:", error);
+            }
+        };
+
+        fetchJobs();
+    }, [auth.isAuthenticated, auth.user]);
 
     // Fetch unread message count
     useEffect(() => {
@@ -355,7 +398,10 @@ export default function CustomerDashboard() {
                     </Card>
 
                     {/* Stats Card 3 */}
-                    <Card className="border-0 bg-white p-6 shadow-lg">
+                    <Card
+                        className={`border-0 bg-white p-6 shadow-lg transition ${showPendingList ? "ring-2 ring-green-500" : "hover:shadow-xl"} cursor-pointer`}
+                        onClick={() => setShowPendingList((prev) => !prev)}
+                    >
                         <div className="flex items-center gap-4">
                             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-100">
                                 <Clock className="h-6 w-6 text-green-600" />
@@ -380,6 +426,57 @@ export default function CustomerDashboard() {
                         </div>
                     </Card>
                 </div>
+
+                {showPendingList && (
+                    <div className="mt-6">
+                        <div className="mb-3 flex items-center justify-between">
+                            <h2 className="text-xl font-bold text-neutral-900">
+                                Pending Jobs
+                            </h2>
+                            <Button
+                                variant="outline"
+                                className="text-sm"
+                                onClick={() => navigate("/customer/jobs")}
+                            >
+                                View All Jobs
+                            </Button>
+                        </div>
+
+                        {pendingJobs.length === 0 ? (
+                            <Card className="border border-neutral-200 bg-white p-6 text-neutral-600">
+                                No pending jobs found in this page of results.
+                            </Card>
+                        ) : (
+                            <div className="grid gap-3">
+                                {pendingJobs.map((job) => (
+                                    <Card
+                                        key={job.job_id}
+                                        className="border border-neutral-200 bg-white p-4"
+                                    >
+                                        <div className="flex items-center justify-between gap-4">
+                                            <div>
+                                                <p className="font-semibold text-neutral-900">
+                                                    {job.title}
+                                                </p>
+                                                <p className="text-sm text-neutral-600">
+                                                    Status: {(job.status || "").replace("_", " ")}
+                                                </p>
+                                            </div>
+                                            <Button
+                                                variant="outline"
+                                                onClick={() =>
+                                                    navigate(`/customer/jobs/${job.job_id}`)
+                                                }
+                                            >
+                                                View Details
+                                            </Button>
+                                        </div>
+                                    </Card>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Pending Reviews Section */}
                 {pendingReviews.length > 0 && (
