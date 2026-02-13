@@ -22,18 +22,23 @@ export default function ProviderMessages() {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [error, setError] = useState(null);
   const [showNewMessageModal, setShowNewMessageModal] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  function silentRefresh() {
+    setRefreshKey((prev) => prev + 1);
+  }
 
   useEffect(() => {
     loadConversations();
     const interval = setInterval(loadConversations, 10000);
     return () => clearInterval(interval);
-  }, []);
+  }, [refreshKey]);
 
   useEffect(() => {
     if (selectedConversation) {
       loadMessagesForConversation(selectedConversation.conversationId);
     }
-  }, [selectedConversation]);
+  }, [selectedConversation, refreshKey]);
 
   async function loadConversations() {
     try {
@@ -66,7 +71,7 @@ export default function ProviderMessages() {
       setSendingMessage(true);
       const sent = await sendMessage(selectedConversation.conversationId, text);
       setMessages((prev) => [...prev, sent]);
-      loadConversations();
+      silentRefresh();
     } finally {
       setSendingMessage(false);
     }
@@ -77,7 +82,7 @@ export default function ProviderMessages() {
       <NewMessageModal
         isOpen={showNewMessageModal}
         onClose={() => setShowNewMessageModal(false)}
-        onConversationCreated={loadConversations}
+        onConversationCreated={silentRefresh}
       />
 
       <div className="flex h-[calc(100vh-64px)] bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">

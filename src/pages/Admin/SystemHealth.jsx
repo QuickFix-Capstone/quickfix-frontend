@@ -289,6 +289,11 @@ export default function SystemHealth() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const silentRefresh = () => {
+    setRefreshKey((prev) => prev + 1);
+  };
 
   const loadHealth = async () => {
     try {
@@ -307,7 +312,7 @@ export default function SystemHealth() {
     loadHealth();
     const interval = setInterval(loadHealth, 50000);
     return () => clearInterval(interval);
-  }, []);
+  }, [refreshKey]);
 
   if (loading) {
     return (
@@ -324,7 +329,7 @@ export default function SystemHealth() {
           <p className="font-medium text-gray-900">System Health Unavailable</p>
           <p className="text-sm text-gray-600 mt-1">{error}</p>
           <button
-            onClick={loadHealth}
+            onClick={silentRefresh}
             className="mt-4 px-4 py-2 bg-black text-white text-sm rounded-md hover:opacity-90"
           >
             Retry
@@ -384,7 +389,7 @@ export default function SystemHealth() {
           <p className="text-sm text-gray-500">Platform performance overview</p>
         </div>
         <button
-          onClick={loadHealth}
+          onClick={silentRefresh}
           className="px-4 py-2 bg-black text-white text-sm rounded-md hover:opacity-90 w-fit"
         >
           Refresh

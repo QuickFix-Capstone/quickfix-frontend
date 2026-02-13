@@ -52,6 +52,7 @@ export default function AdminLogin() {
       localStorage.setItem(
         "adminProfile",
         JSON.stringify({
+          sub: claims.sub,
           email: claims.email,
           exp: claims.exp,
         }),

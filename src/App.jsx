@@ -45,6 +45,9 @@ import ServiceProviderMessages from "./pages/ServiceProvider/Messages";
 import ProviderDocuments from "./pages/ServiceProvider/ProviderDocuments";
 import PendingBookings from "./pages/ServiceProvider/PendingBookings";
 import SPBookingDetails from "./pages/ServiceProvider/BookingDetails";
+import ServiceProviderJobs from "./pages/ServiceProvider/ServiceProviderJobs";
+import ServiceProviderApplications from "./pages/ServiceProvider/ServiceProviderApplications";
+import ServiceProviderCalendar from "./pages/ServiceProvider/ServiceProviderCalendar";
 
 // ================= AUTH PAGES =================
 import Login from "./pages/Login";
@@ -321,6 +324,9 @@ export default function App() {
             <Route path="profile" element={<ServiceProviderProfile />} />
             <Route path="messages" element={<ServiceProviderMessages />} />
             <Route path="documents" element={<ProviderDocuments />} />
+            <Route path="jobs" element={<ServiceProviderJobs />} />
+            <Route path="applications" element={<ServiceProviderApplications />} />
+            <Route path="calendar" element={<ServiceProviderCalendar />} />
             <Route path="bookings" element={<PendingBookings />} />
             <Route path="bookings/:bookingId" element={<SPBookingDetails />} />
           </Route>

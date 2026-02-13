@@ -26,6 +26,7 @@ export default function PendingBookings() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [statusFilter, setStatusFilter] = useState("all");
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const statusColors = {
     pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
@@ -49,7 +50,7 @@ export default function PendingBookings() {
   // =====================================================
   useEffect(() => {
     loadBookings();
-  }, []);
+  }, [refreshKey]);
 
   const loadBookings = async () => {
     setLoading(true);
@@ -83,6 +84,10 @@ export default function PendingBookings() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const silentRefresh = () => {
+    setRefreshKey((prev) => prev + 1);
   };
 
   // =====================================================
@@ -138,7 +143,7 @@ export default function PendingBookings() {
         <Card className="p-8 text-center bg-red-50 border-red-200">
           <AlertCircle className="mx-auto mb-3 h-10 w-10 text-red-500" />
           <p className="text-red-700">{error}</p>
-          <Button className="mt-4" onClick={loadBookings}>
+          <Button className="mt-4" onClick={silentRefresh}>
             Retry
           </Button>
         </Card>

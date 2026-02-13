@@ -29,6 +29,7 @@ export default function BookingDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const statusColors = {
     pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
@@ -41,7 +42,7 @@ export default function BookingDetails() {
 
   useEffect(() => {
     fetchBooking();
-  }, [bookingId]);
+  }, [bookingId, refreshKey]);
 
   // =====================================================
   // FETCH BOOKING BY ID
@@ -165,6 +166,10 @@ export default function BookingDetails() {
     navigate("/service-provider/messages");
   };
 
+  const silentRefresh = () => {
+    setRefreshKey((prev) => prev + 1);
+  };
+
   const formatDate = (date) =>
     date
       ? new Date(date).toLocaleDateString("en-US", {
@@ -207,7 +212,7 @@ export default function BookingDetails() {
         <Card className="p-8 mt-6 text-center bg-red-50 border-red-200">
           <AlertCircle className="mx-auto mb-3 h-10 w-10 text-red-500" />
           <p className="text-red-700">{error}</p>
-          <Button className="mt-4" onClick={fetchBooking}>
+          <Button className="mt-4" onClick={silentRefresh}>
             Retry
           </Button>
         </Card>

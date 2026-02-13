@@ -9,6 +9,7 @@ export default function Bookings() {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -50,7 +51,11 @@ export default function Bookings() {
     return () => {
       cancelled = true;
     };
-  }, [navigate]);
+  }, [navigate, refreshKey]);
+
+  const silentRefresh = () => {
+    setRefreshKey((prev) => prev + 1);
+  };
 
   // =========================
   // UI STATES
@@ -60,7 +65,14 @@ export default function Bookings() {
   }
 
   if (error) {
-    return <div className="p-6 text-red-600">{error}</div>;
+    return (
+      <div className="p-6">
+        <p className="text-red-600">{error}</p>
+        <button className="mt-3 btn-primary" onClick={silentRefresh}>
+          Retry
+        </button>
+      </div>
+    );
   }
 
   return (
@@ -68,6 +80,9 @@ export default function Bookings() {
       <h1 className="text-xl font-semibold mb-6">
         Your Bookings ({bookings.length})
       </h1>
+      <button className="btn-secondary mb-4" onClick={silentRefresh}>
+        Refresh
+      </button>
 
       {bookings.length === 0 ? (
         <EmptyState />
