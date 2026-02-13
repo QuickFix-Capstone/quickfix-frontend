@@ -1,5 +1,5 @@
 // src/pages/customer/Dashboard.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "react-oidc-context";
 import { useNavigate } from "react-router-dom";
 import Card from "../../components/UI/Card";
@@ -18,6 +18,52 @@ export default function CustomerDashboard() {
     const [totalUnread, setTotalUnread] = useState(0);
     const [pendingReviews, setPendingReviews] = useState([]);
     const [myReviews, setMyReviews] = useState([]);
+    const [jobs, setJobs] = useState([]);
+    const [showPendingList, setShowPendingList] = useState(false);
+    const [showCancelledList, setShowCancelledList] = useState(false);
+    const hasFetchedJobs = useRef(false);
+
+    const normalizeJobStatus = (status) => {
+        const value = (status || "").toLowerCase();
+        if (value === "canceled" || value === "cancel") return "cancelled";
+        return value;
+    };
+
+    const jobStatusCounts = useMemo(() => {
+        const counts = {
+            pending: 0,
+            active: 0,
+            completed: 0,
+            cancelled: 0,
+        };
+
+        jobs.forEach((job) => {
+            const status = normalizeJobStatus(job.status);
+
+            if (status === "open" || status === "assigned") {
+                counts.pending += 1;
+            } else if (status === "confirmed" || status === "in_progress") {
+                counts.active += 1;
+            } else if (status === "completed") {
+                counts.completed += 1;
+            } else if (status === "cancelled") {
+                counts.cancelled += 1;
+            }
+        });
+
+        return counts;
+    }, [jobs]);
+
+    const pendingJobs = useMemo(() => {
+        return jobs.filter((job) => {
+            const status = normalizeJobStatus(job.status);
+            return status === "open" || status === "assigned";
+        });
+    }, [jobs]);
+
+    const cancelledJobs = useMemo(() => {
+        return jobs.filter((job) => normalizeJobStatus(job.status) === "cancelled");
+    }, [jobs]);
 
     useEffect(() => {
         if (!auth.isAuthenticated) {
@@ -54,6 +100,46 @@ export default function CustomerDashboard() {
 
         fetchProfile();
     }, [auth.isAuthenticated, auth.user, navigate]);
+
+    useEffect(() => {
+        if (!auth.isAuthenticated) return;
+        if (hasFetchedJobs.current) return;
+        hasFetchedJobs.current = true;
+
+        const fetchJobs = async () => {
+            try {
+                const token = auth.user?.id_token || auth.user?.access_token;
+                const res = await fetch(
+                    "https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/customer/jobs?limit=10&offset=0",
+                    {
+                        method: "GET",
+                        cache: "no-store",
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                            "Content-Type": "application/json",
+                        },
+                    }
+                );
+
+                if (res.ok) {
+                    const data = await res.json();
+                    setJobs(
+                        (data.jobs || []).map((job) => ({
+                            ...job,
+                            status: normalizeJobStatus(job.status),
+                        }))
+                    );
+                    return;
+                }
+
+                console.error("Failed to fetch jobs for dashboard:", res.status);
+            } catch (error) {
+                console.error("Error fetching jobs for dashboard:", error);
+            }
+        };
+
+        fetchJobs();
+    }, [auth.isAuthenticated, auth.user]);
 
     // Fetch unread message count
     useEffect(() => {
@@ -301,7 +387,7 @@ export default function CustomerDashboard() {
                 </div>
 
                 {/* Activity Overview */}
-                <div className="grid gap-6 md:grid-cols-3">
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
                     {/* Stats Card 1 */}
                     <Card className="border-0 bg-white p-6 shadow-lg">
                         <div className="flex items-center gap-4">
@@ -309,8 +395,8 @@ export default function CustomerDashboard() {
                                 <TrendingUp className="h-6 w-6 text-blue-600" />
                             </div>
                             <div>
-                                <p className="text-sm text-neutral-600">Total Bookings</p>
-                                <p className="text-2xl font-bold text-neutral-900">0</p>
+                                <p className="text-sm text-neutral-600">Completed</p>
+                                <p className="text-2xl font-bold text-neutral-900">{jobStatusCounts.completed}</p>
                             </div>
                         </div>
                     </Card>
@@ -323,24 +409,145 @@ export default function CustomerDashboard() {
                             </div>
                             <div>
                                 <p className="text-sm text-neutral-600">Active Jobs</p>
-                                <p className="text-2xl font-bold text-neutral-900">0</p>
+                                <p className="text-2xl font-bold text-neutral-900">{jobStatusCounts.active}</p>
                             </div>
                         </div>
                     </Card>
 
                     {/* Stats Card 3 */}
-                    <Card className="border-0 bg-white p-6 shadow-lg">
+                    <Card
+                        className={`border-0 bg-white p-6 shadow-lg transition ${showPendingList ? "ring-2 ring-green-500" : "hover:shadow-xl"} cursor-pointer`}
+                        onClick={() => setShowPendingList((prev) => !prev)}
+                    >
                         <div className="flex items-center gap-4">
                             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-100">
                                 <Clock className="h-6 w-6 text-green-600" />
                             </div>
                             <div>
                                 <p className="text-sm text-neutral-600">Pending</p>
-                                <p className="text-2xl font-bold text-neutral-900">0</p>
+                                <p className="text-2xl font-bold text-neutral-900">{jobStatusCounts.pending}</p>
+                            </div>
+                        </div>
+                    </Card>
+
+                    {/* Stats Card 4 */}
+                    <Card
+                        className={`border-0 bg-white p-6 shadow-lg transition ${showCancelledList ? "ring-2 ring-red-500" : "hover:shadow-xl"} cursor-pointer`}
+                        onClick={() => setShowCancelledList((prev) => !prev)}
+                    >
+                        <div className="flex items-center gap-4">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-red-100">
+                                <Calendar className="h-6 w-6 text-red-600" />
+                            </div>
+                            <div>
+                                <p className="text-sm text-neutral-600">Cancelled</p>
+                                <p className="text-2xl font-bold text-neutral-900">{jobStatusCounts.cancelled}</p>
                             </div>
                         </div>
                     </Card>
                 </div>
+
+                {showPendingList && (
+                    <div className="mt-6">
+                        <div className="mb-3 flex items-center justify-between">
+                            <h2 className="text-xl font-bold text-neutral-900">
+                                Pending Jobs
+                            </h2>
+                            <Button
+                                variant="outline"
+                                className="text-sm"
+                                onClick={() => navigate("/customer/jobs")}
+                            >
+                                View All Jobs
+                            </Button>
+                        </div>
+
+                        {pendingJobs.length === 0 ? (
+                            <Card className="border border-neutral-200 bg-white p-6 text-neutral-600">
+                                No pending jobs found in this page of results.
+                            </Card>
+                        ) : (
+                            <div className="grid gap-3">
+                                {pendingJobs.map((job) => (
+                                    <Card
+                                        key={job.job_id}
+                                        className="border border-neutral-200 bg-white p-4"
+                                    >
+                                        <div className="flex items-center justify-between gap-4">
+                                            <div>
+                                                <p className="font-semibold text-neutral-900">
+                                                    {job.title}
+                                                </p>
+                                                <p className="text-sm text-neutral-600">
+                                                    Status: {(job.status || "").replace("_", " ")}
+                                                </p>
+                                            </div>
+                                            <Button
+                                                variant="outline"
+                                                onClick={() =>
+                                                    navigate(`/customer/jobs/${job.job_id}`)
+                                                }
+                                            >
+                                                View Details
+                                            </Button>
+                                        </div>
+                                    </Card>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {showCancelledList && (
+                    <div className="mt-6">
+                        <div className="mb-3 flex items-center justify-between">
+                            <h2 className="text-xl font-bold text-neutral-900">
+                                Cancelled Jobs
+                            </h2>
+                            <Button
+                                variant="outline"
+                                className="text-sm"
+                                onClick={() => navigate("/customer/jobs")}
+                            >
+                                View All Jobs
+                            </Button>
+                        </div>
+
+                        {cancelledJobs.length === 0 ? (
+                            <Card className="border border-neutral-200 bg-white p-6 text-neutral-600">
+                                No cancelled jobs found in this page of results.
+                            </Card>
+                        ) : (
+                            <div className="grid gap-3">
+                                {cancelledJobs.map((job) => (
+                                    <Card
+                                        key={job.job_id}
+                                        className="border border-neutral-200 bg-white p-4"
+                                    >
+                                        <div className="flex items-center justify-between gap-4">
+                                            <div>
+                                                <p className="font-semibold text-neutral-900">
+                                                    {job.title}
+                                                </p>
+                                                <p className="text-sm text-neutral-600">
+                                                    Status: {(job.status || "").replace("_", " ")}
+                                                </p>
+                                            </div>
+                                            <Button
+                                                variant="outline"
+                                                onClick={() =>
+                                                    navigate(`/customer/jobs/${job.job_id}`)
+                                                }
+                                            >
+                                                View Details
+                                            </Button>
+                                        </div>
+                                    </Card>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Pending Reviews Section */}
                 {pendingReviews.length > 0 && (

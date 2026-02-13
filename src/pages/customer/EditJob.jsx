@@ -49,7 +49,7 @@ export default function EditJob() {
             const token = auth.user?.id_token || auth.user?.access_token;
 
             const res = await fetch(
-                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/customer/jobs/${job_id}`,
+                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/customer/jobs?limit=100&offset=0`,
                 {
                     method: "GET",
                     headers: {
@@ -60,7 +60,15 @@ export default function EditJob() {
 
             if (res.ok) {
                 const data = await res.json();
-                const job = data.job || data;
+                const job = (data.jobs || []).find(
+                    (j) => String(j.job_id) === String(job_id)
+                );
+                if (!job) {
+                    console.error("Job not found in list");
+                    alert("Job not found.");
+                    navigate("/customer/jobs");
+                    return;
+                }
                 console.log("Job details fetched for editing:", job);
 
                 // Transform nested API response to flat form state
