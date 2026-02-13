@@ -5,7 +5,11 @@ import { useNavigate, useParams } from "react-router-dom";
 import Card from "../../components/UI/Card";
 import Button from "../../components/UI/Button";
 import { API_BASE } from "../../api/config";
-import { cancelJob, updateJobApplicationStatus } from "../../api/jobs";
+import {
+    cancelJob,
+    updateJobApplicationDetails,
+    updateJobApplicationStatus,
+} from "../../api/jobs";
 import {
     ArrowLeft,
     User,
@@ -185,37 +189,22 @@ export default function JobApplications() {
 
         setProcessingId(`edit-${applicationId}`);
         try {
-            const token = auth.user?.id_token || auth.user?.access_token;
-            const res = await fetch(
-                `${API_BASE}/job/${job_id}/applications/${applicationId}/update`,
+            const data = await updateJobApplicationDetails(
+                job_id,
+                applicationId,
                 {
-                    method: "PUT",
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        proposed_price: parsedPrice,
-                        message: editMessage.trim(),
-                    }),
-                }
+                    proposed_price: parsedPrice,
+                    message: editMessage.trim(),
+                },
+                auth
             );
 
-            if (res.ok) {
-                const data = await res.json();
-                alert(data?.message || "Application updated successfully.");
-                cancelEditing();
-                await fetchApplications();
-            } else {
-                const errorMessage = await getErrorMessage(
-                    res,
-                    "Failed to update application. Please try again."
-                );
-                alert(errorMessage);
-            }
+            cancelEditing();
+            alert(data?.message || "Application updated successfully.");
+            await fetchApplications();
         } catch (err) {
             console.error("Error updating application details:", err);
-            alert("Error updating application. Please try again.");
+            alert(err.message || "Error updating application. Please try again.");
         } finally {
             setProcessingId(null);
         }
