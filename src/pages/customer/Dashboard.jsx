@@ -11,20 +11,25 @@ import ReviewCard from "./ReviewCard";
 import { User, LogOut, Plus, Calendar, Settings, Upload, Briefcase, MessageSquare, TrendingUp, Clock, Star } from "lucide-react";
 
 export default function CustomerDashboard() {
+    const JOB_STATUS_WS_BASE = "wss://074y7xhv7f.execute-api.us-east-2.amazonaws.com/dev";
     const auth = useAuth();
     const navigate = useNavigate();
+    const wsRef = useRef(null);
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
     const [totalUnread, setTotalUnread] = useState(0);
     const [pendingReviews, setPendingReviews] = useState([]);
     const [myReviews, setMyReviews] = useState([]);
     const [jobs, setJobs] = useState([]);
+    const [completionNotifications, setCompletionNotifications] = useState([]);
+    const [showActiveList, setShowActiveList] = useState(false);
     const [showPendingList, setShowPendingList] = useState(false);
     const [showCancelledList, setShowCancelledList] = useState(false);
     const hasFetchedJobs = useRef(false);
 
     const normalizeJobStatus = (status) => {
         const value = (status || "").toLowerCase();
+        if (value === "in_prograss" || value === "in progress") return "in_progress";
         if (value === "canceled" || value === "cancel") return "cancelled";
         return value;
     };
@@ -58,6 +63,13 @@ export default function CustomerDashboard() {
         return jobs.filter((job) => {
             const status = normalizeJobStatus(job.status);
             return status === "open" || status === "assigned";
+        });
+    }, [jobs]);
+
+    const activeJobs = useMemo(() => {
+        return jobs.filter((job) => {
+            const status = normalizeJobStatus(job.status);
+            return status === "confirmed" || status === "in_progress";
         });
     }, [jobs]);
 
@@ -140,6 +152,65 @@ export default function CustomerDashboard() {
 
         fetchJobs();
     }, [auth.isAuthenticated, auth.user]);
+
+    useEffect(() => {
+        const userId = auth.user?.profile?.sub;
+        if (!auth.isAuthenticated || !userId) return;
+
+        const ws = new WebSocket(
+            `${JOB_STATUS_WS_BASE}?user_id=${encodeURIComponent(userId)}`
+        );
+        wsRef.current = ws;
+
+        ws.onmessage = (event) => {
+            try {
+                const message = JSON.parse(event.data);
+                const incomingJobId = message?.jobId || message?.job_id;
+                const incomingStatus = normalizeJobStatus(message?.newStatus || message?.status);
+
+                if (message?.type === "JOB_STATUS_CHANGED" && incomingJobId) {
+                    setJobs((prevJobs) =>
+                        prevJobs.map((job) =>
+                            String(job.job_id) === String(incomingJobId)
+                                ? { ...job, status: incomingStatus }
+                                : job
+                        )
+                    );
+
+                    if (incomingStatus === "completed") {
+                        setCompletionNotifications((prev) => {
+                            if (prev.some((n) => String(n.jobId) === String(incomingJobId))) {
+                                return prev;
+                            }
+                            return [
+                                { jobId: String(incomingJobId), receivedAt: Date.now() },
+                                ...prev,
+                            ].slice(0, 10);
+                        });
+                    }
+                }
+            } catch {
+                // Ignore non-JSON websocket events
+            }
+        };
+
+        ws.onerror = () => {
+            ws.close();
+        };
+
+        return () => {
+            if (wsRef.current) {
+                wsRef.current.close();
+                wsRef.current = null;
+            }
+        };
+    }, [auth.isAuthenticated, auth.user]);
+
+    const clearCompletionNotification = (jobId) => {
+        setCompletionNotifications((prev) =>
+            prev.filter((item) => String(item.jobId) !== String(jobId))
+        );
+    };
 
     // Fetch unread message count
     useEffect(() => {
@@ -402,7 +473,10 @@ export default function CustomerDashboard() {
                     </Card>
 
                     {/* Stats Card 2 */}
-                    <Card className="border-0 bg-white p-6 shadow-lg">
+                    <Card
+                        className={`border-0 bg-white p-6 shadow-lg transition ${showActiveList ? "ring-2 ring-orange-500" : "hover:shadow-xl"} cursor-pointer`}
+                        onClick={() => setShowActiveList((prev) => !prev)}
+                    >
                         <div className="flex items-center gap-4">
                             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-orange-100">
                                 <Briefcase className="h-6 w-6 text-orange-600" />
@@ -410,6 +484,11 @@ export default function CustomerDashboard() {
                             <div>
                                 <p className="text-sm text-neutral-600">Active Jobs</p>
                                 <p className="text-2xl font-bold text-neutral-900">{jobStatusCounts.active}</p>
+                                {completionNotifications.length > 0 && (
+                                    <p className="text-xs font-medium text-green-700">
+                                        {completionNotifications.length} completion update{completionNotifications.length > 1 ? "s" : ""}
+                                    </p>
+                                )}
                             </div>
                         </div>
                     </Card>
@@ -446,6 +525,107 @@ export default function CustomerDashboard() {
                         </div>
                     </Card>
                 </div>
+
+                {completionNotifications.length > 0 && (
+                    <div className="mt-6">
+                        <div className="mb-3 flex items-center justify-between">
+                            <h2 className="text-xl font-bold text-neutral-900">
+                                Job Completion Updates
+                            </h2>
+                            <Button
+                                variant="outline"
+                                className="text-sm"
+                                onClick={() => setCompletionNotifications([])}
+                            >
+                                Clear All
+                            </Button>
+                        </div>
+                        <div className="grid gap-3">
+                            {completionNotifications.map((notification) => {
+                                const job = jobs.find(
+                                    (item) => String(item.job_id) === String(notification.jobId)
+                                );
+                                return (
+                                    <Card
+                                        key={`${notification.jobId}-${notification.receivedAt}`}
+                                        className="border border-green-200 bg-green-50 p-4"
+                                    >
+                                        <div className="flex items-center justify-between gap-4">
+                                            <div>
+                                                <p className="font-semibold text-neutral-900">
+                                                    {job?.title || `Job #${notification.jobId}`}
+                                                </p>
+                                                <p className="text-sm text-green-800">
+                                                    Service provider marked this job as completed.
+                                                </p>
+                                            </div>
+                                            <Button
+                                                onClick={() => {
+                                                    clearCompletionNotification(notification.jobId);
+                                                    navigate(`/customer/jobs/${notification.jobId}`);
+                                                }}
+                                                className="bg-green-600 text-white hover:bg-green-700"
+                                            >
+                                                View Details
+                                            </Button>
+                                        </div>
+                                    </Card>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+
+                {showActiveList && (
+                    <div className="mt-6">
+                        <div className="mb-3 flex items-center justify-between">
+                            <h2 className="text-xl font-bold text-neutral-900">
+                                Active Jobs
+                            </h2>
+                            <Button
+                                variant="outline"
+                                className="text-sm"
+                                onClick={() => navigate("/customer/jobs")}
+                            >
+                                View All Jobs
+                            </Button>
+                        </div>
+
+                        {activeJobs.length === 0 ? (
+                            <Card className="border border-neutral-200 bg-white p-6 text-neutral-600">
+                                No active jobs found in this page of results.
+                            </Card>
+                        ) : (
+                            <div className="grid gap-3">
+                                {activeJobs.map((job) => (
+                                    <Card
+                                        key={job.job_id}
+                                        className="border border-neutral-200 bg-white p-4"
+                                    >
+                                        <div className="flex items-center justify-between gap-4">
+                                            <div>
+                                                <p className="font-semibold text-neutral-900">
+                                                    {job.title}
+                                                </p>
+                                                <p className="text-sm text-neutral-600">
+                                                    Status: {(job.status || "").replace("_", " ")}
+                                                </p>
+                                            </div>
+                                            <Button
+                                                variant="outline"
+                                                onClick={() =>
+                                                    navigate(`/customer/jobs/${job.job_id}`)
+                                                }
+                                            >
+                                                View Details
+                                            </Button>
+                                        </div>
+                                    </Card>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {showPendingList && (
                     <div className="mt-6">

@@ -1,5 +1,5 @@
 // src/pages/customer/JobDetails.jsx
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useAuth } from "react-oidc-context";
 import { useNavigate, useParams } from "react-router-dom";
 import Card from "../../components/UI/Card";
@@ -22,9 +22,11 @@ import {
 } from "lucide-react";
 
 export default function JobDetails() {
+    const JOB_STATUS_WS_BASE = "wss://074y7xhv7f.execute-api.us-east-2.amazonaws.com/dev";
     const auth = useAuth();
     const navigate = useNavigate();
     const { job_id } = useParams();
+    const wsRef = useRef(null);
     const [job, setJob] = useState(null);
     const [loading, setLoading] = useState(true);
     const [cancelling, setCancelling] = useState(false);
@@ -32,14 +34,94 @@ export default function JobDetails() {
 
     const normalizeJobStatus = (status) => {
         const value = (status || "").toLowerCase();
+        if (value === "in_prograss" || value === "in progress") return "in_progress";
         if (value === "canceled" || value === "cancel") return "cancelled";
         return value;
+    };
+
+    const notifyJobCompletion = (jobIdToNotify) => {
+        const userId = auth.user?.profile?.sub || job?.customer_id;
+        if (!userId || !jobIdToNotify) return;
+
+        if (wsRef.current?.readyState === WebSocket.OPEN) {
+            wsRef.current.send(
+                JSON.stringify({
+                    action: "complete_job",
+                    job_id: String(jobIdToNotify),
+                })
+            );
+            return;
+        }
+
+        try {
+            const ws = new WebSocket(
+                `${JOB_STATUS_WS_BASE}?user_id=${encodeURIComponent(userId)}`
+            );
+
+            ws.onopen = () => {
+                ws.send(
+                    JSON.stringify({
+                        action: "complete_job",
+                        job_id: String(jobIdToNotify),
+                    })
+                );
+                setTimeout(() => ws.close(), 250);
+            };
+
+            ws.onerror = () => {
+                ws.close();
+            };
+        } catch (error) {
+            console.error("Failed to notify job completion via WebSocket:", error);
+        }
     };
 
     useEffect(() => {
         fetchJobDetails();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [job_id]);
+
+    useEffect(() => {
+        const userId = auth.user?.profile?.sub || job?.customer_id;
+        if (!auth.isAuthenticated || !userId) return;
+
+        const ws = new WebSocket(
+            `${JOB_STATUS_WS_BASE}?user_id=${encodeURIComponent(userId)}`
+        );
+        wsRef.current = ws;
+
+        ws.onmessage = (event) => {
+            try {
+                const message = JSON.parse(event.data);
+                if (
+                    message?.type === "JOB_STATUS_CHANGED" &&
+                    String(message?.jobId) === String(job_id)
+                ) {
+                    setJob((prev) =>
+                        prev
+                            ? {
+                                ...prev,
+                                status: normalizeJobStatus(message?.newStatus),
+                            }
+                            : prev
+                    );
+                }
+            } catch {
+                // Ignore non-JSON websocket events
+            }
+        };
+
+        ws.onerror = () => {
+            ws.close();
+        };
+
+        return () => {
+            if (wsRef.current) {
+                wsRef.current.close();
+                wsRef.current = null;
+            }
+        };
+    }, [auth.isAuthenticated, auth.user, job?.customer_id, job_id]);
 
     const fetchJobDetails = async () => {
         setLoading(true);
@@ -250,6 +332,15 @@ export default function JobDetails() {
                                     Cancel Job
                                 </Button>
                             </div>
+                        )}
+                        {normalizeJobStatus(job.status) === "in_progress" && (
+                            <Button
+                                onClick={handleConfirmComplete}
+                                disabled={confirmingComplete}
+                                className="bg-green-600 hover:bg-green-700"
+                            >
+                                {confirmingComplete ? "Confirming..." : "Confirm Completion"}
+                            </Button>
                         )}
                     </div>
 

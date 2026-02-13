@@ -144,3 +144,39 @@ export const updateJobApplicationDetails = async (
     return { message: text };
   }
 };
+
+export const confirmJobComplete = async (jobId, auth) => {
+  const token = getAuthToken(auth);
+
+  if (!token) {
+    throw new Error("Authentication required. Please sign in again.");
+  }
+  if (!jobId) {
+    throw new Error("Missing job ID.");
+  }
+
+  const response = await fetch(`${API_BASE}/jobs/${jobId}/confirm-complete`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    const errorMessage = await parseErrorMessage(
+      response,
+      "Failed to complete job. Please try again."
+    );
+    throw new Error(errorMessage);
+  }
+
+  const text = await response.text();
+  if (!text) return {};
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { message: text };
+  }
+};
