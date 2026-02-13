@@ -17,6 +17,8 @@ import {
     User,
     Edit,
     Trash2,
+    CheckCircle,
+    Star,
 } from "lucide-react";
 
 export default function JobDetails() {
@@ -26,6 +28,7 @@ export default function JobDetails() {
     const [job, setJob] = useState(null);
     const [loading, setLoading] = useState(true);
     const [cancelling, setCancelling] = useState(false);
+    const [confirmingComplete, setConfirmingComplete] = useState(false);
 
     const normalizeJobStatus = (status) => {
         const value = (status || "").toLowerCase();
@@ -102,6 +105,40 @@ export default function JobDetails() {
         }
     };
 
+    const handleConfirmComplete = async () => {
+        if (!confirm("Confirm that this job has been completed?")) return;
+
+        setConfirmingComplete(true);
+        try {
+            const token = auth.user?.id_token || auth.user?.access_token;
+            const res = await fetch(
+                `${API_BASE}/jobs/${job_id}/confirm-complete`,
+                {
+                    method: "POST",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                }
+            );
+
+            const data = await res.json().catch(() => ({}));
+
+            if (!res.ok) {
+                alert(data.message || "Failed to confirm completion");
+                return;
+            }
+
+            alert("Job confirmed as completed!");
+            fetchJobDetails();
+        } catch (err) {
+            console.error(err);
+            alert("Failed to confirm completion");
+        } finally {
+            setConfirmingComplete(false);
+        }
+    };
+
     const getStatusColor = (status) => {
         switch (normalizeJobStatus(status)) {
             case "open":
@@ -110,6 +147,8 @@ export default function JobDetails() {
                 return "bg-blue-100 text-blue-800 border-blue-200";
             case "in_progress":
                 return "bg-yellow-100 text-yellow-800 border-yellow-200";
+            case "pending_completion":
+                return "bg-emerald-100 text-emerald-800 border-emerald-200";
             case "completed":
                 return "bg-gray-100 text-gray-800 border-gray-200";
             case "cancelled":
@@ -327,6 +366,52 @@ export default function JobDetails() {
                             className="bg-neutral-900 hover:bg-neutral-800"
                         >
                             View All Applications
+                        </Button>
+                    </Card>
+                )}
+
+                {/* Pending completion — customer needs to confirm */}
+                {normalizeJobStatus(job.status) === "pending_completion" && (
+                    <Card className="mb-6 border-emerald-200 bg-emerald-50 p-6 shadow-lg">
+                        <div className="flex items-center gap-3 mb-3">
+                            <CheckCircle className="h-6 w-6 text-emerald-600" />
+                            <h3 className="text-lg font-semibold text-emerald-800">
+                                Service Provider Marked This Job Complete
+                            </h3>
+                        </div>
+                        <p className="text-sm text-emerald-700 mb-4">
+                            Please review the work and confirm completion.
+                        </p>
+                        <Button
+                            onClick={handleConfirmComplete}
+                            disabled={confirmingComplete}
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                        >
+                            {confirmingComplete
+                                ? "Confirming..."
+                                : "Confirm Job Completed"}
+                        </Button>
+                    </Card>
+                )}
+
+                {/* Job fully completed */}
+                {normalizeJobStatus(job.status) === "completed" && (
+                    <Card className="mb-6 border-green-200 bg-green-50 p-6 shadow-lg">
+                        <div className="flex items-center gap-3 mb-3">
+                            <CheckCircle className="h-6 w-6 text-green-600" />
+                            <h3 className="text-lg font-semibold text-green-800">
+                                Job Completed
+                            </h3>
+                        </div>
+                        <p className="text-sm text-green-700 mb-4">
+                            Both you and the service provider have confirmed this job as complete.
+                        </p>
+                        <Button
+                            disabled
+                            className="bg-yellow-500 text-white gap-2 opacity-70 cursor-not-allowed"
+                        >
+                            <Star className="h-4 w-4" />
+                            Add Review (Coming Soon)
                         </Button>
                     </Card>
                 )}

@@ -11,6 +11,8 @@ import {
   User,
   Tag,
   AlertCircle,
+  CheckCircle,
+  Star,
   Image as ImageIcon,
   X,
 } from "lucide-react";
@@ -23,6 +25,7 @@ const statusStyles = {
   assigned: "bg-yellow-50 text-yellow-700 border-yellow-200",
   in_progress: "bg-purple-50 text-purple-700 border-purple-200",
   budget_change_pending: "bg-orange-50 text-orange-700 border-orange-200",
+  pending_completion: "bg-emerald-50 text-emerald-700 border-emerald-200",
   completed: "bg-green-50 text-green-700 border-green-200",
   cancelled: "bg-gray-50 text-gray-700 border-gray-200",
 };
@@ -366,35 +369,36 @@ export default function JobDetailsPage() {
     image?.presigned_url ||
     image?.preview_url ||
     null;
+  const formattedStatus = String(job.status || "unknown").replaceAll("_", " ");
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="max-w-3xl mx-auto px-4 py-6">
+    <div className="min-h-screen bg-slate-50 bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.10),_transparent_42%),radial-gradient(circle_at_top_right,_rgba(16,185,129,0.08),_transparent_38%)]">
+      <div className="max-w-5xl mx-auto px-4 py-6 sm:py-8">
         {/* Back button */}
         <button
           onClick={() => navigate("/service-provider/jobs")}
-          className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 mb-6"
+          className="mb-6 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-600 shadow-sm transition hover:border-slate-300 hover:text-slate-900"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Jobs
         </button>
 
         {/* Header card */}
-        <div className="rounded-2xl border bg-white p-6 shadow-sm mb-4">
+        <div className="rounded-3xl border border-slate-200/80 bg-white/95 p-6 shadow-sm backdrop-blur mb-4">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-sm text-slate-500">
                 Job #{job.job_id}
                 {job.booking_id && <> &middot; Booking #{job.booking_id}</>}
               </p>
-              <h1 className="text-2xl font-bold text-slate-900 mt-1">
+              <h1 className="text-2xl font-bold text-slate-900 mt-1 sm:text-3xl">
                 {job.title || "Untitled Job"}
               </h1>
             </div>
             <span
-              className={`shrink-0 text-xs px-3 py-1 rounded-full border font-medium ${badge}`}
+              className={`shrink-0 text-xs px-3 py-1 rounded-full border font-medium capitalize ${badge}`}
             >
-              {String(job.status).replaceAll("_", " ")}
+              {formattedStatus}
             </span>
           </div>
 
@@ -414,7 +418,7 @@ export default function JobDetailsPage() {
 
         {/* Budget change pending banner */}
         {job.status === "budget_change_pending" && (
-          <div className="mb-4 p-4 rounded-2xl bg-orange-50 border border-orange-200">
+          <div className="mb-4 p-4 rounded-2xl bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200">
             <div className="flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-orange-600 mt-0.5 shrink-0" />
               <div>
@@ -431,7 +435,7 @@ export default function JobDetailsPage() {
         )}
 
         {/* Job images */}
-        <div className="mb-4 rounded-2xl border bg-white p-4 shadow-sm">
+        <div className="mb-4 rounded-3xl border border-slate-200/80 bg-white p-4 shadow-sm sm:p-5">
           <div className="mb-3 flex items-center gap-2 text-sm font-medium text-slate-700">
             <ImageIcon className="h-4 w-4 text-slate-400" />
             Job Images
@@ -439,11 +443,11 @@ export default function JobDetailsPage() {
 
           {primaryImage && getImageUrl(primaryImage) ? (
             <div className="space-y-3">
-              <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+              <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
                 <img
                   src={getImageUrl(primaryImage)}
                   alt={primaryImage.description || "Job image"}
-                  className="h-64 w-full cursor-zoom-in object-cover sm:h-80"
+                  className="h-64 w-full cursor-zoom-in object-cover transition duration-300 hover:scale-[1.01] sm:h-96"
                   onClick={() => setSelectedImage(primaryImage)}
                 />
               </div>
@@ -461,10 +465,10 @@ export default function JobDetailsPage() {
                         type="button"
                         key={img.image_id || img.image_key}
                         onClick={() => setActiveImageId(img.image_id)}
-                        className={`overflow-hidden rounded-lg border ${
+                        className={`overflow-hidden rounded-lg border transition ${
                           isActive
                             ? "border-indigo-400 ring-2 ring-indigo-100"
-                            : "border-slate-200"
+                            : "border-slate-200 hover:border-slate-300"
                         }`}
                       >
                         <img
@@ -491,9 +495,11 @@ export default function JobDetailsPage() {
         {/* Info grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
           {/* Location */}
-          <div className="rounded-2xl border bg-white p-4">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex items-center gap-2 text-sm font-medium text-slate-700 mb-2">
-              <MapPin className="w-4 h-4 text-slate-400" />
+              <span className="rounded-lg bg-slate-100 p-1.5">
+                <MapPin className="w-4 h-4 text-slate-500" />
+              </span>
               Location
             </div>
             <p className="text-slate-900">
@@ -503,7 +509,7 @@ export default function JobDetailsPage() {
                   <br />
                 </>
               )}
-              {job.location?.city || "—"}
+              {job.location?.city || "-"}
               {job.location?.state && `, ${job.location.state}`}
               {(job.location?.postal_code || job.location?.zip) &&
                 ` ${job.location?.postal_code || job.location?.zip}`}
@@ -511,13 +517,15 @@ export default function JobDetailsPage() {
           </div>
 
           {/* Schedule */}
-          <div className="rounded-2xl border bg-white p-4">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex items-center gap-2 text-sm font-medium text-slate-700 mb-2">
-              <Calendar className="w-4 h-4 text-slate-400" />
+              <span className="rounded-lg bg-slate-100 p-1.5">
+                <Calendar className="w-4 h-4 text-slate-500" />
+              </span>
               Schedule
             </div>
             <p className="text-slate-900">
-              {job.schedule?.preferred_date || job.preferred_date || "—"}
+              {job.schedule?.preferred_date || job.preferred_date || "-"}
             </p>
             {(job.schedule?.preferred_time || job.preferred_time) && (
               <p className="text-sm text-slate-500 mt-1 flex items-center gap-1">
@@ -528,9 +536,11 @@ export default function JobDetailsPage() {
           </div>
 
           {/* Budget */}
-          <div className="rounded-2xl border bg-white p-4">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex items-center gap-2 text-sm font-medium text-slate-700 mb-2">
-              <DollarSign className="w-4 h-4 text-slate-400" />
+              <span className="rounded-lg bg-slate-100 p-1.5">
+                <DollarSign className="w-4 h-4 text-slate-500" />
+              </span>
               Budget
             </div>
             {finalPrice != null && (
@@ -540,7 +550,7 @@ export default function JobDetailsPage() {
             )}
             {(job.budget?.min != null || job.budget?.max != null) && (
               <p className="text-sm text-slate-500 mt-1">
-                Range: ${job.budget?.min ?? "—"} – ${job.budget?.max ?? "—"}
+                Range: ${job.budget?.min ?? "-"} - ${job.budget?.max ?? "-"}
               </p>
             )}
             {finalPrice == null && !job.budget?.min && !job.budget?.max && (
@@ -549,13 +559,15 @@ export default function JobDetailsPage() {
           </div>
 
           {/* Customer */}
-          <div className="rounded-2xl border bg-white p-4">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex items-center gap-2 text-sm font-medium text-slate-700 mb-2">
-              <User className="w-4 h-4 text-slate-400" />
+              <span className="rounded-lg bg-slate-100 p-1.5">
+                <User className="w-4 h-4 text-slate-500" />
+              </span>
               Customer
             </div>
             <p className="text-slate-900">
-              {job.customer_name || job.customer_id || "—"}
+              {job.customer_name || job.customer_id || "-"}
             </p>
             {job.customer_email && (
               <p className="text-sm text-slate-500 mt-1">
@@ -566,7 +578,7 @@ export default function JobDetailsPage() {
         </div>
 
         {/* Actions */}
-        <div className="rounded-2xl border bg-white p-6 shadow-sm">
+        <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm">
           <h3 className="text-sm font-medium text-slate-700 mb-4 flex items-center gap-2">
             <Briefcase className="w-4 h-4 text-slate-400" />
             Actions
@@ -616,16 +628,44 @@ export default function JobDetailsPage() {
               </Button>
             )}
 
+            {job.status === "pending_completion" && (
+              <Button disabled className="bg-emerald-600">
+                Waiting for customer to mark as completed
+              </Button>
+            )}
+
             {job.status === "budget_change_pending" && (
               <Button disabled>Waiting for Approval</Button>
             )}
           </div>
         </div>
+
+        {/* Job Completed banner */}
+        {job.status === "completed" && (
+          <div className="mt-4 rounded-2xl border border-green-200 bg-gradient-to-r from-green-50 to-emerald-50 p-6 shadow-sm">
+            <div className="flex items-center gap-3 mb-3">
+              <CheckCircle className="w-6 h-6 text-green-600" />
+              <h3 className="text-lg font-semibold text-green-800">
+                Job Completed
+              </h3>
+            </div>
+            <p className="text-sm text-green-700 mb-4">
+              Both you and the customer have confirmed this job as complete.
+            </p>
+            <Button
+              disabled
+              className="bg-yellow-500 hover:bg-yellow-600 text-white gap-2 opacity-70 cursor-not-allowed"
+            >
+              <Star className="w-4 h-4" />
+              Add Review (Coming Soon)
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Apply Modal */}
       {showApplyModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4 shadow-xl">
             <h2 className="text-lg font-semibold mb-4">Apply to Job</h2>
 
@@ -679,7 +719,7 @@ export default function JobDetailsPage() {
 
       {/* Price Change Modal */}
       {showPriceChangeModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4 shadow-xl">
             <h2 className="text-lg font-semibold mb-4">Request Price Change</h2>
 
@@ -715,7 +755,7 @@ export default function JobDetailsPage() {
                 value={priceChangeReason}
                 onChange={(e) => setPriceChangeReason(e.target.value)}
                 className="w-full border rounded-lg px-3 py-2"
-                placeholder="Explain why additional budget is required…"
+                placeholder="Explain why additional budget is required..."
               />
             </div>
 
