@@ -110,10 +110,10 @@ export default function App() {
   // ================= OIDC USER =================
   const oidcUser = auth.user
     ? {
-        name: auth.user.profile.name || auth.user.profile.email,
-        email: auth.user.profile.email,
-        role: "customer",
-      }
+      name: auth.user.profile.name || auth.user.profile.email,
+      email: auth.user.profile.email,
+      role: "customer",
+    }
     : null;
 
   const currentUser = oidcUser || localUser;
@@ -224,100 +224,9 @@ export default function App() {
           <Route path="/" element={<Home currentUser={currentUser} />} />
           <Route path="/search" element={<SearchView />} />
 
-<<<<<<< HEAD
-        {/* ---------- AUTH ---------- */}
-        <Route path="/auth/callback" element={<AuthCallback />} />
-        <Route
-          path="/login"
-          element={<Login onLogin={handleLogin} error={loginError} />}
-        />
-        <Route
-          path="/logout"
-          element={
-            <Logout onConfirm={handleLogout} onCancel={() => navigate("/")} />
-          }
-        />
-        <Route
-          path="/reset-password"
-          element={
-            <ResetPassword
-              onRequestReset={handleRequestReset}
-              error={resetError}
-              info={resetInfo}
-            />
-          }
-        />
-        <Route
-          path="/reset-confirm"
-          element={
-            <ResetPasswordConfirm
-              onResetPassword={handleConfirmReset}
-              error={resetError}
-            />
-          }
-        />
 
-        {/* Payment */}
-        <Route path="/checkout/:jobId" element={<Checkout />} />
-        <Route path="/receipt-new/:id" element={<ReceiptNew />} />
-
-        {/* ---------- CUSTOMER ---------- */}
-        <Route path="/customer/login" element={<CustomerLogin />} />
-        <Route
-          path="/customer/register"
-          element={
-            <RegisterCustomer
-              onRegister={handleRegister}
-              error={registerError}
-            />
-          }
-        />
-        <Route path="/customer/entry" element={<CustomerEntry />} />
-        <Route path="/customer/dashboard" element={<CustomerDashboard />} />
-        <Route path="/customer/edit" element={<EditProfile />} />
-        <Route path="/customer/services" element={<ServiceList />} />
-        <Route path="/customer/bookings" element={<Bookings />} />
-        <Route path="/customer/book" element={<BookingForm />} />
-        <Route path="/customer/post-job" element={<PostJob />} />
-        <Route path="/customer/jobs" element={<MyJobs />} />
-        <Route path="/customer/jobs/:job_id" element={<JobDetails />} />
-        <Route path="/customer/jobs/:job_id/edit" element={<EditJob />} />
-        <Route
-          path="/customer/jobs/:job_id/applications"
-          element={<JobApplications />}
-        />
-
-        {/* Messages */}
-        <Route path="/customer/messages" element={<CustomerMessages />} />
-
-        {/* Payment History */}
-        <Route path="/customer/payment-history" element={<PaymentHistory />} />
-
-        {/* TEMPORARY TEST ROUTE - DELETE AFTER TESTING */}
-        <Route path="/customer/test-messaging" element={<TestMessagingAPI />} />
-
-        {/* ---------- PROVIDER AUTH ---------- */}
-        <Route
-          path="/service-provider/signup"
-          element={<ServiceProviderSignUp />}
-        />
-        <Route
-          path="/service-provider/login"
-          element={<ServiceProviderLogin />}
-        />
-        <Route
-          path="/service-provider/onboarding"
-          element={<ServiceProviderOnboarding />}
-        />
-
-        {/* ---------- PROVIDER AREA (NESTED) ---------- */}
-        <Route path="/service-provider" element={<ServiceProviderLayout />}>
-          <Route path="home" element={<ServiceProviderHomePage />} />
-          <Route path="dashboard" element={<ServiceProviderDashboard />} />
-=======
           {/* ---------- AUTH ---------- */}
           <Route path="/auth/callback" element={<AuthCallback />} />
->>>>>>> origin/main
           <Route
             path="/login"
             element={<Login onLogin={handleLogin} error={loginError} />}
@@ -349,8 +258,76 @@ export default function App() {
           />
 
           {/* Payment */}
-          <Route path="/payment" element={<Payment />} />
-          <Route path="/receipt/:id" element={<Receipt />} />
+          <Route path="/checkout/:jobId" element={<Checkout />} />
+          <Route path="/receipt-new/:id" element={<ReceiptNew />} />
+
+          {/* ---------- CUSTOMER ---------- */}
+          <Route path="/customer/login" element={<CustomerLogin />} />
+          <Route
+            path="/customer/register"
+            element={
+              <RegisterCustomer
+                onRegister={handleRegister}
+                error={registerError}
+              />
+            }
+          />
+          <Route path="/customer/entry" element={<CustomerEntry />} />
+          <Route path="/customer/dashboard" element={<CustomerDashboard />} />
+          <Route path="/customer/edit" element={<EditProfile />} />
+          <Route path="/customer/services" element={<ServiceList />} />
+          <Route path="/customer/bookings" element={<Bookings />} />
+          <Route path="/customer/book" element={<BookingForm />} />
+          <Route path="/customer/post-job" element={<PostJob />} />
+          <Route path="/customer/jobs" element={<MyJobs />} />
+          <Route path="/customer/jobs/:job_id" element={<JobDetails />} />
+          <Route path="/customer/jobs/:job_id/edit" element={<EditJob />} />
+          <Route
+            path="/customer/jobs/:job_id/applications"
+            element={<JobApplications />}
+          />
+
+          {/* Messages */}
+          <Route path="/customer/messages" element={<CustomerMessages />} />
+
+          {/* Payment History */}
+          <Route path="/customer/payment-history" element={<PaymentHistory />} />
+
+          {/* TEMPORARY TEST ROUTE - DELETE AFTER TESTING */}
+          <Route path="/customer/test-messaging" element={<TestMessagingAPI />} />
+
+          {/* ---------- PROVIDER AUTH ---------- */}
+          <Route
+            path="/service-provider/signup"
+            element={<ServiceProviderSignUp />}
+          />
+          <Route
+            path="/service-provider/login"
+            element={<ServiceProviderLogin />}
+          />
+          <Route
+            path="/service-provider/onboarding"
+            element={<ServiceProviderOnboarding />}
+          />
+
+          {/* ---------- PROVIDER AREA (NESTED) ---------- */}
+          <Route path="/service-provider" element={<ServiceProviderLayout />}>
+            <Route path="home" element={<ServiceProviderHomePage />} />
+            <Route path="dashboard" element={<ServiceProviderDashboard />} />
+            <Route
+              path="create-service-offering"
+              element={<CreateServiceOffering />}
+            />
+            <Route path="job/:jobId" element={<JobDetailsPage />} />
+            <Route path="profile" element={<ServiceProviderProfile />} />
+            <Route path="messages" element={<ServiceProviderMessages />} />
+            <Route path="documents" element={<ProviderDocuments />} />
+            <Route path="jobs" element={<ServiceProviderJobs />} />
+            <Route path="applications" element={<ServiceProviderApplications />} />
+            <Route path="calendar" element={<ServiceProviderCalendar />} />
+            <Route path="bookings" element={<PendingBookings />} />
+            <Route path="bookings/:bookingId" element={<SPBookingDetails />} />
+          </Route>
 
           {/* ---------- CUSTOMER ---------- */}
           <Route path="/customer/login" element={<CustomerLogin />} />
