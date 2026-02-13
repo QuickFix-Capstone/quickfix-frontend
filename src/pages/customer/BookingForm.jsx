@@ -105,17 +105,15 @@ export default function BookingForm() {
                     return;
                 }
 
+
                 // If images were selected, upload them to the new booking
                 if (selectedImages.length > 0) {
                     setUploadingImages(true);
                     await uploadImagesToBooking(bookingId);
                 }
 
-                // Show success message
-                alert(`Booking created successfully! Booking ID: ${bookingId}`);
-
-                // Redirect to bookings list page
-                navigate("/customer/bookings");
+                // Navigate to checkout page with job_id
+                navigate(`/checkout/${bookingId}`);
             } else {
                 const error = await res.text();
                 console.error("Booking failed:", error);

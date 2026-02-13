@@ -10,10 +10,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@paypal/react-paypal-js": "^8.9.2",
     "@stripe/react-stripe-js": "^5.4.1",
     "@stripe/stripe-js": "^8.6.0",
     "@tailwindcss/vite": "^4.1.16",
     "aws-amplify": "^6.15.9",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.1.0",
     "lucide-react": "^0.553.0",
     "oidc-client-ts": "^3.4.1",
     "react": "^19.1.1",

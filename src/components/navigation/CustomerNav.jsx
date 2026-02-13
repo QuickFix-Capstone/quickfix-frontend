@@ -12,6 +12,7 @@ import {
   MessageSquare,
   User,
   LogOut,
+  Receipt,
 } from "lucide-react";
 
 export default function CustomerNav({ currentUser, onGoLogout }) {
@@ -48,11 +49,10 @@ export default function CustomerNav({ currentUser, onGoLogout }) {
     `
       flex items-center gap-2 rounded-lg px-3 py-2 text-sm
       transition-all duration-200
-      ${
-        active
-          ? "bg-neutral-900 text-white shadow-sm"
-          : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
-      }
+      ${active
+      ? "bg-neutral-900 text-white shadow-sm"
+      : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
+    }
     `;
 
   return (
@@ -122,6 +122,14 @@ export default function CustomerNav({ currentUser, onGoLogout }) {
             {totalUnread > 0 && (
               <UnreadBadge count={totalUnread} />
             )}
+          </GhostButton>
+
+          <GhostButton
+            onClick={() => navigate("/customer/payment-history")}
+            className={navBtn(isActive("/customer/payment-history"))}
+          >
+            <Receipt className="h-4 w-4" />
+            Payment History
           </GhostButton>
 
           {/* Divider */}
