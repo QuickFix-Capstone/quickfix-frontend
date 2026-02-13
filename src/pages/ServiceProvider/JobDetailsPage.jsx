@@ -17,6 +17,7 @@ import {
   X,
 } from "lucide-react";
 import Button from "../../components/UI/Button";
+import StarRating from "../../components/UI/StarRating";
 import { API_BASE } from "../../api/config";
 import useWebSocket from "../../hooks/useWebSocket";
 
@@ -51,6 +52,12 @@ export default function JobDetailsPage() {
   const [applicationMessage, setApplicationMessage] = useState("");
   const [submittingApplication, setSubmittingApplication] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+
+  // Review modal state
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewComment, setReviewComment] = useState("");
+  const [submittingReview, setSubmittingReview] = useState(false);
 
   // ─────────────────────────────────────
   // Load current user ID for WebSocket
@@ -316,6 +323,55 @@ export default function JobDetailsPage() {
     } catch (err) {
       console.error(err);
       alert("Failed to complete job");
+    }
+  };
+
+  // ─────────────────────────────────────
+  // Review customer
+  // ─────────────────────────────────────
+  const handleSubmitReview = async () => {
+    if (reviewRating === 0) {
+      alert("Please select a star rating.");
+      return;
+    }
+
+    try {
+      setSubmittingReview(true);
+      const session = await fetchAuthSession();
+      const token = session.tokens.idToken.toString();
+
+      const res = await fetch(
+        `${API_BASE}/service-provider/jobs/${job.job_id}/review-customer`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            rating: reviewRating,
+            comment: reviewComment.trim(),
+          }),
+        },
+      );
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        alert(data.message || "Failed to submit review");
+        return;
+      }
+
+      alert("Review submitted successfully!");
+      setShowReviewModal(false);
+      setReviewRating(0);
+      setReviewComment("");
+      silentRefresh();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to submit review");
+    } finally {
+      setSubmittingReview(false);
     }
   };
 
@@ -653,11 +709,11 @@ export default function JobDetailsPage() {
               Both you and the customer have confirmed this job as complete.
             </p>
             <Button
-              disabled
-              className="bg-yellow-500 hover:bg-yellow-600 text-white gap-2 opacity-70 cursor-not-allowed"
+              className="bg-yellow-500 hover:bg-yellow-600 text-white gap-2"
+              onClick={() => setShowReviewModal(true)}
             >
               <Star className="w-4 h-4" />
-              Add Review (Coming Soon)
+              Add Review
             </Button>
           </div>
         )}
@@ -774,6 +830,92 @@ export default function JobDetailsPage() {
                 disabled={submittingPriceChange}
               >
                 {submittingPriceChange ? "Submitting..." : "Submit Request"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Review Customer Modal */}
+      {showReviewModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4 shadow-xl">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h2 className="text-lg font-semibold">Review Customer</h2>
+                <p className="text-sm text-slate-500 mt-1">
+                  How was your experience with{" "}
+                  {job.customer_name || "this customer"}?
+                </p>
+              </div>
+              <button
+                onClick={() => setShowReviewModal(false)}
+                className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="mb-4 rounded-lg bg-slate-50 p-3">
+              <p className="text-sm font-medium text-slate-700">
+                {job.title || "Service"}
+              </p>
+              <p className="text-xs text-slate-500 mt-1">Job #{job.job_id}</p>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-2">
+                Your Rating <span className="text-red-500">*</span>
+              </label>
+              <div className="flex justify-center">
+                <StarRating
+                  value={reviewRating}
+                  onChange={setReviewRating}
+                  size="lg"
+                />
+              </div>
+              {reviewRating > 0 && (
+                <p className="mt-2 text-center text-sm text-slate-600">
+                  {reviewRating === 1 && "Poor"}
+                  {reviewRating === 2 && "Fair"}
+                  {reviewRating === 3 && "Good"}
+                  {reviewRating === 4 && "Very Good"}
+                  {reviewRating === 5 && "Excellent"}
+                </p>
+              )}
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1">
+                Comment (optional)
+              </label>
+              <textarea
+                rows={4}
+                value={reviewComment}
+                onChange={(e) => setReviewComment(e.target.value)}
+                maxLength={500}
+                className="w-full border rounded-lg px-3 py-2"
+                placeholder="Share your experience working with this customer..."
+              />
+              <p className="mt-1 text-xs text-slate-500">
+                {reviewComment.length}/500 characters
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowReviewModal(false)}
+                disabled={submittingReview}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="bg-yellow-500 hover:bg-yellow-600 text-white"
+                onClick={handleSubmitReview}
+                disabled={submittingReview}
+              >
+                {submittingReview ? "Submitting..." : "Submit Review"}
               </Button>
             </div>
           </div>
