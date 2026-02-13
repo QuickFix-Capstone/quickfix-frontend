@@ -8,7 +8,7 @@ import UnreadBadge from "../../components/messaging/UnreadBadge";
 import { getConversations } from "../../api/messaging";
 import { getMyReviews } from "../../api/reviews";
 import ReviewCard from "./ReviewCard";
-import { User, LogOut, Plus, Calendar, Settings, Upload, Briefcase, MessageSquare, TrendingUp, Clock, Star } from "lucide-react";
+import { User, LogOut, Plus, Calendar, Settings, Upload, Briefcase, MessageSquare, TrendingUp, Clock, Star, Bell } from "lucide-react";
 
 export default function CustomerDashboard() {
     const JOB_STATUS_WS_BASE = "wss://074y7xhv7f.execute-api.us-east-2.amazonaws.com/dev";
@@ -22,10 +22,13 @@ export default function CustomerDashboard() {
     const [myReviews, setMyReviews] = useState([]);
     const [jobs, setJobs] = useState([]);
     const [completionNotifications, setCompletionNotifications] = useState([]);
+    const [showCompletedList, setShowCompletedList] = useState(false);
     const [showActiveList, setShowActiveList] = useState(false);
     const [showPendingList, setShowPendingList] = useState(false);
     const [showCancelledList, setShowCancelledList] = useState(false);
+    const [showNotificationsMenu, setShowNotificationsMenu] = useState(false);
     const hasFetchedJobs = useRef(false);
+    const notificationsMenuRef = useRef(null);
 
     const normalizeJobStatus = (status) => {
         const value = (status || "").toLowerCase();
@@ -71,6 +74,10 @@ export default function CustomerDashboard() {
             const status = normalizeJobStatus(job.status);
             return status === "confirmed" || status === "in_progress";
         });
+    }, [jobs]);
+
+    const completedJobs = useMemo(() => {
+        return jobs.filter((job) => normalizeJobStatus(job.status) === "completed");
     }, [jobs]);
 
     const cancelledJobs = useMemo(() => {
@@ -212,6 +219,24 @@ export default function CustomerDashboard() {
         );
     };
 
+    useEffect(() => {
+        if (!showNotificationsMenu) return;
+
+        const handleClickOutside = (event) => {
+            if (
+                notificationsMenuRef.current &&
+                !notificationsMenuRef.current.contains(event.target)
+            ) {
+                setShowNotificationsMenu(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [showNotificationsMenu]);
+
     // Fetch unread message count
     useEffect(() => {
         if (!auth.isAuthenticated) return;
@@ -292,6 +317,8 @@ export default function CustomerDashboard() {
         navigate("/");
     };
 
+    const totalNotifications = completionNotifications.length + totalUnread;
+
     if (loading) {
         return (
             <div className="flex min-h-screen items-center justify-center">
@@ -314,14 +341,93 @@ export default function CustomerDashboard() {
                                 Your personalized service management hub
                             </p>
                         </div>
-                        <Button
-                            onClick={handleLogout}
-                            variant="outline"
-                            className="gap-2 border-white bg-white/10 text-white hover:bg-white/20"
-                        >
-                            <LogOut className="h-4 w-4" />
-                            Logout
-                        </Button>
+                        <div className="relative flex items-center gap-3" ref={notificationsMenuRef}>
+                            <button
+                                type="button"
+                                onClick={() => setShowNotificationsMenu((prev) => !prev)}
+                                className="relative flex h-11 w-11 items-center justify-center rounded-full border border-white/40 bg-white/10 text-white transition hover:bg-white/20"
+                                aria-label="Open notifications"
+                            >
+                                <Bell className="h-5 w-5" />
+                                {totalNotifications > 0 && (
+                                    <span className="absolute -right-1 -top-1 min-w-[20px] rounded-full bg-red-500 px-1.5 py-0.5 text-center text-xs font-semibold text-white">
+                                        {totalNotifications > 99 ? "99+" : totalNotifications}
+                                    </span>
+                                )}
+                            </button>
+
+                            {showNotificationsMenu && (
+                                <div className="absolute right-0 top-14 z-20 w-80 rounded-xl border border-white/30 bg-white p-4 text-neutral-900 shadow-2xl">
+                                    <div className="mb-3 flex items-center justify-between">
+                                        <h3 className="text-sm font-bold">Notifications</h3>
+                                        <span className="text-xs text-neutral-500">
+                                            {totalNotifications} total
+                                        </span>
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setShowNotificationsMenu(false);
+                                            navigate("/customer/messages");
+                                        }}
+                                        className="mb-2 w-full rounded-lg border border-neutral-200 p-3 text-left transition hover:bg-neutral-50"
+                                    >
+                                        <p className="text-sm font-medium">Messages</p>
+                                        <p className="text-xs text-neutral-600">
+                                            {totalUnread > 0
+                                                ? `${totalUnread} unread message${totalUnread > 1 ? "s" : ""}`
+                                                : "No unread messages"}
+                                        </p>
+                                    </button>
+
+                                    {completionNotifications.length === 0 ? (
+                                        <div className="rounded-lg border border-neutral-200 p-3 text-xs text-neutral-600">
+                                            No job completion updates yet.
+                                        </div>
+                                    ) : (
+                                        <div className="max-h-60 space-y-2 overflow-y-auto">
+                                            {completionNotifications.map((notification) => {
+                                                const job = jobs.find(
+                                                    (item) =>
+                                                        String(item.job_id) ===
+                                                        String(notification.jobId)
+                                                );
+
+                                                return (
+                                                    <button
+                                                        type="button"
+                                                        key={`${notification.jobId}-${notification.receivedAt}`}
+                                                        onClick={() => {
+                                                            clearCompletionNotification(notification.jobId);
+                                                            setShowNotificationsMenu(false);
+                                                            navigate(`/customer/jobs/${notification.jobId}`);
+                                                        }}
+                                                        className="w-full rounded-lg border border-green-200 bg-green-50 p-3 text-left transition hover:bg-green-100"
+                                                    >
+                                                        <p className="text-sm font-semibold text-neutral-900">
+                                                            {job?.title || `Job #${notification.jobId}`}
+                                                        </p>
+                                                        <p className="text-xs text-green-800">
+                                                            Service provider marked this job as completed.
+                                                        </p>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            <Button
+                                onClick={handleLogout}
+                                variant="outline"
+                                className="gap-2 border-white bg-white/10 text-white hover:bg-white/20"
+                            >
+                                <LogOut className="h-4 w-4" />
+                                Logout
+                            </Button>
+                        </div>
                     </div>
                 </div>
 
@@ -460,7 +566,10 @@ export default function CustomerDashboard() {
                 {/* Activity Overview */}
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
                     {/* Stats Card 1 */}
-                    <Card className="border-0 bg-white p-6 shadow-lg">
+                    <Card
+                        className={`border-0 bg-white p-6 shadow-lg transition ${showCompletedList ? "ring-2 ring-blue-500" : "hover:shadow-xl"} cursor-pointer`}
+                        onClick={() => setShowCompletedList((prev) => !prev)}
+                    >
                         <div className="flex items-center gap-4">
                             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100">
                                 <TrendingUp className="h-6 w-6 text-blue-600" />
@@ -609,6 +718,57 @@ export default function CustomerDashboard() {
                                                 </p>
                                                 <p className="text-sm text-neutral-600">
                                                     Status: {(job.status || "").replace("_", " ")}
+                                                </p>
+                                            </div>
+                                            <Button
+                                                variant="outline"
+                                                onClick={() =>
+                                                    navigate(`/customer/jobs/${job.job_id}`)
+                                                }
+                                            >
+                                                View Details
+                                            </Button>
+                                        </div>
+                                    </Card>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {showCompletedList && (
+                    <div className="mt-6">
+                        <div className="mb-3 flex items-center justify-between">
+                            <h2 className="text-xl font-bold text-neutral-900">
+                                Completed Jobs
+                            </h2>
+                            <Button
+                                variant="outline"
+                                className="text-sm"
+                                onClick={() => navigate("/customer/jobs")}
+                            >
+                                View All Jobs
+                            </Button>
+                        </div>
+
+                        {completedJobs.length === 0 ? (
+                            <Card className="border border-neutral-200 bg-white p-6 text-neutral-600">
+                                No completed jobs found in this page of results.
+                            </Card>
+                        ) : (
+                            <div className="grid gap-3">
+                                {completedJobs.map((job) => (
+                                    <Card
+                                        key={job.job_id}
+                                        className="border border-neutral-200 bg-white p-4"
+                                    >
+                                        <div className="flex items-center justify-between gap-4">
+                                            <div>
+                                                <p className="font-semibold text-neutral-900">
+                                                    {job.title}
+                                                </p>
+                                                <p className="text-sm font-medium text-green-700">
+                                                    Job is done.
                                                 </p>
                                             </div>
                                             <Button
