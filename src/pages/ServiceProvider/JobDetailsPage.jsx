@@ -61,7 +61,7 @@ export default function JobDetailsPage() {
   // ─────────────────────────────────────
   // WebSocket for real-time status updates
   // ─────────────────────────────────────
-  useWebSocket(userId, (data) => {
+  const { sendMessage } = useWebSocket(userId, (data) => {
     if (data.type === "JOB_STATUS_CHANGED" && data.jobId === jobId) {
       setJob((prev) => (prev ? { ...prev, status: data.newStatus } : prev));
     }
@@ -285,19 +285,28 @@ export default function JobDetailsPage() {
       const session = await fetchAuthSession();
       const token = session.tokens.idToken.toString();
 
-      const res = await fetch(`${API_BASE}/jobs/${job.job_id}/complete`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
+      const res = await fetch(
+        `${API_BASE}/jobs/${job.job_id}/confirm-complete`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         },
-      });
+      );
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
         alert(data.message || "Failed to complete job");
         return;
       }
+
+      sendMessage({
+        action: "complete_job",
+        job_id: job.job_id,
+      });
 
       alert("Job marked as completed");
       silentRefresh();
