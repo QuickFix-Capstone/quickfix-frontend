@@ -137,7 +137,7 @@ export default function JobApplications() {
 
         setProcessingId(`status-${applicationId}`);
         try {
-            const data = await updateJobApplicationStatus(
+            await updateJobApplicationStatus(
                 job_id,
                 applicationId,
                 normalizedAction,
