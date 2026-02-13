@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "react-oidc-context";
 import { useNavigate } from "react-router-dom";
+import { useLocation as useUserLocation } from "../../context/LocationContext";
 import Card from "../../components/UI/Card";
 import Button from "../../components/UI/Button";
 import { ArrowLeft, Calendar, Clock, MapPin, DollarSign, AlertCircle, ChevronLeft, ChevronRight, Filter, MessageSquare } from "lucide-react";
@@ -10,12 +11,20 @@ import { createConversation } from "../../api/messaging";
 export default function Bookings() {
     const auth = useAuth();
     const navigate = useNavigate();
+    const { location: userLocation, getLocation } = useUserLocation();
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
     const [statusFilter, setStatusFilter] = useState("all");
     const [limit] = useState(20);
     const [offset, setOffset] = useState(0);
     const [pagination, setPagination] = useState({ total: 0, has_more: false });
+
+    // Get user location on mount
+    useEffect(() => {
+        if (!userLocation) {
+            getLocation();
+        }
+    }, [userLocation, getLocation]);
 
     const statusColors = {
         pending: "bg-yellow-100 text-yellow-800 border-yellow-200",

@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "react-oidc-context";
 import { useNavigate } from "react-router-dom";
+import { useLocation as useUserLocation } from "../../context/LocationContext";
 import Card from "../../components/UI/Card";
 import Button from "../../components/UI/Button";
 import { Search, Star, ArrowLeft, Filter, MessageSquare } from "lucide-react";
@@ -10,11 +11,19 @@ import { createConversation } from "../../api/messaging";
 export default function ServiceList() {
     const auth = useAuth();
     const navigate = useNavigate();
+    const { location: userLocation, getLocation } = useUserLocation();
     const [services, setServices] = useState([]);
     const [filteredServices, setFilteredServices] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedCategory, setSelectedCategory] = useState("ALL");
+
+    // Get user location on mount
+    useEffect(() => {
+        if (!userLocation) {
+            getLocation();
+        }
+    }, [userLocation, getLocation]);
 
     // Pagination state
     const [currentPage, setCurrentPage] = useState(1);
@@ -143,7 +152,7 @@ export default function ServiceList() {
     // Handle messaging a provider
     const handleMessageProvider = async (service) => {
         try {
-            const conversation = await createConversation(
+            await createConversation(
                 service.provider_id,
                 service.service_offering_id
             );

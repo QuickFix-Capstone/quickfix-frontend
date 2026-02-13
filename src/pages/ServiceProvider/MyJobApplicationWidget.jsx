@@ -71,7 +71,10 @@ export default function MyJobApplicationsWidget() {
           {applications.map((app) => (
             <div
               key={app.application_id}
-              className="rounded-lg border border-gray-100 bg-gray-50 p-3 hover:bg-gray-100 transition"
+              className="rounded-lg border border-gray-100 bg-gray-50 p-3 hover:bg-gray-100 transition cursor-pointer"
+              onClick={() => {
+                if (app.job_id) navigate(`/service-provider/job/${app.job_id}`);
+              }}
             >
               <div className="flex items-center justify-between">
                 <p className="font-medium text-gray-900 text-sm truncate">

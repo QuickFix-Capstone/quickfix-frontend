@@ -14,6 +14,12 @@ export default function MyJobs() {
     const [limit] = useState(10);
     const [offset, setOffset] = useState(0);
 
+    const normalizeJobStatus = (status) => {
+        const value = (status || "").toLowerCase();
+        if (value === "canceled" || value === "cancel") return "cancelled";
+        return value;
+    };
+
     useEffect(() => {
         fetchJobs();
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -30,6 +36,7 @@ export default function MyJobs() {
                 `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/customer/jobs?limit=${limit}&offset=${offset}`,
                 {
                     method: "GET",
+                    cache: "no-store",
                     headers: {
                         Authorization: `Bearer ${token}`,
                         "Content-Type": "application/json",
@@ -44,7 +51,12 @@ export default function MyJobs() {
                 console.log("Jobs fetched:", data);
                 console.log("Jobs array:", data.jobs);
                 console.log("Jobs array length:", data.jobs?.length);
-                setJobs(data.jobs || []);
+                setJobs(
+                    (data.jobs || []).map((job) => ({
+                        ...job,
+                        status: normalizeJobStatus(job.status),
+                    }))
+                );
             } else {
                 const errorText = await res.text();
                 console.error("Failed to fetch jobs. Status:", res.status, "Error:", errorText);
@@ -162,7 +174,7 @@ export default function MyJobs() {
                                                         job.status
                                                     )}`}
                                                 >
-                                                    {job.status.replace("_", " ").toUpperCase()}
+                                                    {(job.status || "unknown").replace("_", " ").toUpperCase()}
                                                 </span>
                                             </div>
                                         </div>
@@ -226,7 +238,7 @@ export default function MyJobs() {
                                         >
                                             View Details
                                         </Button>
-                                        {job.status === "open" && (
+                                        {normalizeJobStatus(job.status) === "open" && (
                                             <Button
                                                 onClick={() =>
                                                     navigate(`/customer/jobs/${job.job_id}/applications`)

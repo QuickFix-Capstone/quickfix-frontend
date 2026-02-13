@@ -10,6 +10,9 @@ import {
   CheckCircle2,
   Menu,
   X,
+  MessageCircle,
+  Calendar,
+  CalendarDays,
 } from "lucide-react";
 import GhostButton from "../UI/GhostButton";
 
@@ -75,6 +78,24 @@ export default function TopNav({ currentUser, onLogout }) {
             icon={PlusCircle}
             label="Create Service"
             path="/service-provider/create-service-offering"
+          />
+
+          <NavItem
+            icon={MessageCircle}
+            label="Messages"
+            path="/service-provider/messages"
+          />
+
+          <NavItem
+            icon={Calendar}
+            label="Bookings"
+            path="/service-provider/bookings"
+          />
+
+          <NavItem
+            icon={CalendarDays}
+            label="Calendar"
+            path="/service-provider/calendar"
           />
 
           <div className="mx-2 h-6 w-px bg-neutral-200" />
@@ -144,6 +165,24 @@ export default function TopNav({ currentUser, onLogout }) {
               icon={PlusCircle}
               label="Create Service"
               path="/service-provider/create-service-offering"
+            />
+
+            <NavItem
+              icon={MessageCircle}
+              label="Messages"
+              path="/service-provider/messages"
+            />
+
+            <NavItem
+              icon={Calendar}
+              label="Bookings"
+              path="/service-provider/bookings"
+            />
+
+            <NavItem
+              icon={CalendarDays}
+              label="Calendar"
+              path="/service-provider/calendar"
             />
 
             <div className="my-2 h-px bg-neutral-200" />
