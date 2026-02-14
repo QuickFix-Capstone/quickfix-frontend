@@ -112,8 +112,8 @@ export default function BookingForm() {
                     await uploadImagesToBooking(bookingId);
                 }
 
-                // Navigate to checkout page with job_id
-                navigate(`/checkout/${bookingId}`);
+                // Navigate to bookings list page
+                navigate('/customer/bookings');
             } else {
                 const error = await res.text();
                 console.error("Booking failed:", error);
