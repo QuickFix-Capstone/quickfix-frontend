@@ -5,8 +5,10 @@ import { useNavigate } from "react-router-dom";
 import { useLocation as useUserLocation } from "../../context/LocationContext";
 import Card from "../../components/UI/Card";
 import Button from "../../components/UI/Button";
+import ReviewModal from "../../components/reviews/ReviewModal";
 import { ArrowLeft, Calendar, Clock, MapPin, DollarSign, AlertCircle, ChevronLeft, ChevronRight, Filter, MessageSquare } from "lucide-react";
 import { createConversation } from "../../api/messaging";
+import { getMyReviews } from "../../api/reviews";
 
 export default function Bookings() {
     const auth = useAuth();
@@ -18,6 +20,8 @@ export default function Bookings() {
     const [limit] = useState(20);
     const [offset, setOffset] = useState(0);
     const [pagination, setPagination] = useState({ total: 0, has_more: false });
+    const [reviewModalOpen, setReviewModalOpen] = useState(false);
+    const [selectedBookingForReview, setSelectedBookingForReview] = useState(null);
 
     // Get user location on mount
     useEffect(() => {
@@ -167,6 +171,49 @@ export default function Bookings() {
                 console.error("Failed to create conversation:", error);
                 alert("Failed to start conversation. Please try again.");
             }
+        }
+    };
+
+    const handleOpenReviewModal = (booking) => {
+        // Convert booking to job format for the modal
+        const jobData = {
+            job_id: booking.booking_id,
+            title: booking.service_description,
+            provider_name: booking.provider?.name,
+        };
+        setSelectedBookingForReview(jobData);
+        setReviewModalOpen(true);
+    };
+
+    const handleSubmitReview = async (reviewData) => {
+        try {
+            const token = auth.user?.id_token || auth.user?.access_token;
+            
+            const res = await fetch(
+                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/reviews`,
+                {
+                    method: "POST",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        booking_id: reviewData.jobId,
+                        rating: reviewData.rating,
+                        comment: reviewData.comment,
+                    }),
+                }
+            );
+
+            if (res.ok) {
+                alert("Review submitted successfully!");
+                fetchBookings(); // Refresh bookings
+            } else {
+                throw new Error("Failed to submit review");
+            }
+        } catch (error) {
+            console.error("Error submitting review:", error);
+            throw error;
         }
     };
 
@@ -331,6 +378,14 @@ export default function Bookings() {
 
                                         {/* Actions */}
                                         <div className="flex flex-col gap-2 w-full">
+                                            {booking.status === "completed" && (
+                                                <Button
+                                                    onClick={() => handleOpenReviewModal(booking)}
+                                                    className="w-full bg-green-600 hover:bg-green-700 text-white"
+                                                >
+                                                    Write Review
+                                                </Button>
+                                            )}
                                             {booking.status === "pending" && (
                                                 <Button
                                                     onClick={() => handleCancelBooking(booking.booking_id)}
@@ -397,6 +452,19 @@ export default function Bookings() {
                     </div>
                 )}
             </div>
+
+            {/* Review Modal */}
+            {selectedBookingForReview && (
+                <ReviewModal
+                    isOpen={reviewModalOpen}
+                    onClose={() => {
+                        setReviewModalOpen(false);
+                        setSelectedBookingForReview(null);
+                    }}
+                    job={selectedBookingForReview}
+                    onSubmit={handleSubmitReview}
+                />
+            )}
         </div>
     );
 }

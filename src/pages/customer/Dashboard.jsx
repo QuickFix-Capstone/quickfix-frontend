@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import Card from "../../components/UI/Card";
 import Button from "../../components/UI/Button";
 import UnreadBadge from "../../components/messaging/UnreadBadge";
+import ReviewModal from "../../components/reviews/ReviewModal";
 import { getConversations } from "../../api/messaging";
 import { getMyReviews } from "../../api/reviews";
 import ReviewCard from "./ReviewCard";
@@ -27,6 +28,8 @@ export default function CustomerDashboard() {
     const [showPendingList, setShowPendingList] = useState(false);
     const [showCancelledList, setShowCancelledList] = useState(false);
     const [showNotificationsMenu, setShowNotificationsMenu] = useState(false);
+    const [reviewModalOpen, setReviewModalOpen] = useState(false);
+    const [selectedJobForReview, setSelectedJobForReview] = useState(null);
     const hasFetchedJobs = useRef(false);
     const notificationsMenuRef = useRef(null);
 
@@ -315,6 +318,46 @@ export default function CustomerDashboard() {
         // Clear the auth session locally and navigate to home
         await auth.removeUser();
         navigate("/");
+    };
+
+    const handleOpenReviewModal = (job) => {
+        setSelectedJobForReview(job);
+        setReviewModalOpen(true);
+    };
+
+    const handleSubmitReview = async (reviewData) => {
+        try {
+            const token = auth.user?.id_token || auth.user?.access_token;
+            
+            // TODO: Replace with your actual review API endpoint
+            const res = await fetch(
+                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/reviews`,
+                {
+                    method: "POST",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        job_id: reviewData.jobId,
+                        rating: reviewData.rating,
+                        comment: reviewData.comment,
+                    }),
+                }
+            );
+
+            if (res.ok) {
+                alert("Review submitted successfully!");
+                // Refresh reviews
+                const data = await getMyReviews(10);
+                setMyReviews(data.reviews || []);
+            } else {
+                throw new Error("Failed to submit review");
+            }
+        } catch (error) {
+            console.error("Error submitting review:", error);
+            throw error;
+        }
     };
 
     const totalNotifications = completionNotifications.length + totalUnread;
@@ -771,14 +814,22 @@ export default function CustomerDashboard() {
                                                     Job is done.
                                                 </p>
                                             </div>
-                                            <Button
-                                                variant="outline"
-                                                onClick={() =>
-                                                    navigate(`/customer/jobs/${job.job_id}`)
-                                                }
-                                            >
-                                                View Details
-                                            </Button>
+                                            <div className="flex gap-2">
+                                                <Button
+                                                    variant="outline"
+                                                    onClick={() =>
+                                                        navigate(`/customer/jobs/${job.job_id}`)
+                                                    }
+                                                >
+                                                    View Details
+                                                </Button>
+                                                <Button
+                                                    onClick={() => handleOpenReviewModal(job)}
+                                                    className="bg-green-600 hover:bg-green-700 text-white"
+                                                >
+                                                    Review
+                                                </Button>
+                                            </div>
                                         </div>
                                     </Card>
                                 ))}
@@ -986,6 +1037,19 @@ export default function CustomerDashboard() {
                     )}
                 </div>
             </div>
+
+            {/* Review Modal */}
+            {selectedJobForReview && (
+                <ReviewModal
+                    isOpen={reviewModalOpen}
+                    onClose={() => {
+                        setReviewModalOpen(false);
+                        setSelectedJobForReview(null);
+                    }}
+                    job={selectedJobForReview}
+                    onSubmit={handleSubmitReview}
+                />
+            )}
         </div>
     );
 }
