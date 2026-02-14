@@ -19,12 +19,25 @@ export default function ReviewModal({ isOpen, onClose, job, onSubmit }) {
             return;
         }
 
+        // Validate comment length (minimum 10 characters if provided)
+        if (comment.trim() && comment.trim().length < 10) {
+            alert("Comment must be at least 10 characters");
+            return;
+        }
+
+        if (!job.provider_id) {
+            alert("Provider information is missing");
+            return;
+        }
+
         setSubmitting(true);
         try {
             await onSubmit({
                 jobId: job.job_id,
+                bookingId: job.booking_id,
+                providerId: job.provider_id,
                 rating,
-                comment: comment.trim(),
+                comment: comment.trim() || "No comment provided.",
             });
             
             // Reset form
@@ -33,7 +46,7 @@ export default function ReviewModal({ isOpen, onClose, job, onSubmit }) {
             onClose();
         } catch (error) {
             console.error("Failed to submit review:", error);
-            alert("Failed to submit review. Please try again.");
+            // Error is already handled in parent
         } finally {
             setSubmitting(false);
         }
@@ -112,19 +125,24 @@ export default function ReviewModal({ isOpen, onClose, job, onSubmit }) {
                             htmlFor="comment"
                             className="mb-2 block text-sm font-medium text-neutral-700"
                         >
-                            Comment (Optional)
+                            Comment (Optional, min 10 characters)
                         </label>
                         <textarea
                             id="comment"
                             value={comment}
                             onChange={(e) => setComment(e.target.value)}
-                            placeholder="Share details about your experience..."
+                            placeholder="Share details about your experience... (minimum 10 characters)"
                             rows={4}
                             className="w-full rounded-lg border border-neutral-300 px-4 py-3 text-neutral-900 placeholder-neutral-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                            maxLength={500}
+                            maxLength={1000}
                         />
                         <p className="mt-1 text-xs text-neutral-500">
-                            {comment.length}/500 characters
+                            {comment.length}/1000 characters
+                            {comment.length > 0 && comment.length < 10 && (
+                                <span className="ml-2 text-red-600">
+                                    (Need {10 - comment.length} more)
+                                </span>
+                            )}
                         </p>
                     </div>
 

@@ -177,9 +177,11 @@ export default function Bookings() {
     const handleOpenReviewModal = (booking) => {
         // Convert booking to job format for the modal
         const jobData = {
-            job_id: booking.booking_id,
+            job_id: null, // We'll use booking_id instead
+            booking_id: booking.booking_id,
             title: booking.service_description,
             provider_name: booking.provider?.name,
+            provider_id: booking.provider_id,
         };
         setSelectedBookingForReview(jobData);
         setReviewModalOpen(true);
@@ -189,8 +191,14 @@ export default function Bookings() {
         try {
             const token = auth.user?.id_token || auth.user?.access_token;
             
+            // Validate comment length
+            if (reviewData.comment && reviewData.comment.length < 10) {
+                alert("Comment must be at least 10 characters");
+                throw new Error("Comment too short");
+            }
+            
             const res = await fetch(
-                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/reviews`,
+                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/customer/reviews`,
                 {
                     method: "POST",
                     headers: {
@@ -198,21 +206,25 @@ export default function Bookings() {
                         "Content-Type": "application/json",
                     },
                     body: JSON.stringify({
-                        booking_id: reviewData.jobId,
+                        booking_id: reviewData.bookingId,
+                        provider_id: reviewData.providerId,
                         rating: reviewData.rating,
-                        comment: reviewData.comment,
+                        comment: reviewData.comment || "No comment provided.",
                     }),
                 }
             );
+
+            const data = await res.json();
 
             if (res.ok) {
                 alert("Review submitted successfully!");
                 fetchBookings(); // Refresh bookings
             } else {
-                throw new Error("Failed to submit review");
+                throw new Error(data.message || "Failed to submit review");
             }
         } catch (error) {
             console.error("Error submitting review:", error);
+            alert(error.message || "Failed to submit review. Please try again.");
             throw error;
         }
     };

@@ -314,24 +314,28 @@ export default function CustomerDashboard() {
         fetchMyReviews();
     }, [auth.isAuthenticated]);
 
-    const handleLogout = async () => {
-        // Clear the auth session locally and navigate to home
-        await auth.removeUser();
-        navigate("/");
-    };
-
     const handleOpenReviewModal = (job) => {
         setSelectedJobForReview(job);
         setReviewModalOpen(true);
+    };
+
+    const handleLogout = async () => {
+        await auth.removeUser();
+        navigate("/");
     };
 
     const handleSubmitReview = async (reviewData) => {
         try {
             const token = auth.user?.id_token || auth.user?.access_token;
             
-            // TODO: Replace with your actual review API endpoint
+            // Validate comment length
+            if (reviewData.comment && reviewData.comment.length < 10) {
+                alert("Comment must be at least 10 characters");
+                throw new Error("Comment too short");
+            }
+            
             const res = await fetch(
-                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/reviews`,
+                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/customer/reviews`,
                 {
                     method: "POST",
                     headers: {
@@ -340,22 +344,26 @@ export default function CustomerDashboard() {
                     },
                     body: JSON.stringify({
                         job_id: reviewData.jobId,
+                        provider_id: reviewData.providerId,
                         rating: reviewData.rating,
-                        comment: reviewData.comment,
+                        comment: reviewData.comment || "No comment provided.",
                     }),
                 }
             );
 
+            const data = await res.json();
+
             if (res.ok) {
                 alert("Review submitted successfully!");
                 // Refresh reviews
-                const data = await getMyReviews(10);
-                setMyReviews(data.reviews || []);
+                const reviewsData = await getMyReviews(10);
+                setMyReviews(reviewsData.reviews || []);
             } else {
-                throw new Error("Failed to submit review");
+                throw new Error(data.message || "Failed to submit review");
             }
         } catch (error) {
             console.error("Error submitting review:", error);
+            alert(error.message || "Failed to submit review. Please try again.");
             throw error;
         }
     };
