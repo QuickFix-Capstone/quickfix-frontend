@@ -198,7 +198,7 @@ export default function Bookings() {
             }
             
             const res = await fetch(
-                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/customer/reviews`,
+                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/customer/reviews`,
                 {
                     method: "POST",
                     headers: {
@@ -218,7 +218,7 @@ export default function Bookings() {
 
             if (res.ok) {
                 alert("Review submitted successfully!");
-                fetchBookings(); // Refresh bookings
+                fetchBookings(); // Refresh bookings to update review status
             } else {
                 throw new Error(data.message || "Failed to submit review");
             }

@@ -26,7 +26,8 @@ export default function ReviewModal({ isOpen, onClose, job, onSubmit }) {
         }
 
         if (!job.provider_id) {
-            alert("Provider information is missing");
+            console.error("Job data:", job);
+            alert("Provider information is missing. This job may not have been assigned to a provider yet.");
             return;
         }
 

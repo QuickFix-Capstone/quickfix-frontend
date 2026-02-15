@@ -8,8 +8,10 @@ import UnreadBadge from "../../components/messaging/UnreadBadge";
 import ReviewModal from "../../components/reviews/ReviewModal";
 import { getConversations } from "../../api/messaging";
 import { getMyReviews } from "../../api/reviews";
+import { getReviewsAboutMe } from "../../api/customerReviews";
 import ReviewCard from "./ReviewCard";
-import { User, LogOut, Plus, Calendar, Settings, Upload, Briefcase, MessageSquare, TrendingUp, Clock, Star, Bell } from "lucide-react";
+import ProviderReviewCard from "./ProviderReviewCard";
+import { User, LogOut, Plus, Calendar, Settings, Upload, Briefcase, MessageSquare, TrendingUp, Clock, Star, Bell, ThumbsUp } from "lucide-react";
 
 export default function CustomerDashboard() {
     const JOB_STATUS_WS_BASE = "wss://074y7xhv7f.execute-api.us-east-2.amazonaws.com/dev";
@@ -21,6 +23,7 @@ export default function CustomerDashboard() {
     const [totalUnread, setTotalUnread] = useState(0);
     const [pendingReviews, setPendingReviews] = useState([]);
     const [myReviews, setMyReviews] = useState([]);
+    const [reviewsAboutMe, setReviewsAboutMe] = useState([]);
     const [jobs, setJobs] = useState([]);
     const [completionNotifications, setCompletionNotifications] = useState([]);
     const [showCompletedList, setShowCompletedList] = useState(false);
@@ -314,8 +317,30 @@ export default function CustomerDashboard() {
         fetchMyReviews();
     }, [auth.isAuthenticated]);
 
+    // Fetch reviews about me (from providers)
+    useEffect(() => {
+        if (!auth.isAuthenticated) return;
+
+        const fetchReviewsAboutMe = async () => {
+            try {
+                const data = await getReviewsAboutMe(10);
+                setReviewsAboutMe(data.reviews || []);
+            } catch (error) {
+                console.error("Failed to fetch reviews about me:", error);
+                // Silently fail - endpoint might not be implemented yet
+            }
+        };
+
+        fetchReviewsAboutMe();
+    }, [auth.isAuthenticated]);
+
     const handleOpenReviewModal = (job) => {
-        setSelectedJobForReview(job);
+        // Ensure we have the provider_id field
+        const jobData = {
+            ...job,
+            provider_id: job.provider_id || job.assigned_provider_id || job.providerId
+        };
+        setSelectedJobForReview(jobData);
         setReviewModalOpen(true);
     };
 
@@ -335,7 +360,7 @@ export default function CustomerDashboard() {
             }
             
             const res = await fetch(
-                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/customer/reviews`,
+                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/customer/reviews`,
                 {
                     method: "POST",
                     headers: {
@@ -355,9 +380,14 @@ export default function CustomerDashboard() {
 
             if (res.ok) {
                 alert("Review submitted successfully!");
-                // Refresh reviews
-                const reviewsData = await getMyReviews(10);
-                setMyReviews(reviewsData.reviews || []);
+                // Try to refresh reviews, but don't fail if this errors
+                try {
+                    const reviewsData = await getMyReviews(10);
+                    setMyReviews(reviewsData.reviews || []);
+                } catch (refreshError) {
+                    console.warn("Could not refresh reviews list:", refreshError);
+                    // Review was submitted successfully, just couldn't refresh the list
+                }
             } else {
                 throw new Error(data.message || "Failed to submit review");
             }
@@ -1040,6 +1070,40 @@ export default function CustomerDashboard() {
                         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                             {myReviews.slice(0, 3).map((review) => (
                                 <ReviewCard key={review.review_id} review={review} />
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                {/* Reviews About Me Section */}
+                <div className="mt-8">
+                    <div className="mb-4 flex items-center justify-between">
+                        <div>
+                            <h2 className="text-2xl font-bold text-neutral-900">
+                                Reviews About Me
+                            </h2>
+                            <p className="text-sm text-neutral-600">
+                                Feedback from service providers
+                            </p>
+                        </div>
+                    </div>
+
+                    {reviewsAboutMe.length === 0 ? (
+                        <Card className="border border-neutral-200 bg-white p-8 text-center">
+                            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-purple-100">
+                                <ThumbsUp className="h-8 w-8 text-purple-600" />
+                            </div>
+                            <h3 className="mb-2 text-lg font-semibold text-neutral-900">
+                                No Provider Reviews Yet
+                            </h3>
+                            <p className="text-sm text-neutral-600">
+                                Service providers haven't left feedback about you yet
+                            </p>
+                        </Card>
+                    ) : (
+                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                            {reviewsAboutMe.slice(0, 3).map((review) => (
+                                <ProviderReviewCard key={review.review_id} review={review} />
                             ))}
                         </div>
                     )}
