@@ -29,13 +29,22 @@ function getAuthToken() {
 
 /**
  * Get reviews that providers have written about the authenticated customer
- * @param {number} limit - Maximum number of reviews to return
- * @returns {Promise<Object>} Object containing reviews array
+ * @param {Object} options - Query options
+ * @param {string} options.sort - Sort order: "newest" | "oldest" | "highest_rating" | "lowest_rating"
+ * @param {number} options.limit - Maximum number of reviews to return (1-100)
+ * @param {number} options.offset - Pagination offset
+ * @returns {Promise<Object>} Object containing reviews array, pagination, and customer info
  */
-export async function getReviewsAboutMe(limit = 20) {
+export async function getReviewsAboutMe({ sort = "newest", limit = 20, offset = 0 } = {}) {
   const token = getAuthToken();
 
-  const res = await fetch(`${API_BASE}/customer/reviews-about-me?limit=${limit}`, {
+  const params = new URLSearchParams({
+    sort,
+    limit: String(limit),
+    offset: String(offset),
+  });
+
+  const res = await fetch(`${API_BASE}/customer/reviews-about-me?${params}`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",

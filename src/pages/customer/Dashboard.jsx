@@ -323,7 +323,11 @@ export default function CustomerDashboard() {
 
         const fetchReviewsAboutMe = async () => {
             try {
-                const data = await getReviewsAboutMe(10);
+                const data = await getReviewsAboutMe({ 
+                    sort: "newest", 
+                    limit: 10, 
+                    offset: 0 
+                });
                 setReviewsAboutMe(data.reviews || []);
             } catch (error) {
                 console.error("Failed to fetch reviews about me:", error);
@@ -1086,6 +1090,15 @@ export default function CustomerDashboard() {
                                 Feedback from service providers
                             </p>
                         </div>
+                        {reviewsAboutMe.length > 0 && (
+                            <Button
+                                onClick={() => navigate("/customer/reviews-about-me")}
+                                variant="outline"
+                                className="text-sm"
+                            >
+                                View All
+                            </Button>
+                        )}
                     </div>
 
                     {reviewsAboutMe.length === 0 ? (

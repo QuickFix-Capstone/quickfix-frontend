@@ -27,6 +27,11 @@ export default function ProviderReviewCard({ review }) {
             <p className="font-semibold text-neutral-900">
               {review.provider_name || "Service Provider"}
             </p>
+            {review.provider_rating && (
+              <p className="text-xs text-neutral-500">
+                Provider Rating: {review.provider_rating.toFixed(1)} ⭐
+              </p>
+            )}
             <p className="text-xs text-neutral-500">
               {review.created_at ? formatDate(review.created_at) : "Recently"}
             </p>

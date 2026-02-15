@@ -31,6 +31,8 @@ import CustomerEntry from "./pages/customer/CustomerEntry";
 import TestMessagingAPI from "./pages/customer/TestMessagingAPI"; // TEMPORARY TEST PAGE
 import CustomerMessages from "./pages/customer/Messages";
 import PaymentHistory from "./pages/customer/PaymentHistory";
+import MyReviews from "./pages/customer/MyReviews";
+import ReviewsAboutMe from "./pages/customer/ReviewsAboutMe";
 
 // ================= PROVIDER PAGES =================
 import ServiceProviderSignUp from "./pages/ServiceProvider/ServiceProviderSignUp";
@@ -290,6 +292,10 @@ export default function App() {
           {/* Messages */}
           <Route path="/customer/messages" element={<CustomerMessages />} />
 
+          {/* Reviews */}
+          <Route path="/customer/reviews" element={<MyReviews />} />
+          <Route path="/customer/reviews-about-me" element={<ReviewsAboutMe />} />
+
           {/* Payment History */}
           <Route path="/customer/payment-history" element={<PaymentHistory />} />
 
@@ -361,6 +367,10 @@ export default function App() {
 
           {/* Messages */}
           <Route path="/customer/messages" element={<CustomerMessages />} />
+
+          {/* Reviews */}
+          <Route path="/customer/reviews" element={<MyReviews />} />
+          <Route path="/customer/reviews-about-me" element={<ReviewsAboutMe />} />
 
           {/* TEMPORARY TEST ROUTE - DELETE AFTER TESTING */}
           <Route
