@@ -27,7 +27,9 @@ export default function CustomerProfileStats({ stats, badges = [] }) {
         },
         {
             label: "Completion Rate",
-            value: stats.completion_rate ? `${stats.completion_rate.toFixed(1)}%` : "N/A",
+            value: stats.completion_rate === null || stats.completion_rate === undefined
+                ? "N/A"
+                : `${stats.completion_rate.toFixed(1)}%`,
             icon: TrendingUp,
             color: "purple"
         },
