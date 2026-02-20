@@ -3,9 +3,14 @@ import React from "react";
 import { User, Calendar } from "lucide-react";
 
 export default function CustomerProfileHeader({ profile, stats }) {
-    const memberSince = profile?.created_at 
-        ? new Date(profile.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-        : 'Unknown';
+    const memberSinceRaw = profile?.created_at || profile?.member_since || null;
+    const normalizedMemberSince = typeof memberSinceRaw === "string"
+        ? memberSinceRaw.replace(" ", "T")
+        : memberSinceRaw;
+    const parsedMemberSince = normalizedMemberSince ? new Date(normalizedMemberSince) : null;
+    const memberSince = parsedMemberSince && !Number.isNaN(parsedMemberSince.getTime())
+        ? parsedMemberSince.toLocaleDateString("en-US", { month: "long", year: "numeric" })
+        : "Unknown";
 
     const displayName = profile?.display_name || 
         (profile?.first_name && profile?.last_name 

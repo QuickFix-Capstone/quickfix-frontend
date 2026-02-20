@@ -8,6 +8,7 @@ import ProviderReviewCard from "./ProviderReviewCard";
 import Card from "../../components/UI/Card";
 import Button from "../../components/UI/Button";
 import { getReviewsAboutMe } from "../../api/customerReviews";
+import { API_BASE } from "../../api/config";
 import { Settings, ArrowLeft } from "lucide-react";
 
 export default function CustomerProfile() {
@@ -19,6 +20,21 @@ export default function CustomerProfile() {
     const [badges, setBadges] = useState([]);
     const [reviewsAboutMe, setReviewsAboutMe] = useState([]);
 
+    const normalizeJobStatus = (status) => {
+        const value = (status || "").toLowerCase();
+        if (value === "in_prograss" || value === "in progress") return "in_progress";
+        if (value === "canceled" || value === "cancel") return "cancelled";
+        return value;
+    };
+
+    const parseJobDate = (job) => {
+        const raw = job?.created_at || job?.posted_at || job?.createdAt;
+        if (!raw) return null;
+        const normalized = typeof raw === "string" ? raw.replace(" ", "T") : raw;
+        const date = new Date(normalized);
+        return Number.isNaN(date.getTime()) ? null : date;
+    };
+
     useEffect(() => {
         if (!auth.isAuthenticated) {
             navigate("/customer/login");
@@ -28,48 +44,81 @@ export default function CustomerProfile() {
         const fetchProfileData = async () => {
             try {
                 const token = auth.user?.id_token || auth.user?.access_token;
-                
-                // Fetch customer profile
-                const profileRes = await fetch(
-                    "https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/customer",
-                    {
+
+                const [profileResult, reviewsResult, jobsResult] = await Promise.allSettled([
+                    fetch("https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/customer", {
                         method: "GET",
                         headers: { Authorization: `Bearer ${token}` },
-                    }
-                );
+                    }),
+                    getReviewsAboutMe({
+                        sort: "newest",
+                        limit: 10,
+                        offset: 0
+                    }),
+                    fetch(`${API_BASE}/customer/jobs?limit=10&offset=0`, {
+                        method: "GET",
+                        cache: "no-store",
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                            "Content-Type": "application/json",
+                        },
+                    }),
+                ]);
 
-                if (profileRes.ok) {
-                    const profileData = await profileRes.json();
+                if (profileResult.status === "fulfilled" && profileResult.value.ok) {
+                    const profileData = await profileResult.value.json();
                     setProfile(profileData.customer);
                 }
 
-                // Fetch reviews about me
-                const reviewsData = await getReviewsAboutMe({ 
-                    sort: "newest", 
-                    limit: 10, 
-                    offset: 0 
-                });
-                setReviewsAboutMe(reviewsData.reviews || []);
+                const reviews = reviewsResult.status === "fulfilled"
+                    ? reviewsResult.value?.reviews || []
+                    : [];
+                setReviewsAboutMe(reviews);
 
-                // Calculate basic stats from reviews
-                if (reviewsData.reviews && reviewsData.reviews.length > 0) {
-                    const avgRating = reviewsData.reviews.reduce((sum, r) => sum + r.rating, 0) / reviewsData.reviews.length;
-                    setStats({
-                        avg_rating: avgRating,
-                        review_count: reviewsData.reviews.length,
-                        jobs_posted_6mo: 0, // TODO: Fetch from backend
-                        jobs_completed: 0,   // TODO: Fetch from backend
-                        completion_rate: 0,  // TODO: Fetch from backend
-                        jobs_cancelled: 0    // TODO: Fetch from backend
-                    });
+                const avgRating = reviews.length > 0
+                    ? reviews.reduce((sum, r) => sum + Number(r.rating || 0), 0) / reviews.length
+                    : 0;
 
-                    // Generate badges based on stats
-                    const generatedBadges = [];
-                    if (avgRating >= 4.5) {
-                        generatedBadges.push({ type: 'highly_rated', label: 'Highly Rated' });
-                    }
-                    setBadges(generatedBadges);
+                let jobs = [];
+                if (jobsResult.status === "fulfilled" && jobsResult.value.ok) {
+                    const jobsData = await jobsResult.value.json();
+                    jobs = (jobsData.jobs || []).map((job) => ({
+                        ...job,
+                        status: normalizeJobStatus(job.status),
+                    }));
                 }
+
+                const sixMonthsAgo = new Date();
+                sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+                const jobsPosted6mo = jobs.filter((job) => {
+                    const postedAt = parseJobDate(job);
+                    return postedAt ? postedAt >= sixMonthsAgo : true;
+                }).length;
+                const jobsCompleted = jobs.filter((job) => job.status === "completed").length;
+                const jobsCancelled = jobs.filter((job) => job.status === "cancelled").length;
+                const jobsClosed = jobsCompleted + jobsCancelled;
+                const completionRate = jobsClosed > 0
+                    ? (jobsCompleted / jobsClosed) * 100
+                    : null;
+
+                setStats({
+                    avg_rating: avgRating,
+                    review_count: reviews.length,
+                    jobs_posted_6mo: jobsPosted6mo,
+                    jobs_completed: jobsCompleted,
+                    completion_rate: completionRate,
+                    jobs_cancelled: jobsCancelled,
+                });
+
+                const generatedBadges = [];
+                if (avgRating >= 4.5) {
+                    generatedBadges.push({ type: "highly_rated", label: "Highly Rated" });
+                }
+                if (completionRate !== null && completionRate >= 80) {
+                    generatedBadges.push({ type: "reliable", label: "Reliable" });
+                }
+                setBadges(generatedBadges);
 
             } catch (error) {
                 console.error("Error fetching profile data:", error);
