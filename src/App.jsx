@@ -18,6 +18,7 @@ import CustomerLogin from "./pages/customer/CustomerLogin";
 import CustomerDashboard from "./pages/customer/Dashboard";
 import RegisterCustomer from "./pages/customer/RegisterCustomer";
 import EditProfile from "./pages/customer/EditProfile";
+import CustomerProfile from "./pages/customer/CustomerProfile";
 import ServiceList from "./pages/customer/ServiceList";
 import Bookings from "./pages/customer/Bookings";
 import BookingForm from "./pages/customer/BookingForm";
@@ -276,6 +277,7 @@ export default function App() {
           />
           <Route path="/customer/entry" element={<CustomerEntry />} />
           <Route path="/customer/dashboard" element={<CustomerDashboard />} />
+          <Route path="/customer/profile" element={<CustomerProfile />} />
           <Route path="/customer/edit" element={<EditProfile />} />
           <Route path="/customer/services" element={<ServiceList />} />
           <Route path="/customer/bookings" element={<Bookings />} />
@@ -348,6 +350,7 @@ export default function App() {
           />
           <Route path="/customer/entry" element={<CustomerEntry />} />
           <Route path="/customer/dashboard" element={<CustomerDashboard />} />
+          <Route path="/customer/profile" element={<CustomerProfile />} />
           <Route path="/customer/edit" element={<EditProfile />} />
           <Route path="/customer/services" element={<ServiceList />} />
           <Route path="/customer/bookings" element={<Bookings />} />

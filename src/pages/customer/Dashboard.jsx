@@ -646,6 +646,25 @@ export default function CustomerDashboard() {
                             {totalUnread > 0 ? "View Messages" : "Open Messages"}
                         </Button>
                     </Card>
+
+                    {/* My Profile Card */}
+                    <Card className="group cursor-pointer overflow-hidden border-0 bg-gradient-to-br from-teal-500 to-teal-600 p-6 text-white shadow-xl transition-all hover:shadow-2xl hover:scale-105">
+                        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
+                            <User className="h-7 w-7" />
+                        </div>
+                        <h3 className="mb-2 text-xl font-bold">
+                            My Profile
+                        </h3>
+                        <p className="mb-4 text-sm text-teal-100">
+                            View your public profile and reputation
+                        </p>
+                        <Button
+                            onClick={() => navigate("/customer/profile")}
+                            className="w-full bg-teal-700 text-white font-bold border-2 border-teal-800 shadow-lg hover:bg-teal-800"
+                        >
+                            View Profile
+                        </Button>
+                    </Card>
                 </div>
 
                 {/* Activity Overview */}
