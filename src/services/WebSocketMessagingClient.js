@@ -1,6 +1,5 @@
-const DEFAULT_WS_URL =
-  import.meta.env.VITE_MESSAGING_WEBSOCKET_URL ||
-  "wss://074y7xhv7f.execute-api.us-east-2.amazonaws.com/dev";
+const DEFAULT_WS_URL = import.meta.env.VITE_MESSAGING_WEBSOCKET_URL;
+const MAX_RECONNECT_ATTEMPTS = 5;
 
 const NOOP = () => {};
 const clientRegistry = new Map();
@@ -35,6 +34,10 @@ export default class WebSocketMessagingClient {
 
   connect() {
     if (!this.userId) return;
+    if (!this.url) {
+      this.emitStatus("disabled");
+      return;
+    }
     if (this.socket && [WebSocket.CONNECTING, WebSocket.OPEN].includes(this.socket.readyState)) {
       return;
     }
@@ -66,6 +69,10 @@ export default class WebSocketMessagingClient {
       this.socket = null;
 
       if (!this.manualClose) {
+        if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+          this.emitStatus("failed");
+          return;
+        }
         this.scheduleReconnect();
       }
     };

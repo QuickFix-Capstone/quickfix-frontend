@@ -15,6 +15,33 @@ import {
   markConversationAsRead,
 } from "../../api/messaging";
 
+function toTimestamp(value) {
+  if (value == null) return Date.now();
+
+  if (typeof value === "number") {
+    // Convert epoch seconds to milliseconds if needed.
+    return value < 1e12 ? value * 1000 : value;
+  }
+
+  if (typeof value === "string") {
+    const numeric = Number(value);
+    if (Number.isFinite(numeric)) {
+      return numeric < 1e12 ? numeric * 1000 : numeric;
+    }
+
+    const parsed = Date.parse(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+
+  return Date.now();
+}
+
+function sortMessagesByTime(messages) {
+  return [...messages].sort(
+    (a, b) => toTimestamp(a?.timestamp) - toTimestamp(b?.timestamp),
+  );
+}
+
 function normalizeMessagePayload(event) {
   const payload = event?.message && typeof event.message === "object" ? event.message : event;
   if (!payload || typeof payload !== "object") return null;
@@ -25,8 +52,8 @@ function normalizeMessagePayload(event) {
     payload.chatId ||
     payload.chat_id;
 
-  const timestamp = Number(
-    payload.timestamp || payload.createdAt || payload.created_at || Date.now(),
+  const timestamp = toTimestamp(
+    payload.timestamp || payload.createdAt || payload.created_at,
   );
 
   const senderId = String(
@@ -61,14 +88,12 @@ function upsertMessage(existingMessages, incomingMessage) {
   );
 
   if (existingIndex === -1) {
-    return [...existingMessages, incomingMessage].sort(
-      (a, b) => Number(a.timestamp || 0) - Number(b.timestamp || 0),
-    );
+    return sortMessagesByTime([...existingMessages, incomingMessage]);
   }
 
   const next = [...existingMessages];
   next[existingIndex] = { ...next[existingIndex], ...incomingMessage };
-  return next;
+  return sortMessagesByTime(next);
 }
 
 export default function Messages() {
@@ -124,7 +149,7 @@ export default function Messages() {
         const normalized = (data.messages || []).map((message) =>
           normalizeMessagePayload(message),
         );
-        setMessages(normalized.filter(Boolean));
+        setMessages(sortMessagesByTime(normalized.filter(Boolean)));
 
         await markConversationAsRead(conversationId);
 
@@ -164,7 +189,7 @@ export default function Messages() {
     };
   }, []);
 
-  const { sendTypingStart, sendTypingStop, sendReadReceipt } =
+  const { isConnected, sendTypingStart, sendTypingStop, sendReadReceipt } =
     useMessagingWebSocket({
       enabled: auth.isAuthenticated,
       userId: currentUserId,
@@ -298,6 +323,24 @@ export default function Messages() {
       },
     });
 
+  useEffect(() => {
+    if (isConnected) return undefined;
+
+    const interval = window.setInterval(() => {
+      loadConversations();
+      if (selectedConversation?.conversationId) {
+        loadMessagesForConversation(selectedConversation.conversationId);
+      }
+    }, 10000);
+
+    return () => window.clearInterval(interval);
+  }, [
+    isConnected,
+    loadConversations,
+    loadMessagesForConversation,
+    selectedConversation?.conversationId,
+  ]);
+
   function handleSelectConversation(conversation) {
     setSelectedConversation(conversation);
   }
@@ -386,7 +429,8 @@ export default function Messages() {
               </div>
               <Button
                 onClick={() => setShowNewMessageModal(true)}
-                className="gap-2 bg-white text-blue-600 hover:bg-blue-50 shadow-md"
+                variant="outline"
+                className="gap-2 border-blue-200 bg-white text-blue-700 hover:border-blue-300 hover:bg-blue-50 font-semibold"
                 size="sm"
               >
                 <PlusCircle className="h-4 w-4" />

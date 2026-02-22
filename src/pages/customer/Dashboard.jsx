@@ -262,7 +262,7 @@ export default function CustomerDashboard() {
         refreshUnreadCount();
     }, [refreshUnreadCount]);
 
-    useMessagingWebSocket({
+    const { isConnected: isMessagingWsConnected } = useMessagingWebSocket({
         enabled: auth.isAuthenticated,
         userId: auth.user?.profile?.sub,
         onMessage: refreshUnreadCount,
@@ -275,6 +275,14 @@ export default function CustomerDashboard() {
             refreshUnreadCount();
         },
     });
+
+    useEffect(() => {
+        if (isMessagingWsConnected) return undefined;
+        if (!auth.isAuthenticated) return undefined;
+
+        const interval = window.setInterval(refreshUnreadCount, 30000);
+        return () => window.clearInterval(interval);
+    }, [auth.isAuthenticated, isMessagingWsConnected, refreshUnreadCount]);
 
     // Fetch completed bookings that need reviews
     useEffect(() => {
