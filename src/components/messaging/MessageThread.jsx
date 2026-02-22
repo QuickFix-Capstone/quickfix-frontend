@@ -137,17 +137,19 @@
 
 // src/components/messaging/MessageThread.jsx
 import React, { useEffect, useRef } from "react";
-import { useAuth } from "react-oidc-context";
 
 /**
  * Message thread component - displays messages in a conversation
+ * @param {string} currentUserId - The current user's ID (passed from parent)
+ * @param {string|null} typingUser - Name of user currently typing, or null
  */
-export default function MessageThread({ messages = [], loading = false }) {
-  const auth = useAuth();
+export default function MessageThread({
+  messages = [],
+  loading = false,
+  currentUserId,
+  typingUser = null,
+}) {
   const messagesEndRef = useRef(null);
-
-  // 🔑 Current logged-in user (Cognito sub)
-  const currentUserId = auth.user?.profile?.sub?.toString();
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -232,6 +234,15 @@ export default function MessageThread({ messages = [], loading = false }) {
             </div>
           );
         })}
+        {typingUser && (
+          <div className="flex justify-start">
+            <div className="rounded-2xl rounded-bl-sm bg-white border border-slate-200 px-5 py-3 shadow-sm">
+              <p className="text-sm text-slate-500 italic">
+                {typingUser} is typing...
+              </p>
+            </div>
+          </div>
+        )}
         <div ref={messagesEndRef} />
       </div>
     </div>

@@ -1,5 +1,5 @@
 // src/components/messaging/MessageInput.jsx
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Send } from "lucide-react";
 
 /**
@@ -7,8 +7,9 @@ import { Send } from "lucide-react";
  * @param {Function} onSend - Callback function when message is sent
  * @param {boolean} disabled - Whether input is disabled
  */
-export default function MessageInput({ onSend, disabled = false }) {
+export default function MessageInput({ onSend, disabled = false, onTyping }) {
   const [message, setMessage] = useState("");
+  const typingTimeoutRef = useRef(null);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -17,14 +18,23 @@ export default function MessageInput({ onSend, disabled = false }) {
     if (!trimmedMessage || disabled) return;
 
     onSend(trimmedMessage);
-    setMessage(""); // Clear input after sending
+    setMessage("");
+    if (onTyping) onTyping(false);
   };
 
   const handleKeyDown = (e) => {
-    // Send on Enter, new line on Shift+Enter
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e);
+    }
+  };
+
+  const handleChange = (e) => {
+    setMessage(e.target.value);
+    if (onTyping) {
+      onTyping(true);
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = setTimeout(() => onTyping(false), 2000);
     }
   };
 
@@ -34,7 +44,7 @@ export default function MessageInput({ onSend, disabled = false }) {
         <div className="flex-1 relative">
           <textarea
             value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            onChange={handleChange}
             onKeyDown={handleKeyDown}
             placeholder="Type your message..."
             disabled={disabled}

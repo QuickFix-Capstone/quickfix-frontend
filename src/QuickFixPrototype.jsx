@@ -63,7 +63,9 @@ const TextArea = ({ className = "", ...props }) => (
 );
 
 const Card = ({ children, className = "" }) => (
-  <div className={`rounded-2xl border border-neutral-200 bg-white shadow-sm ${className}`}>
+  <div
+    className={`rounded-2xl border border-neutral-200 bg-white shadow-sm ${className}`}
+  >
     {children}
   </div>
 );
@@ -108,7 +110,14 @@ const gigs = new Array(6).fill(0).map((_, i) => ({
   rating: [4.9, 4.8, 5.0, 4.7, 4.9, 4.6][i],
   reviews: [120, 95, 34, 210, 64, 48][i],
   img: `https://picsum.photos/seed/gig${i}/640/360`,
-  provider: ["Alex P.", "Sam E.", "Casey R.", "Jordan K.", "Taylor M.", "Riley S."][i],
+  provider: [
+    "Alex P.",
+    "Sam E.",
+    "Casey R.",
+    "Jordan K.",
+    "Taylor M.",
+    "Riley S.",
+  ][i],
 }));
 
 // ---------- LAYOUT ----------
@@ -181,7 +190,9 @@ function Home({ searchTerm, setSearchTerm, onSearchClick, onViewGig }) {
       <Card className="bg-gradient-to-br from-neutral-50 to-white p-6">
         <div className="flex flex-col items-start gap-4 md:flex-row md:items-center">
           <div className="flex-1">
-            <h1 className="text-2xl font-bold">Book trusted pros, on your schedule</h1>
+            <h1 className="text-2xl font-bold">
+              Book trusted pros, on your schedule
+            </h1>
             <p className="text-neutral-600">
               Real-time bookings • Verified providers • Secure payments
             </p>
@@ -223,7 +234,9 @@ function Home({ searchTerm, setSearchTerm, onSearchClick, onViewGig }) {
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <h3 className="font-semibold leading-tight">{g.title}</h3>
-                    <div className="text-sm text-neutral-500">by {g.provider}</div>
+                    <div className="text-sm text-neutral-500">
+                      by {g.provider}
+                    </div>
                   </div>
                   <Rating value={g.rating} count={g.reviews} />
                 </div>
@@ -252,7 +265,7 @@ function SearchView({ searchTerm, setSearchTerm, onBookGig }) {
       (g) =>
         g.title.toLowerCase().includes(q) ||
         g.provider.toLowerCase().includes(q) ||
-        categories.some((c) => c.toLowerCase().includes(q))
+        categories.some((c) => c.toLowerCase().includes(q)),
     );
   }, [searchTerm]);
 
@@ -290,18 +303,24 @@ function SearchView({ searchTerm, setSearchTerm, onBookGig }) {
           {filteredGigs.map((g) => (
             <Card key={g.id} className="overflow-hidden">
               <div className="grid gap-4 md:grid-cols-[200px_1fr]">
-                <img src={g.img} alt="gig" className="h-full w-full object-cover" />
+                <img
+                  src={g.img}
+                  alt="gig"
+                  className="h-full w-full object-cover"
+                />
                 <div className="space-y-2 p-4">
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <h3 className="font-semibold leading-tight">{g.title}</h3>
-                      <div className="text-sm text-neutral-500">by {g.provider}</div>
+                      <div className="text-sm text-neutral-500">
+                        by {g.provider}
+                      </div>
                     </div>
                     <Rating value={g.rating} count={g.reviews} />
                   </div>
                   <p className="line-clamp-2 text-sm text-neutral-600">
-                    I will professionally handle your request with quality tools and guaranteed
-                    results. Same-day available.
+                    I will professionally handle your request with quality tools
+                    and guaranteed results. Same-day available.
                   </p>
                   <div className="flex items-center justify-between">
                     <div className="text-sm text-neutral-600">
@@ -449,8 +468,8 @@ function PostJobWizard({ onJobPosted = () => {} }) {
               <MapPin className="h-4 w-4" /> {address || "123 Main St, Toronto"}
             </div>
             <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4" />{" "}
-              {date || "Tomorrow"}, {time || "5:00 PM"}
+              <Clock className="h-4 w-4" /> {date || "Tomorrow"},{" "}
+              {time || "5:00 PM"}
             </div>
             <div className="rounded-xl bg-neutral-50 p-3">
               <div className="font-semibold mb-1">{category} job</div>
@@ -508,9 +527,12 @@ function Messages({ messages, onSendMessage }) {
           <div className="flex items-center justify-between border-b border-neutral-200 p-4">
             <div>
               <div className="font-semibold">
-                Alex P. <span className="ml-2 text-xs text-green-600">● online</span>
+                Alex P.{" "}
+                <span className="ml-2 text-xs text-green-600">● online</span>
               </div>
-              <div className="text-xs text-neutral-500">Job: Install faucet • #12345</div>
+              <div className="text-xs text-neutral-500">
+                Job: Install faucet • #12345
+              </div>
             </div>
           </div>
           <div className="space-y-3 overflow-y-auto p-4">
@@ -528,8 +550,12 @@ function Messages({ messages, onSendMessage }) {
             ))}
             {/* Static example offer card */}
             <Card className="w-fit max-w-[80%] p-3">
-              <div className="text-sm font-semibold">Offer • $120 • 2h • Tomorrow 5pm</div>
-              <div className="text-xs text-neutral-500">Includes parts and cleanup</div>
+              <div className="text-sm font-semibold">
+                Offer • $120 • 2h • Tomorrow 5pm
+              </div>
+              <div className="text-xs text-neutral-500">
+                Includes parts and cleanup
+              </div>
               <div className="mt-2 flex gap-2">
                 <Button>Accept</Button>
                 <GhostButton>Counter</GhostButton>
@@ -585,7 +611,8 @@ function Checkout({ booking, onConfirm }) {
               {gig.title} • {dateTime} • {address}
             </div>
             <div className="rounded-xl bg-neutral-50 p-3 text-sm">
-              Provider: {gig.provider} • ★{gig.rating.toFixed(1)} ({gig.reviews})
+              Provider: {gig.provider} • ★{gig.rating.toFixed(1)} ({gig.reviews}
+              )
             </div>
           </div>
           <div className="space-y-2">
@@ -678,7 +705,8 @@ function ProviderDashboard({ jobs }) {
           <div className="space-y-2 text-sm">
             {jobs.length === 0 && (
               <div className="rounded-xl border border-dashed border-neutral-300 p-3 text-neutral-500">
-                No upcoming jobs yet. Post a job or accept a booking to see it here.
+                No upcoming jobs yet. Post a job or accept a booking to see it
+                here.
               </div>
             )}
             {jobs.map((job) => (
@@ -752,12 +780,14 @@ function AdminConsole() {
     <div className="mx-auto max-w-6xl px-4 py-6">
       <h1 className="mb-4 text-2xl font-bold">Admin Console</h1>
       <div className="grid gap-4 md:grid-cols-3">
-        {["Gigs Pending Review", "Jobs Flagged", "Open Disputes"].map((k, i) => (
-          <Card key={k} className="p-4">
-            <div className="text-sm text-neutral-500">{k}</div>
-            <div className="mt-1 text-2xl font-bold">{[3, 1, 2][i]}</div>
-          </Card>
-        ))}
+        {["Gigs Pending Review", "Jobs Flagged", "Open Disputes"].map(
+          (k, i) => (
+            <Card key={k} className="p-4">
+              <div className="text-sm text-neutral-500">{k}</div>
+              <div className="mt-1 text-2xl font-bold">{[3, 1, 2][i]}</div>
+            </Card>
+          ),
+        )}
       </div>
       <Card className="mt-4 overflow-hidden">
         <div className="grid grid-cols-5 bg-neutral-50 p-3 text-sm font-medium">
@@ -775,10 +805,14 @@ function AdminConsole() {
             <div>#{1000 + i}</div>
             <div>{i === 1 ? "Gig" : "Job"}</div>
             <div>{i === 1 ? "Alex P." : "Jamie L."}</div>
-            <div>{i === 1 ? "Photo requires review" : "Possible duplicate"}</div>
+            <div>
+              {i === 1 ? "Photo requires review" : "Possible duplicate"}
+            </div>
             <div className="flex gap-2">
               <GhostButton>Approve</GhostButton>
-              <GhostButton className="border-red-300 text-red-600">Reject</GhostButton>
+              <GhostButton className="border-red-300 text-red-600">
+                Reject
+              </GhostButton>
             </div>
           </div>
         ))}
@@ -822,10 +856,7 @@ export default function QuickFixPrototype() {
   };
 
   const handleSendMessage = (text) => {
-    setMessages((prev) => [
-      ...prev,
-      { id: Date.now(), from: "me", text },
-    ]);
+    setMessages((prev) => [...prev, { id: Date.now(), from: "me", text }]);
   };
 
   const renderView = () => {
@@ -851,18 +882,10 @@ export default function QuickFixPrototype() {
         return <PostJobWizard onJobPosted={handleJobPosted} />;
       case "messages":
         return (
-          <Messages
-            messages={messages}
-            onSendMessage={handleSendMessage}
-          />
+          <Messages messages={messages} onSendMessage={handleSendMessage} />
         );
       case "checkout":
-        return (
-          <Checkout
-            booking={booking}
-            onConfirm={handleConfirmBooking}
-          />
-        );
+        return <Checkout booking={booking} onConfirm={handleConfirmBooking} />;
       case "provider":
         return (
           <div>
@@ -882,7 +905,8 @@ export default function QuickFixPrototype() {
       <TopNav view={view} setView={setView} />
       {renderView()}
       <footer className="mx-auto mt-10 max-w-7xl px-4 pb-16 text-center text-sm text-neutral-500">
-        Built for QuickFix Capstone • Fiverr-style UX skeleton • React + Tailwind
+        Built for QuickFix Capstone • Fiverr-style UX skeleton • React +
+        Tailwind
       </footer>
     </div>
   );

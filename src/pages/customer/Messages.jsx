@@ -1,5 +1,6 @@
 // src/pages/customer/Messages.jsx
 import React, { useState, useEffect } from "react";
+import { useAuth } from "react-oidc-context";
 import { MessageSquare, PlusCircle } from "lucide-react";
 import ConversationList from "../../components/messaging/ConversationList";
 import MessageThread from "../../components/messaging/MessageThread";
@@ -14,6 +15,8 @@ import {
 } from "../../api/messaging";
 
 export default function Messages() {
+  const auth = useAuth();
+  const currentUserId = auth.user?.profile?.sub?.toString();
   const [conversations, setConversations] = useState([]);
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -85,6 +88,32 @@ export default function Messages() {
       setLoadingMessages(false);
     }
   }
+
+  // Poll messages for the selected conversation every 5 seconds
+  useEffect(() => {
+    const convId = selectedConversation?.conversationId;
+    if (!convId) return;
+
+    const poll = async () => {
+      try {
+        const data = await getMessages(convId, 100);
+        const fresh = data.messages || [];
+        setMessages((prev) => {
+          if (fresh.length === prev.length) {
+            const lastFresh = fresh[fresh.length - 1];
+            const lastPrev = prev[prev.length - 1];
+            if (lastFresh?.messageId === lastPrev?.messageId) return prev;
+          }
+          return fresh;
+        });
+      } catch {
+        // silently ignore polling errors
+      }
+    };
+
+    const interval = setInterval(poll, 5000);
+    return () => clearInterval(interval);
+  }, [selectedConversation?.conversationId]);
 
   /**
    * Handle conversation selection
@@ -213,7 +242,7 @@ export default function Messages() {
               )}
 
               {/* Messages Thread */}
-              <MessageThread messages={messages} loading={loadingMessages} />
+              <MessageThread messages={messages} loading={loadingMessages} currentUserId={currentUserId} />
 
               {/* Message Input */}
               <MessageInput

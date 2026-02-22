@@ -10,7 +10,10 @@ import {
 import { useAuth } from "react-oidc-context";
 import Card from "../components/UI/Card";
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+const STRIPE_PUBLISHABLE_KEY = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+const stripePromise = STRIPE_PUBLISHABLE_KEY
+    ? loadStripe(STRIPE_PUBLISHABLE_KEY)
+    : null;
 
 function CheckoutForm({ orderId }) {
     const stripe = useStripe();
@@ -60,6 +63,7 @@ export default function Payment() {
     const [clientSecret, setClientSecret] = useState("");
     const [orderId, setOrderId] = useState(null);
     const [error, setError] = useState("");
+    const [configError, setConfigError] = useState("");
 
     // optional: show order details on the page
     const [order, _setOrder] = useState(null);
@@ -77,6 +81,12 @@ export default function Payment() {
         const run = async () => {
             try {
                 setError("");
+                setConfigError("");
+
+                if (!STRIPE_PUBLISHABLE_KEY) {
+                    setConfigError("Stripe is not configured. Missing VITE_STRIPE_PUBLISHABLE_KEY.");
+                    return;
+                }
 
                 if (auth.isLoading) return;
                 // ✅ Fix: always prefer access token
@@ -132,6 +142,17 @@ export default function Payment() {
                 <Card className="p-6">
                     <h2 className="text-xl font-bold text-red-600">Payment Error</h2>
                     <p className="mt-2 text-neutral-600">{error}</p>
+                </Card>
+            </div>
+        );
+    }
+
+    if (configError) {
+        return (
+            <div className="mx-auto max-w-xl p-6">
+                <Card className="p-6">
+                    <h2 className="text-xl font-bold text-red-600">Payment Configuration Error</h2>
+                    <p className="mt-2 text-neutral-600">{configError}</p>
                 </Card>
             </div>
         );
