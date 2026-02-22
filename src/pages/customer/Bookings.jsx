@@ -436,7 +436,7 @@ export default function Bookings() {
                                                     className="gap-1 border-neutral-300 hover:bg-neutral-50 disabled:opacity-50"
                                                 >
                                                     <MessageSquare className="h-4 w-4" />
-                                                    {openingChatBookingId === booking.booking_id ? "Opening..." : "Message"}
+                                                    {openingChatBookingId === booking.booking_id ? "Opening..." : "Message Provider"}
                                                 </Button>
                                             </div>
                                         </div>

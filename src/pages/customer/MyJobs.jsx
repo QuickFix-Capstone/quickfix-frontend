@@ -4,7 +4,8 @@ import { useAuth } from "react-oidc-context";
 import { useNavigate } from "react-router-dom";
 import Card from "../../components/UI/Card";
 import Button from "../../components/UI/Button";
-import { ArrowLeft, Briefcase, MapPin, Calendar, Clock, DollarSign, Users } from "lucide-react";
+import { ArrowLeft, Briefcase, MapPin, Calendar, Clock, DollarSign, Users, MessageSquare } from "lucide-react";
+import { createConversation } from "../../api/messaging";
 
 export default function MyJobs() {
     const auth = useAuth();
@@ -13,6 +14,7 @@ export default function MyJobs() {
     const [loading, setLoading] = useState(true);
     const [limit] = useState(10);
     const [offset, setOffset] = useState(0);
+    const [openingChatJobId, setOpeningChatJobId] = useState(null);
 
     const normalizeJobStatus = (status) => {
         const value = (status || "").toLowerCase();
@@ -95,6 +97,42 @@ export default function MyJobs() {
             day: "numeric",
             year: "numeric",
         });
+    };
+
+    const resolveProviderId = (job) =>
+        job?.assigned_provider_id ||
+        job?.provider_id ||
+        job?.provider?.provider_id ||
+        job?.provider?.id ||
+        null;
+
+    const handleMessageProvider = async (job) => {
+        const providerId = resolveProviderId(job);
+        if (!providerId) return;
+
+        setOpeningChatJobId(job.job_id);
+        try {
+            const conversation = await createConversation(
+                providerId,
+                job.service_offering_id || job.job_id
+            );
+            if (conversation?.conversationId) {
+                navigate(`/customer/messages?conversationId=${encodeURIComponent(conversation.conversationId)}`);
+            } else {
+                navigate("/customer/messages");
+            }
+        } catch (error) {
+            if (error.status === 409 && error.conversationId) {
+                navigate(`/customer/messages?conversationId=${encodeURIComponent(error.conversationId)}`);
+            } else if (error.status === 409) {
+                navigate("/customer/messages");
+            } else {
+                console.error("Failed to open conversation:", error);
+                alert("Failed to open chat. Please try again.");
+            }
+        } finally {
+            setOpeningChatJobId(null);
+        }
     };
 
     console.log("MyJobs render - loading:", loading, "jobs count:", jobs.length);
@@ -246,6 +284,17 @@ export default function MyJobs() {
                                                 className="whitespace-nowrap bg-neutral-900 hover:bg-neutral-800"
                                             >
                                                 View Applications ({job.application_count || 0})
+                                            </Button>
+                                        )}
+                                        {resolveProviderId(job) && (
+                                            <Button
+                                                onClick={() => handleMessageProvider(job)}
+                                                variant="outline"
+                                                disabled={openingChatJobId === job.job_id}
+                                                className="whitespace-nowrap gap-2"
+                                            >
+                                                <MessageSquare className="h-4 w-4" />
+                                                {openingChatJobId === job.job_id ? "Opening..." : "Message Provider"}
                                             </Button>
                                         )}
                                     </div>
