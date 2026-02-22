@@ -187,14 +187,16 @@ export default function Messages() {
 
   useEffect(() => {
     if (!preselectConversationId || hasAppliedPreselectRef.current) return;
-    if (!conversations.length) return;
 
     const matched = conversations.find(
       (conv) => String(conv.conversationId) === String(preselectConversationId),
     );
-    if (!matched) return;
-
-    setSelectedConversation(matched);
+    setSelectedConversation(
+      matched || {
+        conversationId: preselectConversationId,
+        otherUser: { name: "Conversation" },
+      },
+    );
     hasAppliedPreselectRef.current = true;
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
@@ -475,11 +477,11 @@ export default function Messages() {
               <div className="border-b border-slate-200 bg-white px-6 py-5 shadow-md">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold text-lg shadow-md">
-                    {selectedConversation.otherUser.name.charAt(0).toUpperCase()}
+                    {(selectedConversation?.otherUser?.name || "C").charAt(0).toUpperCase()}
                   </div>
                   <div>
                     <h2 className="text-lg font-bold text-slate-900">
-                      {selectedConversation.otherUser.name}
+                      {selectedConversation?.otherUser?.name || "Conversation"}
                     </h2>
                     {selectedConversation.jobTitle && (
                       <p className="text-sm text-blue-600 font-medium">

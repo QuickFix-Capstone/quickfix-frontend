@@ -1,5 +1,71 @@
 import { API_BASE } from "./config";
 
+const MESSAGING_API_BASE =
+  import.meta.env.VITE_MESSAGING_API_BASE_URL || API_BASE;
+
+const MESSAGING_API_BASE_CANDIDATES = Array.from(
+  new Set([
+    MESSAGING_API_BASE,
+    API_BASE,
+    API_BASE.endsWith("/prod") ? API_BASE.slice(0, -"/prod".length) : null,
+  ].filter(Boolean)),
+);
+
+function shouldTryFallback(status) {
+  return [500, 502, 503, 504, 404].includes(Number(status));
+}
+
+async function safeReadJson(res) {
+  try {
+    return await res.json();
+  } catch {
+    return {};
+  }
+}
+
+async function messagingRequest(path, { method = "GET", token, body } = {}) {
+  let lastErrorData = {};
+  let lastStatus = 0;
+
+  for (let index = 0; index < MESSAGING_API_BASE_CANDIDATES.length; index += 1) {
+    const base = MESSAGING_API_BASE_CANDIDATES[index];
+    const res = await fetch(`${base}${path}`, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      ...(body ? { body: JSON.stringify(body) } : {}),
+    });
+
+    const data = await safeReadJson(res);
+
+    if (res.ok) {
+      return { data, status: res.status };
+    }
+
+    lastErrorData = data;
+    lastStatus = res.status;
+
+    const isLastCandidate = index === MESSAGING_API_BASE_CANDIDATES.length - 1;
+    if (!shouldTryFallback(res.status) || isLastCandidate) {
+      const error = new Error(
+        data.message || `Messaging request failed (${res.status})`,
+      );
+      error.status = res.status;
+      error.data = data;
+      throw error;
+    }
+  }
+
+  const fallbackError = new Error(
+    lastErrorData.message || `Messaging request failed (${lastStatus || "unknown"})`,
+  );
+  fallbackError.status = lastStatus;
+  fallbackError.data = lastErrorData;
+  throw fallbackError;
+}
+
 /**
  * Get the authentication token from OIDC localStorage
  * This works with react-oidc-context authentication
@@ -18,7 +84,7 @@ function getAuthToken() {
 
   try {
     const userData = JSON.parse(userDataString);
-    const token = userData.id_token;
+    const token = userData.access_token || userData.id_token;
 
     if (!token) {
       throw new Error("User not authenticated - no ID token found");
@@ -40,32 +106,28 @@ function getAuthToken() {
 export async function createConversation(otherUserId, jobId) {
   const token = getAuthToken();
 
-  const res = await fetch(`${API_BASE}/messages/conversations`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({
-      otherUserId,
-      jobId,
-    }),
-  });
+  try {
+    const { data } = await messagingRequest("/messages/conversations", {
+      method: "POST",
+      token,
+      body: {
+        otherUserId,
+        jobId,
+      },
+    });
 
-  const data = await res.json();
-
-  if (!res.ok) {
+    return data;
+  } catch (error) {
     // If conversation already exists (409), the response includes conversationId
-    if (res.status === 409) {
-      const error = new Error("Conversation already exists");
-      error.conversationId = data.conversationId;
-      error.status = 409;
-      throw error;
+    if (error.status === 409) {
+      const conflictError = new Error("Conversation already exists");
+      conflictError.conversationId = error.data?.conversationId;
+      conflictError.status = 409;
+      throw conflictError;
     }
-    throw new Error(data.message || "Failed to create conversation");
-  }
 
-  return data;
+    throw new Error(error.data?.message || "Failed to create conversation");
+  }
 }
 
 /**
@@ -75,25 +137,22 @@ export async function createConversation(otherUserId, jobId) {
  */
 export async function getConversations(limit = 20) {
   const token = getAuthToken();
-
-  const res = await fetch(
-    `${API_BASE}/messages/conversations?limit=${limit}`,
-    {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
+  try {
+    const { data } = await messagingRequest(
+      `/messages/conversations?limit=${limit}`,
+      {
+        method: "GET",
+        token,
       },
+    );
+    return data;
+  } catch (error) {
+    // Some environments currently return 500 for list fetch while other message endpoints still work.
+    if (Number(error?.status) >= 500) {
+      return { conversations: [], pagination: { total: 0, has_more: false } };
     }
-  );
-
-  const data = await res.json();
-
-  if (!res.ok) {
-    throw new Error(data.message || "Failed to fetch conversations");
+    throw error;
   }
-
-  return data;
 }
 
 /**
@@ -105,23 +164,14 @@ export async function getConversations(limit = 20) {
 export async function sendMessage(conversationId, text) {
   const token = getAuthToken();
 
-  const res = await fetch(`${API_BASE}/messages`, {
+  const { data } = await messagingRequest("/messages", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({
+    token,
+    body: {
       conversationId,
       text,
-    }),
+    },
   });
-
-  const data = await res.json();
-
-  if (!res.ok) {
-    throw new Error(data.message || "Failed to send message");
-  }
 
   return data;
 }
@@ -136,24 +186,15 @@ export async function sendMessage(conversationId, text) {
 export async function getMessages(conversationId, limit = 50, before = null) {
   const token = getAuthToken();
 
-  let url = `${API_BASE}/messages/${conversationId}?limit=${limit}`;
+  let path = `/messages/${conversationId}?limit=${limit}`;
   if (before) {
-    url += `&before=${before}`;
+    path += `&before=${before}`;
   }
 
-  const res = await fetch(url, {
+  const { data } = await messagingRequest(path, {
     method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
+    token,
   });
-
-  const data = await res.json();
-
-  if (!res.ok) {
-    throw new Error(data.message || "Failed to fetch messages");
-  }
 
   return data;
 }
@@ -166,22 +207,13 @@ export async function getMessages(conversationId, limit = 50, before = null) {
 export async function markConversationAsRead(conversationId) {
   const token = getAuthToken();
 
-  const res = await fetch(
-    `${API_BASE}/messages/conversations/${conversationId}/read`,
+  const { data } = await messagingRequest(
+    `/messages/conversations/${conversationId}/read`,
     {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-    }
+      token,
+    },
   );
-
-  const data = await res.json();
-
-  if (!res.ok) {
-    throw new Error(data.message || "Failed to mark conversation as read");
-  }
 
   return data;
 }
