@@ -2,15 +2,17 @@
 import React, { useState, useEffect } from "react";
 import { X, Search, MessageSquare, Star } from "lucide-react";
 import Button from "../UI/Button";
-import { createConversation } from "../../api/messaging";
+import { createConversation as defaultCreateConversation } from "../../api/messaging";
 
 /**
  * Modal for starting a new conversation with a service provider
  * @param {boolean} isOpen - Whether modal is open
  * @param {Function} onClose - Callback to close modal
  * @param {Function} onConversationCreated - Callback when conversation is created
+ * @param {Function} createConversationFn - Optional override for creating conversations (e.g. provider API)
  */
-export default function NewMessageModal({ isOpen, onClose, onConversationCreated }) {
+export default function NewMessageModal({ isOpen, onClose, onConversationCreated, createConversationFn }) {
+  const createConversation = createConversationFn || defaultCreateConversation;
   const [providers, setProviders] = useState([]);
   const [filteredProviders, setFilteredProviders] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");

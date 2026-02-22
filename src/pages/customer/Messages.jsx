@@ -365,6 +365,32 @@ export default function Messages() {
     selectedConversation?.conversationId,
   ]);
 
+  // Poll messages for the selected conversation every 5 seconds
+  useEffect(() => {
+    const convId = selectedConversation?.conversationId;
+    if (!convId) return;
+
+    const poll = async () => {
+      try {
+        const data = await getMessages(convId, 100);
+        const fresh = data.messages || [];
+        setMessages((prev) => {
+          if (fresh.length === prev.length) {
+            const lastFresh = fresh[fresh.length - 1];
+            const lastPrev = prev[prev.length - 1];
+            if (lastFresh?.messageId === lastPrev?.messageId) return prev;
+          }
+          return fresh;
+        });
+      } catch {
+        // silently ignore polling errors
+      }
+    };
+
+    const interval = setInterval(poll, 5000);
+    return () => clearInterval(interval);
+  }, [selectedConversation?.conversationId]);
+
   function handleSelectConversation(conversation) {
     setSelectedConversation(conversation);
   }
@@ -501,6 +527,7 @@ export default function Messages() {
               <MessageThread
                 messages={messages}
                 loading={loadingMessages}
+                currentUserId={currentUserId}
                 typingUsers={typingUsers}
               />
 

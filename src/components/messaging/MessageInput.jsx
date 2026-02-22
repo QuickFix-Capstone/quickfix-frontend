@@ -56,11 +56,10 @@ export default function MessageInput({
 
     onSend(trimmedMessage);
     stopTyping();
-    setMessage(""); // Clear input after sending
+    setMessage("");
   };
 
   const handleKeyDown = (e) => {
-    // Send on Enter, new line on Shift+Enter
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e);

@@ -12,6 +12,7 @@ import TopNav from "./components/layout/TopNav";
 // ================= VIEWS =================
 import Home from "./views/Home";
 import SearchView from "./views/SearchView";
+import ProviderPublicProfile from "./pages/ProviderPublicProfile";
 
 // ================= CUSTOMER PAGES =================
 import CustomerLogin from "./pages/customer/CustomerLogin";
@@ -229,6 +230,7 @@ export default function App() {
           {/* ---------- PUBLIC ---------- */}
           <Route path="/" element={<Home currentUser={currentUser} />} />
           <Route path="/search" element={<SearchView />} />
+          <Route path="/providers/:providerId" element={<ProviderPublicProfile />} />
 
 
           {/* ---------- AUTH ---------- */}
