@@ -280,9 +280,28 @@ export default function CustomerDashboard() {
         if (isMessagingWsConnected) return undefined;
         if (!auth.isAuthenticated) return undefined;
 
-        const interval = window.setInterval(refreshUnreadCount, 30000);
+        const interval = window.setInterval(refreshUnreadCount, 10000);
         return () => window.clearInterval(interval);
     }, [auth.isAuthenticated, isMessagingWsConnected, refreshUnreadCount]);
+
+    useEffect(() => {
+        if (!auth.isAuthenticated) return undefined;
+
+        const handleFocusRefresh = () => refreshUnreadCount();
+        const handleVisibilityRefresh = () => {
+            if (document.visibilityState === "visible") {
+                refreshUnreadCount();
+            }
+        };
+
+        window.addEventListener("focus", handleFocusRefresh);
+        document.addEventListener("visibilitychange", handleVisibilityRefresh);
+
+        return () => {
+            window.removeEventListener("focus", handleFocusRefresh);
+            document.removeEventListener("visibilitychange", handleVisibilityRefresh);
+        };
+    }, [auth.isAuthenticated, refreshUnreadCount]);
 
     // Fetch completed bookings that need reviews
     useEffect(() => {

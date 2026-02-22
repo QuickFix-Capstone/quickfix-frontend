@@ -2,6 +2,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { MessageSquare, PlusCircle } from "lucide-react";
 import { useAuth } from "react-oidc-context";
+import { useSearchParams } from "react-router-dom";
 import ConversationList from "../../components/messaging/ConversationList";
 import MessageThread from "../../components/messaging/MessageThread";
 import MessageInput from "../../components/messaging/MessageInput";
@@ -98,6 +99,9 @@ function upsertMessage(existingMessages, incomingMessage) {
 
 export default function Messages() {
   const auth = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const preselectConversationId = searchParams.get("conversationId");
+  const hasAppliedPreselectRef = useRef(false);
   const currentUserId = useMemo(
     () => String(auth.user?.profile?.sub || ""),
     [auth.user],
@@ -180,6 +184,24 @@ export default function Messages() {
     loadMessagesForConversation(selectedConversation.conversationId);
     setTypingUsers([]);
   }, [selectedConversation, loadMessagesForConversation]);
+
+  useEffect(() => {
+    if (!preselectConversationId || hasAppliedPreselectRef.current) return;
+    if (!conversations.length) return;
+
+    const matched = conversations.find(
+      (conv) => String(conv.conversationId) === String(preselectConversationId),
+    );
+    if (!matched) return;
+
+    setSelectedConversation(matched);
+    hasAppliedPreselectRef.current = true;
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete("conversationId");
+      return next;
+    }, { replace: true });
+  }, [conversations, preselectConversationId, setSearchParams]);
 
   useEffect(() => {
     const timers = typingTimeoutRef.current;

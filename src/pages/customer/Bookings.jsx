@@ -2,18 +2,15 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "react-oidc-context";
 import { useNavigate } from "react-router-dom";
-import { useLocation as useUserLocation } from "../../context/LocationContext";
 import Card from "../../components/UI/Card";
 import Button from "../../components/UI/Button";
 import ReviewModal from "../../components/reviews/ReviewModal";
 import { ArrowLeft, Calendar, Clock, MapPin, DollarSign, AlertCircle, ChevronLeft, ChevronRight, Filter, MessageSquare } from "lucide-react";
 import { createConversation } from "../../api/messaging";
-import { getMyReviews } from "../../api/reviews";
 
 export default function Bookings() {
     const auth = useAuth();
     const navigate = useNavigate();
-    const { location: userLocation, getLocation } = useUserLocation();
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
     const [statusFilter, setStatusFilter] = useState("all");
@@ -22,13 +19,14 @@ export default function Bookings() {
     const [pagination, setPagination] = useState({ total: 0, has_more: false });
     const [reviewModalOpen, setReviewModalOpen] = useState(false);
     const [selectedBookingForReview, setSelectedBookingForReview] = useState(null);
+    const [openingChatBookingId, setOpeningChatBookingId] = useState(null);
 
-    // Get user location on mount
-    useEffect(() => {
-        if (!userLocation) {
-            getLocation();
-        }
-    }, [userLocation, getLocation]);
+    const resolveProviderId = (booking) =>
+        booking?.provider_id ||
+        booking?.provider?.provider_id ||
+        booking?.provider?.user_id ||
+        booking?.provider?.id ||
+        null;
 
     const statusColors = {
         pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
@@ -157,20 +155,36 @@ export default function Bookings() {
 
     // Handle messaging a provider
     const handleMessageProvider = async (booking) => {
+        const providerId = resolveProviderId(booking);
+        if (!providerId) {
+            alert("This booking does not have an assigned provider yet.");
+            return;
+        }
+
+        setOpeningChatBookingId(booking.booking_id);
         try {
-            await createConversation(
-                booking.provider_id,
+            const conversation = await createConversation(
+                providerId,
                 booking.service_offering_id || booking.booking_id
             );
-            navigate("/customer/messages");
+            const conversationId = conversation?.conversationId;
+            if (conversationId) {
+                navigate(`/customer/messages?conversationId=${encodeURIComponent(conversationId)}`);
+            } else {
+                navigate("/customer/messages");
+            }
         } catch (error) {
             // If conversation already exists (409), navigate to messages anyway
-            if (error.status === 409) {
+            if (error.status === 409 && error.conversationId) {
+                navigate(`/customer/messages?conversationId=${encodeURIComponent(error.conversationId)}`);
+            } else if (error.status === 409) {
                 navigate("/customer/messages");
             } else {
                 console.error("Failed to create conversation:", error);
                 alert("Failed to start conversation. Please try again.");
             }
+        } finally {
+            setOpeningChatBookingId(null);
         }
     };
 
@@ -418,10 +432,11 @@ export default function Bookings() {
                                                 <Button
                                                     onClick={() => handleMessageProvider(booking)}
                                                     variant="outline"
-                                                    className="gap-1 border-neutral-300 hover:bg-neutral-50"
+                                                    disabled={!resolveProviderId(booking) || openingChatBookingId === booking.booking_id}
+                                                    className="gap-1 border-neutral-300 hover:bg-neutral-50 disabled:opacity-50"
                                                 >
                                                     <MessageSquare className="h-4 w-4" />
-                                                    Message
+                                                    {openingChatBookingId === booking.booking_id ? "Opening..." : "Message"}
                                                 </Button>
                                             </div>
                                         </div>
