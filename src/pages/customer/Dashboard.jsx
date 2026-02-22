@@ -1,5 +1,5 @@
 // src/pages/customer/Dashboard.jsx
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "react-oidc-context";
 import { useNavigate } from "react-router-dom";
 import Card from "../../components/UI/Card";
@@ -11,6 +11,7 @@ import { getMyReviews } from "../../api/reviews";
 import { getReviewsAboutMe } from "../../api/customerReviews";
 import ReviewCard from "./ReviewCard";
 import ProviderReviewCard from "./ProviderReviewCard";
+import useMessagingWebSocket from "../../hooks/useMessagingWebSocket";
 import { User, LogOut, Plus, Calendar, Settings, Upload, Briefcase, MessageSquare, TrendingUp, Clock, Star, Bell, ThumbsUp } from "lucide-react";
 
 export default function CustomerDashboard() {
@@ -35,6 +36,20 @@ export default function CustomerDashboard() {
     const [selectedJobForReview, setSelectedJobForReview] = useState(null);
     const hasFetchedJobs = useRef(false);
     const notificationsMenuRef = useRef(null);
+    const refreshUnreadCount = useCallback(async () => {
+        if (!auth.isAuthenticated) return;
+
+        try {
+            const data = await getConversations(50);
+            const total = (data.conversations || []).reduce(
+                (sum, conv) => sum + conv.unreadCount,
+                0
+            );
+            setTotalUnread(total);
+        } catch (error) {
+            console.error("Failed to fetch unread count:", error);
+        }
+    }, [auth.isAuthenticated]);
 
     const normalizeJobStatus = (status) => {
         const value = (status || "").toLowerCase();
@@ -243,30 +258,23 @@ export default function CustomerDashboard() {
         };
     }, [showNotificationsMenu]);
 
-    // Fetch unread message count
     useEffect(() => {
-        if (!auth.isAuthenticated) return;
+        refreshUnreadCount();
+    }, [refreshUnreadCount]);
 
-        const fetchUnreadCount = async () => {
-            try {
-                const data = await getConversations(50);
-                const total = (data.conversations || []).reduce(
-                    (sum, conv) => sum + conv.unreadCount,
-                    0
-                );
-                setTotalUnread(total);
-            } catch (error) {
-                // Silently fail - user might not have any conversations yet
-                console.error("Failed to fetch unread count:", error);
+    useMessagingWebSocket({
+        enabled: auth.isAuthenticated,
+        userId: auth.user?.profile?.sub,
+        onMessage: refreshUnreadCount,
+        onUnreadCount: (event) => {
+            const totalFromEvent = Number(event?.totalUnread);
+            if (Number.isFinite(totalFromEvent)) {
+                setTotalUnread(totalFromEvent);
+                return;
             }
-        };
-
-        fetchUnreadCount();
-
-        // Poll every 30 seconds for new messages
-        const interval = setInterval(fetchUnreadCount, 30000);
-        return () => clearInterval(interval);
-    }, [auth.isAuthenticated]);
+            refreshUnreadCount();
+        },
+    });
 
     // Fetch completed bookings that need reviews
     useEffect(() => {

@@ -72,6 +72,7 @@ import AdminDashboard from "./pages/Admin/AdminDashboard";
 import UnverifiedServiceProvider from "./pages/Admin/UnverifiedServiceProvider";
 import AdminProviderDetails from "./pages/Admin/AdminProviderDetails";
 import ChatbotProvider from "./views/chatbot";
+import MessageToastNotifications from "./components/messaging/MessageToastNotifications";
 
 // ================= LOCAL AUTH =================
 import {
@@ -213,6 +214,8 @@ export default function App() {
       userRole={currentUser?.role || "customer"}
     >
       <div className="min-h-screen bg-neutral-100 text-neutral-900">
+        <MessageToastNotifications currentUserRole={currentUser?.role} />
+
         {/* ================= NAV ================= */}
         {!isProviderRoute &&
           (isCustomerRoute ? (

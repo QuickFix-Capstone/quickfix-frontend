@@ -1,5 +1,5 @@
 // src/components/messaging/MessageInput.jsx
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Send } from "lucide-react";
 
 /**
@@ -7,8 +7,46 @@ import { Send } from "lucide-react";
  * @param {Function} onSend - Callback function when message is sent
  * @param {boolean} disabled - Whether input is disabled
  */
-export default function MessageInput({ onSend, disabled = false }) {
+export default function MessageInput({
+  onSend,
+  disabled = false,
+  onTypingChange,
+  typingIndicatorText,
+}) {
   const [message, setMessage] = useState("");
+  const typingTimeoutRef = useRef(null);
+  const isTypingRef = useRef(false);
+
+  const stopTyping = useCallback(() => {
+    if (isTypingRef.current) {
+      isTypingRef.current = false;
+      onTypingChange?.(false);
+    }
+  }, [onTypingChange]);
+
+  const startTyping = useCallback(() => {
+    if (!isTypingRef.current) {
+      isTypingRef.current = true;
+      onTypingChange?.(true);
+    }
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    typingTimeoutRef.current = setTimeout(() => {
+      stopTyping();
+    }, 1800);
+  }, [onTypingChange, stopTyping]);
+
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      stopTyping();
+    };
+  }, [stopTyping]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -17,6 +55,7 @@ export default function MessageInput({ onSend, disabled = false }) {
     if (!trimmedMessage || disabled) return;
 
     onSend(trimmedMessage);
+    stopTyping();
     setMessage(""); // Clear input after sending
   };
 
@@ -34,8 +73,16 @@ export default function MessageInput({ onSend, disabled = false }) {
         <div className="flex-1 relative">
           <textarea
             value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            onChange={(e) => {
+              setMessage(e.target.value);
+              if (e.target.value.trim()) {
+                startTyping();
+              } else {
+                stopTyping();
+              }
+            }}
             onKeyDown={handleKeyDown}
+            onBlur={stopTyping}
             placeholder="Type your message..."
             disabled={disabled}
             rows={1}
@@ -58,6 +105,9 @@ export default function MessageInput({ onSend, disabled = false }) {
         <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500"></span>
         Press <kbd className="px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-xs font-mono">Enter</kbd> to send, <kbd className="px-1.5 py-0.5 bg-slate-100 border border-slate-300 rounded text-xs font-mono">Shift+Enter</kbd> for new line
       </p>
+      {typingIndicatorText && (
+        <p className="mt-1 text-xs text-blue-600">{typingIndicatorText}</p>
+      )}
     </form>
   );
 }

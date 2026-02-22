@@ -142,7 +142,11 @@ import { useAuth } from "react-oidc-context";
 /**
  * Message thread component - displays messages in a conversation
  */
-export default function MessageThread({ messages = [], loading = false }) {
+export default function MessageThread({
+  messages = [],
+  loading = false,
+  typingUsers = [],
+}) {
   const auth = useAuth();
   const messagesEndRef = useRef(null);
 
@@ -228,10 +232,37 @@ export default function MessageThread({ messages = [], loading = false }) {
                 >
                   {formatTimestamp(msg.timestamp)}
                 </p>
+                {isOwnMessage && (
+                  <p
+                    className={`mt-1 text-[11px] text-right ${
+                      msg.readAt || msg.status === "read"
+                        ? "text-blue-100"
+                        : "text-blue-200"
+                    }`}
+                  >
+                    {msg.readAt || msg.status === "read"
+                      ? "Read"
+                      : msg.deliveredAt || msg.status === "delivered"
+                        ? "Delivered"
+                        : "Sent"}
+                  </p>
+                )}
               </div>
             </div>
           );
         })}
+        {typingUsers.length > 0 && (
+            <div className="flex justify-start">
+              <div className="rounded-2xl rounded-bl-sm border border-slate-200 bg-white px-4 py-2 text-xs text-slate-600 shadow-sm">
+                {typingUsers.join(", ")} typing
+                <span className="ml-1 inline-flex gap-1">
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-blue-400 [animation-delay:0ms]" />
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-blue-400 [animation-delay:120ms]" />
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-blue-400 [animation-delay:240ms]" />
+                </span>
+              </div>
+            </div>
+          )}
         <div ref={messagesEndRef} />
       </div>
     </div>
