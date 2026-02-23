@@ -285,15 +285,27 @@ export default function PaymentHistory() {
 
                                     {/* Right: Actions */}
                                     <div className="flex items-center lg:col-span-3">
-                                        <button
-                                            onClick={() => navigate(`/receipt-new/${payment.payment_id}`)}
-                                            className="w-full rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-3 font-semibold text-white transition-all hover:from-blue-700 hover:to-blue-800 hover:shadow-lg"
-                                        >
-                                            <div className="flex items-center justify-center gap-2">
-                                                <Receipt className="h-4 w-4" />
-                                                View Receipt
-                                            </div>
-                                        </button>
+                                        {["PAID", "COMPLETED", "SUCCEEDED"].includes(String(payment.status).toUpperCase()) ? (
+                                            <button
+                                                onClick={() => navigate(`/receipt-new/${payment.payment_id}`)}
+                                                className="w-full rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-3 font-semibold text-white transition-all hover:from-blue-700 hover:to-blue-800 hover:shadow-lg"
+                                            >
+                                                <div className="flex items-center justify-center gap-2">
+                                                    <Receipt className="h-4 w-4" />
+                                                    View Receipt
+                                                </div>
+                                            </button>
+                                        ) : (
+                                            <button
+                                                onClick={() => navigate(`/checkout/${payment.job_id}`)}
+                                                className="w-full rounded-lg bg-gradient-to-r from-green-600 to-green-700 px-4 py-3 font-semibold text-white transition-all hover:from-green-700 hover:to-green-800 hover:shadow-lg"
+                                            >
+                                                <div className="flex items-center justify-center gap-2">
+                                                    <DollarSign className="h-4 w-4" />
+                                                    Pay Now
+                                                </div>
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             </Card>
