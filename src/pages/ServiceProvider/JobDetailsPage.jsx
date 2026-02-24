@@ -31,6 +31,8 @@ const statusStyles = {
   cancelled: "bg-gray-50 text-gray-700 border-gray-200",
 };
 
+const normalizeJobStatus = (status) => String(status || "").toLowerCase();
+
 export default function JobDetailsPage() {
   const { jobId } = useParams();
   const navigate = useNavigate();
@@ -72,8 +74,19 @@ export default function JobDetailsPage() {
   // WebSocket for real-time status updates
   // ─────────────────────────────────────
   const { sendMessage } = useWebSocket(userId, (data) => {
-    if (data.type === "JOB_STATUS_CHANGED" && data.jobId === jobId) {
-      setJob((prev) => (prev ? { ...prev, status: data.newStatus } : prev));
+    const incomingJobId = data?.jobId || data?.job_id;
+    const incomingStatus = normalizeJobStatus(data?.newStatus || data?.status);
+
+    if (
+      data?.type === "JOB_STATUS_CHANGED" &&
+      incomingJobId &&
+      String(incomingJobId) === String(jobId)
+    ) {
+      setJob((prev) =>
+        prev
+          ? { ...prev, status: incomingStatus || prev.status }
+          : prev,
+      );
     }
   });
 
@@ -673,9 +686,19 @@ export default function JobDetailsPage() {
               </Button>
             )}
 
+            {(job.status === "in_progress" ||
+              job.status === "pending_completion" ||
+              job.status === "budget_change_pending" ||
+              job.status === "completed") && (
+              <Button disabled className="bg-slate-500 text-white cursor-not-allowed">
+                Job Started
+              </Button>
+            )}
+
             {(job.status === "assigned" || job.status === "in_progress") && (
               <Button
                 disabled={job.status === "budget_change_pending"}
+                className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 text-base font-semibold"
                 onClick={handleCompleteJob}
               >
                 {job.status === "budget_change_pending"
@@ -685,8 +708,8 @@ export default function JobDetailsPage() {
             )}
 
             {job.status === "pending_completion" && (
-              <Button disabled className="bg-emerald-600">
-                Waiting for customer to mark as completed
+              <Button disabled className="bg-yellow-500 hover:bg-yellow-500 text-white px-6 py-3 text-base font-semibold">
+                Pending Customer Action
               </Button>
             )}
 
