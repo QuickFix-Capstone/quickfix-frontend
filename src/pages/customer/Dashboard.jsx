@@ -182,17 +182,30 @@ export default function CustomerDashboard() {
     }, [auth.isAuthenticated, auth.user]);
 
     useEffect(() => {
-        const userId = auth.user?.profile?.sub;
-        if (!auth.isAuthenticated || !userId) return;
+        const token = auth.user?.id_token || auth.user?.access_token;
+        if (!auth.isAuthenticated || !token) return;
 
         const ws = new WebSocket(
-            `${JOB_STATUS_WS_BASE}?user_id=${encodeURIComponent(userId)}`
+            `${JOB_STATUS_WS_BASE}?token=${encodeURIComponent(token)}`
         );
         wsRef.current = ws;
+        let pingInterval = null;
+
+        ws.onopen = () => {
+            // Send ping every 30s to keep connection alive
+            pingInterval = setInterval(() => {
+                if (ws.readyState === WebSocket.OPEN) {
+                    ws.send(JSON.stringify({ action: "ping" }));
+                }
+            }, 30000);
+        };
 
         ws.onmessage = (event) => {
             try {
                 const message = JSON.parse(event.data);
+                // Ignore pong responses
+                if (message?.type === "PONG") return;
+
                 const incomingJobId = message?.jobId || message?.job_id;
                 const incomingStatus = normalizeJobStatus(message?.newStatus || message?.status);
 
@@ -227,6 +240,7 @@ export default function CustomerDashboard() {
         };
 
         return () => {
+            clearInterval(pingInterval);
             if (wsRef.current) {
                 wsRef.current.close();
                 wsRef.current = null;
@@ -358,10 +372,10 @@ export default function CustomerDashboard() {
 
         const fetchReviewsAboutMe = async () => {
             try {
-                const data = await getReviewsAboutMe({ 
-                    sort: "newest", 
-                    limit: 10, 
-                    offset: 0 
+                const data = await getReviewsAboutMe({
+                    sort: "newest",
+                    limit: 10,
+                    offset: 0
                 });
                 setReviewsAboutMe(data.reviews || []);
             } catch (error) {
@@ -391,13 +405,13 @@ export default function CustomerDashboard() {
     const handleSubmitReview = async (reviewData) => {
         try {
             const token = auth.user?.id_token || auth.user?.access_token;
-            
+
             // Validate comment length
             if (reviewData.comment && reviewData.comment.length < 10) {
                 alert("Comment must be at least 10 characters");
                 throw new Error("Comment too short");
             }
-            
+
             const res = await fetch(
                 `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/customer/reviews`,
                 {

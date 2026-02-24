@@ -1,7 +1,7 @@
 const DEFAULT_WS_URL = import.meta.env.VITE_MESSAGING_WEBSOCKET_URL;
 const MAX_RECONNECT_ATTEMPTS = 5;
 
-const NOOP = () => {};
+const NOOP = () => { };
 const clientRegistry = new Map();
 
 function parseMessage(rawData) {
@@ -19,9 +19,10 @@ function normalizeType(event) {
 }
 
 export default class WebSocketMessagingClient {
-  constructor({ userId, url = DEFAULT_WS_URL } = {}) {
+  constructor({ userId, url = DEFAULT_WS_URL, token = null } = {}) {
     this.userId = userId;
     this.url = url;
+    this.token = token;
     this.socket = null;
     this.reconnectTimer = null;
     this.reconnectAttempts = 0;
@@ -44,7 +45,10 @@ export default class WebSocketMessagingClient {
 
     this.manualClose = false;
     const separator = this.url.includes("?") ? "&" : "?";
-    const wsUrl = `${this.url}${separator}user_id=${encodeURIComponent(this.userId)}`;
+    const authParam = this.token
+      ? `token=${encodeURIComponent(this.token)}`
+      : `user_id=${encodeURIComponent(this.userId)}`;
+    const wsUrl = `${this.url}${separator}${authParam}`;
 
     this.socket = new WebSocket(wsUrl);
 
@@ -164,18 +168,20 @@ export default class WebSocketMessagingClient {
   }
 }
 
-export function acquireWebSocketMessagingClient({ userId, url = DEFAULT_WS_URL } = {}) {
+export function acquireWebSocketMessagingClient({ userId, url = DEFAULT_WS_URL, token = null } = {}) {
   if (!userId) return null;
 
   const key = `${url}::${userId}`;
   const existing = clientRegistry.get(key);
 
   if (existing) {
+    // Update the token in case it was refreshed
+    if (token) existing.client.token = token;
     existing.refs += 1;
     return existing.client;
   }
 
-  const client = new WebSocketMessagingClient({ userId, url });
+  const client = new WebSocketMessagingClient({ userId, url, token });
   clientRegistry.set(key, { client, refs: 1 });
   return client;
 }

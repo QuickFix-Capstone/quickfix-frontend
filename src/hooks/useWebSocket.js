@@ -2,13 +2,16 @@ import { useEffect, useRef } from "react";
 
 const WS_URL = "wss://074y7xhv7f.execute-api.us-east-2.amazonaws.com/dev";
 
-export default function useWebSocket(userId, onMessage) {
+export default function useWebSocket(userId, onMessage, token) {
   const wsRef = useRef(null);
 
   useEffect(() => {
     if (!userId) return;
 
-    const ws = new WebSocket(`${WS_URL}?user_id=${userId}`);
+    const authParam = token
+      ? `token=${encodeURIComponent(token)}`
+      : `user_id=${encodeURIComponent(userId)}`;
+    const ws = new WebSocket(`${WS_URL}?${authParam}`);
 
     ws.onopen = () => {
       console.log("WebSocket connected");
@@ -33,7 +36,7 @@ export default function useWebSocket(userId, onMessage) {
     return () => {
       ws.close();
     };
-  }, [userId]);
+  }, [userId, token]);
 
   const sendMessage = (payload) => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {

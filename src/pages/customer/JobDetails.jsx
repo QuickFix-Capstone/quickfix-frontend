@@ -40,8 +40,9 @@ export default function JobDetails() {
     };
 
     const notifyJobCompletion = (jobIdToNotify) => {
-        const userId = auth.user?.profile?.sub || job?.customer_id;
-        if (!userId || !jobIdToNotify) return;
+        if (!jobIdToNotify) return;
+        const token = auth.user?.id_token || auth.user?.access_token;
+        if (!token) return;
 
         if (wsRef.current?.readyState === WebSocket.OPEN) {
             wsRef.current.send(
@@ -55,7 +56,7 @@ export default function JobDetails() {
 
         try {
             const ws = new WebSocket(
-                `${JOB_STATUS_WS_BASE}?user_id=${encodeURIComponent(userId)}`
+                `${JOB_STATUS_WS_BASE}?token=${encodeURIComponent(token)}`
             );
 
             ws.onopen = () => {
@@ -82,17 +83,18 @@ export default function JobDetails() {
     }, [job_id]);
 
     useEffect(() => {
-        const userId = auth.user?.profile?.sub || job?.customer_id;
-        if (!auth.isAuthenticated || !userId) return;
+        const token = auth.user?.id_token || auth.user?.access_token;
+        if (!auth.isAuthenticated || !token) return;
 
         const ws = new WebSocket(
-            `${JOB_STATUS_WS_BASE}?user_id=${encodeURIComponent(userId)}`
+            `${JOB_STATUS_WS_BASE}?token=${encodeURIComponent(token)}`
         );
         wsRef.current = ws;
 
         ws.onmessage = (event) => {
             try {
                 const message = JSON.parse(event.data);
+                if (message?.type === "PONG") return;
                 if (
                     message?.type === "JOB_STATUS_CHANGED" &&
                     String(message?.jobId) === String(job_id)
@@ -121,7 +123,7 @@ export default function JobDetails() {
                 wsRef.current = null;
             }
         };
-    }, [auth.isAuthenticated, auth.user, job?.customer_id, job_id]);
+    }, [auth.isAuthenticated, auth.user, job_id]);
 
     const fetchJobDetails = async () => {
         setLoading(true);
