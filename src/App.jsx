@@ -12,6 +12,7 @@ import TopNav from "./components/layout/TopNav";
 // ================= VIEWS =================
 import Home from "./views/Home";
 import SearchView from "./views/SearchView";
+// import ProviderPublicProfile from "./pages/ProviderPublicProfile";
 import ProviderPublicProfile from "./pages/ProviderPublicProfile";
 
 // ================= CUSTOMER PAGES =================
@@ -19,6 +20,7 @@ import CustomerLogin from "./pages/customer/CustomerLogin";
 import CustomerDashboard from "./pages/customer/Dashboard";
 import RegisterCustomer from "./pages/customer/RegisterCustomer";
 import EditProfile from "./pages/customer/EditProfile";
+// import CustomerProfile from "./pages/customer/CustomerProfile";
 import CustomerProfile from "./pages/customer/CustomerProfile";
 import ServiceList from "./pages/customer/ServiceList";
 import Bookings from "./pages/customer/Bookings";
@@ -72,8 +74,10 @@ import AdminRoute from "./pages/Auth/AdminRoute";
 import AdminDashboard from "./pages/Admin/AdminDashboard";
 import UnverifiedServiceProvider from "./pages/Admin/UnverifiedServiceProvider";
 import AdminProviderDetails from "./pages/Admin/AdminProviderDetails";
-import ChatbotProvider from "./views/chatbot";
-import MessageToastNotifications from "./components/messaging/MessageToastNotifications";
+import AdminRefundRequests from "./pages/Admin/Refunds/AdminRefundRequests";
+import AdminRefundDetails from "./pages/Admin/Refunds/AdminRefundDetails";
+// import ChatbotProvider from "./views/chatbot";
+// import MessageToastNotifications from "./components/messaging/MessageToastNotifications";
 
 // ================= LOCAL AUTH =================
 import {
@@ -210,12 +214,9 @@ export default function App() {
   const isProviderRoute = location.pathname.startsWith("/service-provider");
 
   return (
-    <ChatbotProvider
-      userToken={currentUser?.token || currentUser?.idToken}
-      userRole={currentUser?.role || "customer"}
-    >
+    <>
       <div className="min-h-screen bg-neutral-100 text-neutral-900">
-        <MessageToastNotifications currentUserRole={currentUser?.role} />
+        {/* <MessageToastNotifications currentUserRole={currentUser?.role} /> */}
 
         {/* ================= NAV ================= */}
         {!isProviderRoute &&
@@ -231,7 +232,6 @@ export default function App() {
           <Route path="/" element={<Home currentUser={currentUser} />} />
           <Route path="/search" element={<SearchView />} />
           <Route path="/providers/:providerId" element={<ProviderPublicProfile />} />
-
 
           {/* ---------- AUTH ---------- */}
           <Route path="/auth/callback" element={<AuthCallback />} />
@@ -324,83 +324,6 @@ export default function App() {
           />
 
           {/* ---------- PROVIDER AREA (NESTED) ---------- */}
-          <Route path="/service-provider" element={<ServiceProviderLayout />}>
-            <Route path="home" element={<ServiceProviderHomePage />} />
-            <Route path="dashboard" element={<ServiceProviderDashboard />} />
-            <Route
-              path="create-service-offering"
-              element={<CreateServiceOffering />}
-            />
-            <Route path="job/:jobId" element={<JobDetailsPage />} />
-            <Route path="profile" element={<ServiceProviderProfile />} />
-            <Route path="messages" element={<ServiceProviderMessages />} />
-            <Route path="documents" element={<ProviderDocuments />} />
-            <Route path="jobs" element={<ServiceProviderJobs />} />
-            <Route path="applications" element={<ServiceProviderApplications />} />
-            <Route path="calendar" element={<ServiceProviderCalendar />} />
-            <Route path="bookings" element={<PendingBookings />} />
-            <Route path="bookings/:bookingId" element={<SPBookingDetails />} />
-          </Route>
-
-          {/* ---------- CUSTOMER ---------- */}
-          <Route path="/customer/login" element={<CustomerLogin />} />
-          <Route
-            path="/customer/register"
-            element={
-              <RegisterCustomer
-                onRegister={handleRegister}
-                error={registerError}
-              />
-            }
-          />
-          <Route path="/customer/entry" element={<CustomerEntry />} />
-          <Route path="/customer/dashboard" element={<CustomerDashboard />} />
-          <Route path="/customer/profile" element={<CustomerProfile />} />
-          <Route path="/customer/edit" element={<EditProfile />} />
-          <Route path="/customer/services" element={<ServiceList />} />
-          <Route path="/customer/bookings" element={<Bookings />} />
-          <Route
-            path="/customer/bookings/:bookingId"
-            element={<BookingDetails />}
-          />
-          <Route path="/customer/book" element={<BookingForm />} />
-          <Route path="/customer/post-job" element={<PostJob />} />
-          <Route path="/customer/jobs" element={<MyJobs />} />
-          <Route path="/customer/jobs/:job_id" element={<JobDetails />} />
-          <Route path="/customer/jobs/:job_id/edit" element={<EditJob />} />
-          <Route
-            path="/customer/jobs/:job_id/applications"
-            element={<JobApplications />}
-          />
-
-          {/* Messages */}
-          <Route path="/customer/messages" element={<CustomerMessages />} />
-
-          {/* Reviews */}
-          <Route path="/customer/reviews" element={<MyReviews />} />
-          <Route path="/customer/reviews-about-me" element={<ReviewsAboutMe />} />
-
-          {/* TEMPORARY TEST ROUTE - DELETE AFTER TESTING */}
-          <Route
-            path="/customer/test-messaging"
-            element={<TestMessagingAPI />}
-          />
-
-          {/* ---------- PROVIDER AUTH ---------- */}
-          <Route
-            path="/service-provider/signup"
-            element={<ServiceProviderSignUp />}
-          />
-          <Route
-            path="/service-provider/login"
-            element={<ServiceProviderLogin />}
-          />
-          <Route
-            path="/service-provider/onboarding"
-            element={<ServiceProviderOnboarding />}
-          />
-
-          {/* ---------- PROVIDER AREA (NESTED) ---------- */}
           <Route path="/service-provider" element={<ServiceProviderLayout currentUser={currentUser} onLogout={handleLogout} />}>
             <Route path="home" element={<ServiceProviderHomePage />} />
             <Route path="dashboard" element={<ServiceProviderDashboard />} />
@@ -459,12 +382,30 @@ export default function App() {
               </AdminRoute>
             }
           />
+
+          <Route
+            path="/admin/refunds"
+            element={
+              <AdminRoute>
+                <AdminRefundRequests />
+              </AdminRoute>
+            }
+          />
+
+          <Route
+            path="/admin/refunds/:refundRequestId"
+            element={
+              <AdminRoute>
+                <AdminRefundDetails />
+              </AdminRoute>
+            }
+          />
         </Routes>
 
         <footer className="text-center py-8 text-neutral-400">
           Built for QuickFix Capstone • React + Tailwind • AWS Powered
         </footer>
       </div>
-    </ChatbotProvider>
+    </>
   );
 }

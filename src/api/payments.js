@@ -1,7 +1,7 @@
 // Payment API helper - matches AWS Lambda endpoints exactly
 // Uses OIDC context for authentication
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL;
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod";
 
 /**
  * Get auth headers from OIDC context
@@ -82,3 +82,49 @@ export const getPaymentHistory = (limit = 20, offset = 0, authHeaders) =>
     api(`/payments/history/customer?limit=${limit}&offset=${offset}`, {
         headers: authHeaders,
     });
+
+// ✅ Refund: presign S3 uploads
+export const refundPresignUploads = (paymentId, jobId, files, authHeaders) =>
+    api(`/refunds/presign-uploads`, {
+        method: "POST",
+        headers: authHeaders,
+        body: {
+            payment_id: paymentId,
+            job_id: jobId,
+            files: files.map((f) => ({
+                filename: f.name,
+                content_type: f.type || "application/octet-stream",
+            })),
+        },
+    });
+
+// ✅ Refund: create request in DB
+export const createRefundRequest = (payload, authHeaders) =>
+    api(`/refunds/request`, {
+        method: "POST",
+        headers: authHeaders,
+        body: payload,
+    });
+
+// ✅ Admin: list refund requests (optional status filter)
+export const adminListRefunds = (status, authHeaders) =>
+    api(`/admin/refunds${status ? `?status=${encodeURIComponent(status)}` : ""}`, {
+        method: "GET",
+        headers: authHeaders,
+    });
+
+// ✅ Admin: get single refund request + attachments
+export const adminGetRefundDetails = (refundRequestId, authHeaders) =>
+    api(`/admin/refunds/${refundRequestId}`, {
+        method: "GET",
+        headers: authHeaders,
+    });
+
+// ✅ Admin: approve or reject a refund request
+export const adminReviewRefund = (refundRequestId, payload, authHeaders) =>
+    api(`/admin/refunds/${refundRequestId}/review`, {
+        method: "POST",
+        headers: authHeaders,
+        body: payload,
+    });
+

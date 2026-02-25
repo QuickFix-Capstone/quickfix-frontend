@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "react-oidc-context";
 import { getPaymentHistory, getAuthHeaders } from "../../api/payments";
+import RefundRequestModal from "../../components/payments/RefundRequestModal";
 import Card from "../../components/UI/Card";
 import { Receipt, Calendar, MapPin, CreditCard, DollarSign, TrendingUp, CheckCircle } from "lucide-react";
 
@@ -62,6 +63,37 @@ const PaymentMethodBadge = ({ method }) => {
     return <span className="text-sm text-neutral-500">{method || "Unknown"}</span>;
 };
 
+function RefundStatusBanner({ status, note }) {
+    if (!status) return null;
+    const s = String(status).toUpperCase();
+    const styles = {
+        PENDING: "border-yellow-200 bg-yellow-50 text-yellow-800",
+        APPROVED: "border-green-200 bg-green-50 text-green-800",
+        REJECTED: "border-red-200 bg-red-50 text-red-800",
+    };
+    const title = {
+        PENDING: "⏳ Refund requested",
+        APPROVED: "✅ Refund approved",
+        REJECTED: "❌ Refund rejected",
+    };
+    const msg = {
+        PENDING: "Your request has been submitted and is waiting for admin review.",
+        APPROVED: "Your refund has been approved. It will be processed to your original payment method.",
+        REJECTED: "Your refund was rejected. Please call customer service at 416-XXX-7777.",
+    };
+    return (
+        <div className={`mt-3 rounded-xl border px-4 py-3 text-sm ${styles[s] || "border-neutral-200 bg-neutral-50 text-neutral-700"}`}>
+            <div className="font-semibold">{title[s] || "Refund update"}</div>
+            <div className="mt-1">{msg[s] || ""}</div>
+            {s === "REJECTED" && note && (
+                <div className="mt-2 text-xs text-neutral-700">
+                    <span className="font-semibold">Admin note:</span> {note}
+                </div>
+            )}
+        </div>
+    );
+}
+
 export default function PaymentHistory() {
     const navigate = useNavigate();
     const auth = useAuth();
@@ -71,6 +103,9 @@ export default function PaymentHistory() {
     const [data, setData] = useState(null);
     const [limit] = useState(20);
     const [offset, setOffset] = useState(0);
+    const [refundOpen, setRefundOpen] = useState(false);
+    const [selectedPayment, setSelectedPayment] = useState(null);
+    const [refundedIds, setRefundedIds] = useState(new Set());
 
     useEffect(() => {
         fetchHistory();
@@ -279,21 +314,56 @@ export default function PaymentHistory() {
                                                         {money(payment.final_amount_cents)}
                                                     </span>
                                                 </div>
+                                                {/* Refund status banner — shown when backend returns refund_status */}
+                                                <RefundStatusBanner
+                                                    status={payment.refund_status}
+                                                    note={payment.refund_admin_note}
+                                                />
                                             </div>
                                         </div>
                                     </div>
 
                                     {/* Right: Actions */}
-                                    <div className="flex items-center lg:col-span-3">
-                                        <button
-                                            onClick={() => navigate(`/receipt-new/${payment.payment_id}`)}
-                                            className="w-full rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-3 font-semibold text-white transition-all hover:from-blue-700 hover:to-blue-800 hover:shadow-lg"
-                                        >
-                                            <div className="flex items-center justify-center gap-2">
-                                                <Receipt className="h-4 w-4" />
-                                                View Receipt
-                                            </div>
-                                        </button>
+                                    <div className="flex flex-col gap-2 lg:col-span-3">
+                                        {["PAID", "COMPLETED", "SUCCEEDED"].includes(String(payment.status).toUpperCase()) ? (
+                                            <>
+                                                <button
+                                                    onClick={() => navigate(`/receipt-new/${payment.payment_id}`)}
+                                                    className="w-full rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 px-4 py-3 font-semibold text-white transition-all hover:from-blue-700 hover:to-blue-800 hover:shadow-lg"
+                                                >
+                                                    <div className="flex items-center justify-center gap-2">
+                                                        <Receipt className="h-4 w-4" />
+                                                        View Receipt
+                                                    </div>
+                                                </button>
+                                                {/* Show refund badge if already requested (from API or optimistic local state) */}
+                                                {refundedIds.has(String(payment.payment_id)) || payment.refund_status ? (
+                                                    <div className="w-full rounded-lg border border-orange-300 bg-orange-50 px-4 py-2 text-center text-sm font-semibold text-orange-700">
+                                                        ⏳ Refund Requested
+                                                    </div>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => {
+                                                            setSelectedPayment(payment);
+                                                            setRefundOpen(true);
+                                                        }}
+                                                        className="w-full rounded-lg border border-red-300 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 transition-all hover:bg-red-100"
+                                                    >
+                                                        Request Refund
+                                                    </button>
+                                                )}
+                                            </>
+                                        ) : (
+                                            <button
+                                                onClick={() => navigate(`/checkout/${payment.job_id}`)}
+                                                className="w-full rounded-lg bg-gradient-to-r from-green-600 to-green-700 px-4 py-3 font-semibold text-white transition-all hover:from-green-700 hover:to-green-800 hover:shadow-lg"
+                                            >
+                                                <div className="flex items-center justify-center gap-2">
+                                                    <DollarSign className="h-4 w-4" />
+                                                    Pay Now
+                                                </div>
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             </Card>
@@ -326,6 +396,18 @@ export default function PaymentHistory() {
                     </div>
                 )}
             </div>
+
+            {/* Refund Request Modal */}
+            <RefundRequestModal
+                isOpen={refundOpen}
+                onClose={() => setRefundOpen(false)}
+                payment={selectedPayment}
+                authUser={auth.user}
+                onSuccess={(result) => {
+                    setRefundedIds((prev) => new Set([...prev, String(selectedPayment?.payment_id)]));
+                    fetchHistory();
+                }}
+            />
         </div>
     );
 }
