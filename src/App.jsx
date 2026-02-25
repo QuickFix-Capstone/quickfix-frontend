@@ -72,6 +72,8 @@ import AdminRoute from "./pages/Auth/AdminRoute";
 import AdminDashboard from "./pages/Admin/AdminDashboard";
 import UnverifiedServiceProvider from "./pages/Admin/UnverifiedServiceProvider";
 import AdminProviderDetails from "./pages/Admin/AdminProviderDetails";
+import AdminRefundRequests from "./pages/Admin/Refunds/AdminRefundRequests";
+import AdminRefundDetails from "./pages/Admin/Refunds/AdminRefundDetails";
 // import ChatbotProvider from "./views/chatbot";
 // import MessageToastNotifications from "./components/messaging/MessageToastNotifications";
 
@@ -375,6 +377,24 @@ export default function App() {
             element={
               <AdminRoute>
                 <SystemHealth />
+              </AdminRoute>
+            }
+          />
+
+          <Route
+            path="/admin/refunds"
+            element={
+              <AdminRoute>
+                <AdminRefundRequests />
+              </AdminRoute>
+            }
+          />
+
+          <Route
+            path="/admin/refunds/:refundRequestId"
+            element={
+              <AdminRoute>
+                <AdminRefundDetails />
               </AdminRoute>
             }
           />
