@@ -73,7 +73,8 @@ export default function useMessagingWebSocket({
       return;
     }
 
-    const client = acquireWebSocketMessagingClient({ userId: resolvedUserId, url: wsUrl });
+    const token = auth.user?.id_token || auth.user?.access_token || null;
+    const client = acquireWebSocketMessagingClient({ userId: resolvedUserId, url: wsUrl, token });
     if (!client) return;
 
     clientRef.current = client;

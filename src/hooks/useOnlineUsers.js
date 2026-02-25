@@ -18,14 +18,15 @@ export default function useOnlineUsers() {
     const stored = localStorage.getItem("adminProfile");
     const admin = stored ? JSON.parse(stored) : null;
     const userId = admin?.sub;
-    if (!userId) return;
+    const token = admin?.token || admin?.id_token || admin?.access_token;
+    if (!userId || !token) return;
 
     function connect() {
       if (!mountedRef.current) return;
       if (wsRef.current?.readyState === WebSocket.OPEN) return;
 
       const ws = new WebSocket(
-        `${WS_BASE}?user_id=${encodeURIComponent(userId)}&role=admin`
+        `${WS_BASE}?token=${encodeURIComponent(token)}`
       );
       wsRef.current = ws;
 
