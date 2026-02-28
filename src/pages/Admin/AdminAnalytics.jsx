@@ -1,6 +1,36 @@
 import { useEffect, useState } from "react";
 import { fetchAdminAnalytics } from "../../api/adminAnalytics";
 import HealthCard from "../../components/Admin/HealthCard";
+import {
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    Tooltip,
+    ResponsiveContainer,
+    CartesianGrid,
+    PieChart,
+    Pie,
+    Cell,
+    Legend,
+    LineChart,
+    Line,
+} from "recharts";
+
+const CHART_COLORS = [
+    "#0f766e",
+    "#0ea5e9",
+    "#f59e0b",
+    "#ef4444",
+    "#8b5cf6",
+    "#22c55e",
+    "#64748b",
+];
+
+const asNumber = (value) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+};
 
 export default function AdminAnalytics() {
     const [data, setData] = useState(null);
@@ -59,7 +89,89 @@ export default function AdminAnalytics() {
     const { commitment } = metrics;
 
     const formatMinutes = (val) =>
-        val === null || val === undefined ? "N/A" : `${val.toFixed(1)} min`;
+        val === null || val === undefined || Number.isNaN(Number(val))
+            ? "N/A"
+            : `${Number(val).toFixed(1)} min`;
+
+    const entityOverviewData = [
+        { entity: "Customers", total: asNumber(metrics.customers_total) },
+        { entity: "Providers", total: asNumber(metrics.providers_total) },
+        { entity: "Jobs", total: asNumber(metrics.jobs_total) },
+        { entity: "Bookings", total: asNumber(metrics.bookings_total) },
+        { entity: "Reviews", total: asNumber(metrics.reviews_total) },
+    ];
+
+    const commitmentSplitData = [
+        {
+            name: "Direct Jobs",
+            value: asNumber(commitment.direct_jobs_committed),
+        },
+        {
+            name: "Booking Jobs",
+            value: asNumber(commitment.booking_jobs_committed),
+        },
+    ];
+
+    const commitmentTimeData = [
+        {
+            name: "Avg Minutes",
+            direct: asNumber(commitment.avg_minutes_direct),
+            booking: asNumber(commitment.avg_minutes_booking),
+        },
+    ];
+
+    const jobStatusData = (metrics.job_status_distribution || []).map((item) => ({
+        status: item.status || "unknown",
+        count: asNumber(item.count),
+    }));
+
+    const bookingStatusData = (metrics.booking_status_distribution || []).map(
+        (item) => ({
+            status: item.status || "unknown",
+            count: asNumber(item.count),
+        }),
+    );
+
+    const monthlyGrowth = metrics.monthly_growth || {};
+    const monthMap = new Map();
+
+    ["jobs", "customers", "bookings", "providers"].forEach((key) => {
+        (monthlyGrowth[key] || []).forEach((entry) => {
+            if (!entry.month) return;
+            if (!monthMap.has(entry.month)) {
+                monthMap.set(entry.month, {
+                    month: entry.month,
+                    jobs: 0,
+                    customers: 0,
+                    bookings: 0,
+                    providers: 0,
+                });
+            }
+            monthMap.get(entry.month)[key] = asNumber(entry.count);
+        });
+    });
+
+    const monthlyGrowthData = Array.from(monthMap.values()).sort((a, b) =>
+        a.month.localeCompare(b.month),
+    );
+
+    const compactKpis = [
+        { label: "Customers", value: metrics.customers_total },
+        { label: "Providers", value: metrics.providers_total },
+        { label: "Jobs", value: metrics.jobs_total },
+        { label: "Bookings", value: metrics.bookings_total },
+        { label: "Reviews", value: metrics.reviews_total },
+        { label: "Committed Jobs", value: commitment.committed_jobs },
+        {
+            label: "Avg Time to Commit",
+            value: formatMinutes(commitment.avg_minutes_to_commitment),
+        },
+    ];
+
+    const hasV2Charts =
+        jobStatusData.length > 0 ||
+        bookingStatusData.length > 0 ||
+        monthlyGrowthData.length > 0;
 
     return (
         <div className="space-y-6">
@@ -81,94 +193,213 @@ export default function AdminAnalytics() {
                 </button>
             </div>
 
-            {/* KPI CARDS */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <HealthCard title="Customers">
-                    <p className="text-3xl font-semibold text-gray-900">
-                        {metrics.customers_total}
+            {/* COMPACT KPI CARDS */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3">
+                {compactKpis.map((item) => (
+                    <div
+                        key={item.label}
+                        className="bg-white border border-gray-200 rounded-lg p-3"
+                    >
+                        <p className="text-[11px] uppercase tracking-wide text-gray-500">
+                            {item.label}
+                        </p>
+                        <p className="text-lg font-semibold text-gray-900 mt-1">
+                            {item.value}
+                        </p>
+                    </div>
+                ))}
+            </div>
+
+            {/* PHASE 1: CHARTS WITH V1 DATA */}
+            <HealthCard title="Entity Overview">
+                <p className="text-xs text-gray-500 mb-3">
+                    Side-by-side comparison of core platform entities
+                </p>
+                <ResponsiveContainer width="100%" height={290}>
+                    <BarChart data={entityOverviewData} layout="vertical">
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis type="number" allowDecimals={false} />
+                        <YAxis type="category" dataKey="entity" width={90} />
+                        <Tooltip />
+                        <Bar dataKey="total" fill="#111827" radius={[0, 6, 6, 0]} />
+                    </BarChart>
+                </ResponsiveContainer>
+            </HealthCard>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <HealthCard title="Commitment Split">
+                    <p className="text-xs text-gray-500 mb-3">
+                        Direct jobs versus booking-based jobs
                     </p>
-                    <p className="text-xs text-gray-500 mt-1">Registered customers</p>
+                    <ResponsiveContainer width="100%" height={290}>
+                        <PieChart>
+                            <Pie
+                                data={commitmentSplitData}
+                                dataKey="value"
+                                nameKey="name"
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={70}
+                                outerRadius={100}
+                                paddingAngle={2}
+                            >
+                                {commitmentSplitData.map((slice, index) => (
+                                    <Cell
+                                        key={slice.name}
+                                        fill={index === 0 ? "#0f766e" : "#0ea5e9"}
+                                    />
+                                ))}
+                            </Pie>
+                            <Tooltip />
+                            <Legend />
+                        </PieChart>
+                    </ResponsiveContainer>
                 </HealthCard>
 
-                <HealthCard title="Providers">
-                    <p className="text-3xl font-semibold text-gray-900">
-                        {metrics.providers_total}
+                <HealthCard title="Commitment Time Comparison">
+                    <p className="text-xs text-gray-500 mb-3">
+                        Average minutes to commitment by commitment type
                     </p>
-                    <p className="text-xs text-gray-500 mt-1">Registered service providers</p>
-                </HealthCard>
-
-                <HealthCard title="Jobs">
-                    <p className="text-3xl font-semibold text-gray-900">
-                        {metrics.jobs_total}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">Total jobs posted</p>
-                </HealthCard>
-
-                <HealthCard title="Bookings">
-                    <p className="text-3xl font-semibold text-gray-900">
-                        {metrics.bookings_total}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">Total bookings created</p>
-                </HealthCard>
-
-                <HealthCard title="Reviews">
-                    <p className="text-3xl font-semibold text-gray-900">
-                        {metrics.reviews_total}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">Total reviews submitted</p>
+                    <ResponsiveContainer width="100%" height={290}>
+                        <BarChart data={commitmentTimeData}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="name" />
+                            <YAxis />
+                            <Tooltip />
+                            <Legend />
+                            <Bar
+                                dataKey="direct"
+                                name="Direct Jobs"
+                                fill="#0f766e"
+                                radius={[6, 6, 0, 0]}
+                            />
+                            <Bar
+                                dataKey="booking"
+                                name="Booking Jobs"
+                                fill="#0ea5e9"
+                                radius={[6, 6, 0, 0]}
+                            />
+                        </BarChart>
+                    </ResponsiveContainer>
                 </HealthCard>
             </div>
 
-            {/* COMMITMENT STATS */}
-            <div className="border border-gray-200 rounded-xl p-5">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">
-                    Commitment Metrics
-                </h3>
+            {/* PHASE 2: CHARTS WITH V2 DATA */}
+            {hasV2Charts && (
+                <div className="space-y-4">
+                    <h3 className="text-lg font-medium text-gray-900">
+                        Advanced Trends
+                    </h3>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div>
-                        <p className="text-xs text-gray-500 uppercase tracking-wide">
-                            Committed Jobs
-                        </p>
-                        <p className="text-2xl font-semibold text-gray-900 mt-1">
-                            {commitment.committed_jobs}
-                        </p>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        {jobStatusData.length > 0 && (
+                            <HealthCard title="Job Status Distribution">
+                                <ResponsiveContainer width="100%" height={290}>
+                                    <PieChart>
+                                        <Pie
+                                            data={jobStatusData}
+                                            dataKey="count"
+                                            nameKey="status"
+                                            cx="50%"
+                                            cy="50%"
+                                            outerRadius={105}
+                                        >
+                                            {jobStatusData.map((entry, index) => (
+                                                <Cell
+                                                    key={`${entry.status}-${index}`}
+                                                    fill={
+                                                        CHART_COLORS[
+                                                            index % CHART_COLORS.length
+                                                        ]
+                                                    }
+                                                />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip />
+                                        <Legend />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </HealthCard>
+                        )}
+
+                        {bookingStatusData.length > 0 && (
+                            <HealthCard title="Booking Status Distribution">
+                                <ResponsiveContainer width="100%" height={290}>
+                                    <PieChart>
+                                        <Pie
+                                            data={bookingStatusData}
+                                            dataKey="count"
+                                            nameKey="status"
+                                            cx="50%"
+                                            cy="50%"
+                                            outerRadius={105}
+                                        >
+                                            {bookingStatusData.map((entry, index) => (
+                                                <Cell
+                                                    key={`${entry.status}-${index}`}
+                                                    fill={
+                                                        CHART_COLORS[
+                                                            index % CHART_COLORS.length
+                                                        ]
+                                                    }
+                                                />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip />
+                                        <Legend />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </HealthCard>
+                        )}
                     </div>
 
-                    <div>
-                        <p className="text-xs text-gray-500 uppercase tracking-wide">
-                            Avg Time to Commit
-                        </p>
-                        <p className="text-2xl font-semibold text-gray-900 mt-1">
-                            {formatMinutes(commitment.avg_minutes_to_commitment)}
-                        </p>
-                    </div>
-
-                    <div>
-                        <p className="text-xs text-gray-500 uppercase tracking-wide">
-                            Direct Jobs
-                        </p>
-                        <p className="text-2xl font-semibold text-gray-900 mt-1">
-                            {commitment.direct_jobs_committed}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-0.5">
-                            Avg: {formatMinutes(commitment.avg_minutes_direct)}
-                        </p>
-                    </div>
-
-                    <div>
-                        <p className="text-xs text-gray-500 uppercase tracking-wide">
-                            Booking Jobs
-                        </p>
-                        <p className="text-2xl font-semibold text-gray-900 mt-1">
-                            {commitment.booking_jobs_committed}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-0.5">
-                            Avg: {formatMinutes(commitment.avg_minutes_booking)}
-                        </p>
-                    </div>
+                    {monthlyGrowthData.length > 0 && (
+                        <HealthCard title="Monthly Growth (Last 6 Months)">
+                            <ResponsiveContainer width="100%" height={310}>
+                                <LineChart data={monthlyGrowthData}>
+                                    <CartesianGrid strokeDasharray="3 3" />
+                                    <XAxis dataKey="month" />
+                                    <YAxis allowDecimals={false} />
+                                    <Tooltip />
+                                    <Legend />
+                                    <Line
+                                        type="monotone"
+                                        dataKey="jobs"
+                                        name="Jobs"
+                                        stroke="#0f766e"
+                                        strokeWidth={2}
+                                        dot={{ r: 3 }}
+                                    />
+                                    <Line
+                                        type="monotone"
+                                        dataKey="customers"
+                                        name="Customers"
+                                        stroke="#0ea5e9"
+                                        strokeWidth={2}
+                                        dot={{ r: 3 }}
+                                    />
+                                    <Line
+                                        type="monotone"
+                                        dataKey="bookings"
+                                        name="Bookings"
+                                        stroke="#f59e0b"
+                                        strokeWidth={2}
+                                        dot={{ r: 3 }}
+                                    />
+                                    <Line
+                                        type="monotone"
+                                        dataKey="providers"
+                                        name="Providers"
+                                        stroke="#ef4444"
+                                        strokeWidth={2}
+                                        dot={{ r: 3 }}
+                                    />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        </HealthCard>
+                    )}
                 </div>
-            </div>
+            )}
 
             {/* FOOTER */}
             <div className="text-xs text-gray-400 text-right">
