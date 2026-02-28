@@ -63,6 +63,10 @@ import Logout from "./pages/Logout";
 import AuthCallback from "./pages/AuthCallback";
 import Checkout from "./pages/payment/Checkout";
 import ReceiptNew from "./pages/payment/ReceiptNew";
+import StripeReturn from "./pages/ServiceProvider/providerPayment/StripeReturn";
+import StripeRefresh from "./pages/ServiceProvider/providerPayment/StripeRefresh";
+import ProviderPayoutSettings from "./pages/ServiceProvider/providerPayment/ProviderPayoutSettings";
+import ProviderPayoutDashboard from "./pages/ServiceProvider/providerPayment/ProviderPayoutDashboard";
 
 import AllServiceProvider from "./pages/Admin/AllServiceProvider";
 import SystemHealth from "./pages/Admin/SystemHealth";
@@ -74,6 +78,7 @@ import UnverifiedServiceProvider from "./pages/Admin/UnverifiedServiceProvider";
 import AdminProviderDetails from "./pages/Admin/AdminProviderDetails";
 import AdminRefundRequests from "./pages/Admin/Refunds/AdminRefundRequests";
 import AdminRefundDetails from "./pages/Admin/Refunds/AdminRefundDetails";
+import AdminPayouts from "./pages/Admin/AdminPayouts";
 // import ChatbotProvider from "./views/chatbot";
 // import MessageToastNotifications from "./components/messaging/MessageToastNotifications";
 
@@ -267,6 +272,10 @@ export default function App() {
           <Route path="/checkout/:jobId" element={<Checkout />} />
           <Route path="/receipt-new/:id" element={<ReceiptNew />} />
 
+          {/* Stripe Connect */}
+          <Route path="/provider/stripe/return" element={<StripeReturn />} />
+          <Route path="/provider/stripe/refresh" element={<StripeRefresh />} />
+
           {/* ---------- CUSTOMER ---------- */}
           <Route path="/customer/login" element={<CustomerLogin />} />
           <Route
@@ -338,6 +347,8 @@ export default function App() {
             <Route path="calendar" element={<ServiceProviderCalendar />} />
             <Route path="bookings" element={<PendingBookings />} />
             <Route path="bookings/:bookingId" element={<SPBookingDetails />} />
+            <Route path="payout-settings" element={<ProviderPayoutSettings />} />
+            <Route path="payouts" element={<ProviderPayoutDashboard />} />
           </Route>
 
           {/* ---------- ADMIN ---------- */}
@@ -395,6 +406,15 @@ export default function App() {
             element={
               <AdminRoute>
                 <AdminRefundDetails />
+              </AdminRoute>
+            }
+          />
+
+          <Route
+            path="/admin/payouts"
+            element={
+              <AdminRoute>
+                <AdminPayouts />
               </AdminRoute>
             }
           />

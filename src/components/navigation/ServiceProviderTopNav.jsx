@@ -13,6 +13,7 @@ import {
   MessageCircle,
   Calendar,
   CalendarDays,
+  Wallet,
 } from "lucide-react";
 import GhostButton from "../UI/GhostButton";
 
@@ -39,10 +40,9 @@ export default function TopNav({ currentUser, onLogout }) {
         setMobileOpen(false);
       }}
       className={`flex items-center gap-2 px-3 py-2 rounded-lg transition
-        ${
-          isActive(path)
-            ? "bg-neutral-100 font-semibold text-indigo-600"
-            : "hover:bg-neutral-50"
+        ${isActive(path)
+          ? "bg-neutral-100 font-semibold text-indigo-600"
+          : "hover:bg-neutral-50"
         }`}
     >
       <IconComponent className="h-4 w-4" />
@@ -96,6 +96,18 @@ export default function TopNav({ currentUser, onLogout }) {
             icon={CalendarDays}
             label="Calendar"
             path="/service-provider/calendar"
+          />
+
+          <NavItem
+            icon={Wallet}
+            label="Payout Settings"
+            path="/service-provider/payout-settings"
+          />
+
+          <NavItem
+            icon={Wallet}
+            label="Payouts"
+            path="/service-provider/payouts"
           />
 
           <div className="mx-2 h-6 w-px bg-neutral-200" />
@@ -183,6 +195,18 @@ export default function TopNav({ currentUser, onLogout }) {
               icon={CalendarDays}
               label="Calendar"
               path="/service-provider/calendar"
+            />
+
+            <NavItem
+              icon={Wallet}
+              label="Payout Settings"
+              path="/service-provider/payout-settings"
+            />
+
+            <NavItem
+              icon={Wallet}
+              label="Payouts"
+              path="/service-provider/payouts"
             />
 
             <div className="my-2 h-px bg-neutral-200" />
