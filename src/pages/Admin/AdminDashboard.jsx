@@ -3,6 +3,7 @@ import AdminServiceProviders from "./AllServiceProvider";
 import SystemHealth from "./SystemHealth";
 import AdminUnverifiedServiceProviders from "./UnverifiedServiceProvider";
 import AdminRefundRequests from "./Refunds/AdminRefundRequests";
+import AdminAnalytics from "./AdminAnalytics";
 import useOnlineUsers from "../../hooks/useOnlineUsers";
 
 const TABS = {
@@ -10,6 +11,7 @@ const TABS = {
   UNVERIFIED: "UNVERIFIED",
   SYSTEM: "SYSTEM",
   REFUNDS: "REFUNDS",
+  ANALYTICS: "ANALYTICS",
 };
 
 export default function AdminDashboard() {
@@ -66,6 +68,13 @@ export default function AdminDashboard() {
         </button>
 
         <button
+          className={tabStyle(TABS.ANALYTICS)}
+          onClick={() => setActiveTab(TABS.ANALYTICS)}
+        >
+          Analytics
+        </button>
+
+        <button
           className={tabStyle(TABS.SYSTEM)}
           onClick={() => setActiveTab(TABS.SYSTEM)}
         >
@@ -86,6 +95,7 @@ export default function AdminDashboard() {
         {activeTab === TABS.UNVERIFIED && <AdminUnverifiedServiceProviders />}
         {activeTab === TABS.SYSTEM && <SystemHealth />}
         {activeTab === TABS.REFUNDS && <AdminRefundRequests />}
+        {activeTab === TABS.ANALYTICS && <AdminAnalytics />}
       </div>
     </div>
   );
