@@ -77,7 +77,7 @@ import UnverifiedServiceProvider from "./pages/Admin/UnverifiedServiceProvider";
 import AdminProviderDetails from "./pages/Admin/AdminProviderDetails";
 import AdminRefundRequests from "./pages/Admin/Refunds/AdminRefundRequests";
 import AdminRefundDetails from "./pages/Admin/Refunds/AdminRefundDetails";
-// import ChatbotProvider from "./views/chatbot";
+import ChatbotProvider from "./views/chatbot";
 // import MessageToastNotifications from "./components/messaging/MessageToastNotifications";
 
 // ================= LOCAL AUTH =================
@@ -215,9 +215,8 @@ export default function App() {
   const isProviderRoute = location.pathname.startsWith("/service-provider");
 
   return (
-    <>
+    <ChatbotProvider>
       <div className="min-h-screen bg-neutral-100 text-neutral-900">
-        {/* <MessageToastNotifications currentUserRole={currentUser?.role} /> */}
 
         {/* ================= NAV ================= */}
         {!isProviderRoute &&
@@ -411,7 +410,7 @@ export default function App() {
           Built for QuickFix Capstone • React + Tailwind • AWS Powered
         </footer>
       </div>
-    </>
+    </ChatbotProvider>
   );
 }
 
