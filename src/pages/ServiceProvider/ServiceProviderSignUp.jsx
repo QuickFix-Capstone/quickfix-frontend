@@ -12,6 +12,7 @@ import { Eye, EyeOff } from "lucide-react";
 import AuthCard from "../../components/auth/AuthCard";
 import SocialAuthButtons from "../../components/auth/SocialAuthButtons";
 import AuthDivider from "../../components/auth/AuthDivider";
+import AlertBanner from "../../components/UI/AlertBanner";
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -193,9 +194,7 @@ export default function Signup() {
         </>
       )}
 
-      {error && (
-        <p className="text-red-500 text-sm mt-3 text-center">{error}</p>
-      )}
+      <AlertBanner variant="error" message={error} className="mt-3" />
     </AuthCard>
   );
 }

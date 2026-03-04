@@ -181,72 +181,88 @@ export default function CustomerDashboard() {
         fetchJobs();
     }, [auth.isAuthenticated, auth.user]);
 
+    const wsToken = auth.user?.id_token || auth.user?.access_token;
+
     useEffect(() => {
-        const token = auth.user?.id_token || auth.user?.access_token;
-        if (!auth.isAuthenticated || !token) return;
+        if (!auth.isAuthenticated || !wsToken) return;
 
-        const ws = new WebSocket(
-            `${JOB_STATUS_WS_BASE}?token=${encodeURIComponent(token)}`
-        );
-        wsRef.current = ws;
+        let ws = null;
         let pingInterval = null;
+        const connectTimer = setTimeout(() => {
+            ws = new WebSocket(
+                `${JOB_STATUS_WS_BASE}?token=${encodeURIComponent(wsToken)}`
+            );
+            wsRef.current = ws;
 
-        ws.onopen = () => {
-            // Send ping every 30s to keep connection alive
-            pingInterval = setInterval(() => {
-                if (ws.readyState === WebSocket.OPEN) {
-                    ws.send(JSON.stringify({ action: "ping" }));
-                }
-            }, 30000);
-        };
-
-        ws.onmessage = (event) => {
-            try {
-                const message = JSON.parse(event.data);
-                // Ignore pong responses
-                if (message?.type === "PONG") return;
-
-                const incomingJobId = message?.jobId || message?.job_id;
-                const incomingStatus = normalizeJobStatus(message?.newStatus || message?.status);
-
-                if (message?.type === "JOB_STATUS_CHANGED" && incomingJobId) {
-                    setJobs((prevJobs) =>
-                        prevJobs.map((job) =>
-                            String(job.job_id) === String(incomingJobId)
-                                ? { ...job, status: incomingStatus }
-                                : job
-                        )
-                    );
-
-                    if (incomingStatus === "completed") {
-                        setCompletionNotifications((prev) => {
-                            if (prev.some((n) => String(n.jobId) === String(incomingJobId))) {
-                                return prev;
-                            }
-                            return [
-                                { jobId: String(incomingJobId), receivedAt: Date.now() },
-                                ...prev,
-                            ].slice(0, 10);
-                        });
+            ws.onopen = () => {
+                // Send ping every 30s to keep connection alive
+                pingInterval = setInterval(() => {
+                    if (ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({ action: "ping" }));
                     }
-                }
-            } catch {
-                // Ignore non-JSON websocket events
-            }
-        };
+                }, 30000);
+            };
 
-        ws.onerror = () => {
-            ws.close();
-        };
+            ws.onmessage = (event) => {
+                try {
+                    const message = JSON.parse(event.data);
+                    // Ignore pong responses
+                    if (message?.type === "PONG") return;
+
+                    const incomingJobId = message?.jobId || message?.job_id;
+                    const incomingStatus = normalizeJobStatus(message?.newStatus || message?.status);
+
+                    if (message?.type === "JOB_STATUS_CHANGED" && incomingJobId) {
+                        setJobs((prevJobs) =>
+                            prevJobs.map((job) =>
+                                String(job.job_id) === String(incomingJobId)
+                                    ? { ...job, status: incomingStatus }
+                                    : job
+                            )
+                        );
+
+                        if (incomingStatus === "completed") {
+                            setCompletionNotifications((prev) => {
+                                if (prev.some((n) => String(n.jobId) === String(incomingJobId))) {
+                                    return prev;
+                                }
+                                return [
+                                    { jobId: String(incomingJobId), receivedAt: Date.now() },
+                                    ...prev,
+                                ].slice(0, 10);
+                            });
+                        }
+                    }
+                } catch {
+                    // Ignore non-JSON websocket events
+                }
+            };
+
+            ws.onerror = () => {
+                // Let the close event lifecycle happen naturally.
+            };
+        }, 0);
 
         return () => {
+            clearTimeout(connectTimer);
             clearInterval(pingInterval);
-            if (wsRef.current) {
-                wsRef.current.close();
+            if (ws) {
+                ws.onopen = null;
+                ws.onmessage = null;
+                ws.onerror = null;
+                ws.onclose = null;
+                if (
+                    ws.readyState === WebSocket.OPEN ||
+                    ws.readyState === WebSocket.CONNECTING
+                ) {
+                    ws.close();
+                }
+            }
+            if (wsRef.current === ws) {
                 wsRef.current = null;
             }
         };
-    }, [auth.isAuthenticated, auth.user]);
+    }, [auth.isAuthenticated, wsToken]);
 
     const clearCompletionNotification = (jobId) => {
         setCompletionNotifications((prev) =>

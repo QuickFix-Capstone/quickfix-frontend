@@ -42,6 +42,7 @@ import ServiceProviderLogin from "./pages/ServiceProvider/ServiceProviderLogin";
 import ServiceProviderOnboarding from "./pages/ServiceProvider/ServiceProviderOnboarding";
 import ServiceProviderDashboard from "./pages/ServiceProvider/ServiceProviderDashboard";
 import CreateServiceOffering from "./pages/ServiceProvider/CreateServiceOffering";
+import EditServiceOffering from "./pages/ServiceProvider/EditServiceOffering";
 import ServiceProviderHomePage from "./pages/ServiceProvider/ServiceProviderHomePage";
 import JobDetailsPage from "./pages/ServiceProvider/JobDetailsPage";
 import ServiceProviderProfile from "./pages/ServiceProvider/ServiceProviderProfile";
@@ -65,7 +66,7 @@ import Checkout from "./pages/payment/Checkout";
 import ReceiptNew from "./pages/payment/ReceiptNew";
 
 import AllServiceProvider from "./pages/Admin/AllServiceProvider";
-import SystemHealth from "./pages/Admin/SystemHealth";
+import AdminMonitoringDashboard from "./pages/Admin/AdminMonitoringDashboard";
 import AdminLogin from "./pages/Admin/AdminLogin";
 import AdminSetPassword from "./pages/Admin/AdminSetPassword";
 import AdminRoute from "./pages/Auth/AdminRoute";
@@ -331,6 +332,10 @@ export default function App() {
               path="create-service-offering"
               element={<CreateServiceOffering />}
             />
+            <Route
+              path="offerings/:service_offering_id/edit"
+              element={<EditServiceOffering />}
+            />
             <Route path="job/:jobId" element={<JobDetailsPage />} />
             <Route path="profile" element={<ServiceProviderProfile />} />
             <Route path="messages" element={<ServiceProviderMessages />} />
@@ -408,6 +413,10 @@ export default function App() {
               path="create-service-offering"
               element={<CreateServiceOffering />}
             />
+            <Route
+              path="offerings/:service_offering_id/edit"
+              element={<EditServiceOffering />}
+            />
             <Route path="job/:jobId" element={<JobDetailsPage />} />
             <Route path="profile" element={<ServiceProviderProfile />} />
             <Route path="messages" element={<ServiceProviderMessages />} />
@@ -455,7 +464,7 @@ export default function App() {
             path="/admin/system-health"
             element={
               <AdminRoute>
-                <SystemHealth />
+                <AdminMonitoringDashboard />
               </AdminRoute>
             }
           />
@@ -468,3 +477,4 @@ export default function App() {
     </ChatbotProvider>
   );
 }
+

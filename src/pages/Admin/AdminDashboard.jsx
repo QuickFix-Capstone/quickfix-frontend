@@ -1,6 +1,6 @@
 import { useState } from "react";
 import AdminServiceProviders from "./AllServiceProvider";
-import SystemHealth from "./SystemHealth";
+import AdminMonitoringDashboard from "./AdminMonitoringDashboard";
 import AdminUnverifiedServiceProviders from "./UnverifiedServiceProvider";
 import useOnlineUsers from "../../hooks/useOnlineUsers";
 
@@ -76,8 +76,9 @@ export default function AdminDashboard() {
       <div className="border border-gray-200 rounded-xl p-4">
         {activeTab === TABS.ALL && <AdminServiceProviders />}
         {activeTab === TABS.UNVERIFIED && <AdminUnverifiedServiceProviders />}
-        {activeTab === TABS.SYSTEM && <SystemHealth />}
+        {activeTab === TABS.SYSTEM && <AdminMonitoringDashboard />}
       </div>
     </div>
   );
 }
+

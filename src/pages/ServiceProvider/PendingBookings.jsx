@@ -4,18 +4,20 @@ import { useNavigate } from "react-router-dom";
 import { API_BASE } from "../../api/config";
 import Card from "../../components/UI/Card";
 import Button from "../../components/UI/Button";
+import AlertBanner from "../../components/UI/AlertBanner";
 import {
   ArrowLeft,
   Calendar,
   Clock,
   MapPin,
   DollarSign,
-  AlertCircle,
   Mail,
   Phone,
   MessageSquare,
   FileText,
   Filter,
+  X,
+  AlertCircle,
 } from "lucide-react";
 import { createConversation } from "../../api/messagingProvider";
 
@@ -27,6 +29,7 @@ export default function PendingBookings() {
   const [error, setError] = useState(null);
   const [statusFilter, setStatusFilter] = useState("all");
   const [refreshKey, setRefreshKey] = useState(0);
+  const [rejectingId, setRejectingId] = useState(null);
 
   const statusColors = {
     pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
@@ -91,6 +94,41 @@ export default function PendingBookings() {
   };
 
   // =====================================================
+  // Reject booking
+  // =====================================================
+  const handleRejectBooking = async (bookingId) => {
+    if (!window.confirm("Reject this booking?")) return;
+
+    setRejectingId(bookingId);
+    try {
+      const session = await fetchAuthSession();
+      const accessToken = session.tokens?.accessToken?.toString();
+
+      const res = await fetch(
+        `${API_BASE}/service-provider/bookings/${bookingId}/cancel`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        },
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to reject booking");
+      }
+
+      silentRefresh();
+    } catch (err) {
+      setError(err.message || "Error rejecting booking");
+    } finally {
+      setRejectingId(null);
+    }
+  };
+
+  // =====================================================
   // Message customer
   // =====================================================
   const handleMessageCustomer = async (booking) => {
@@ -140,9 +178,8 @@ export default function PendingBookings() {
   if (error) {
     return (
       <div className="p-6">
-        <Card className="p-8 text-center bg-red-50 border-red-200">
-          <AlertCircle className="mx-auto mb-3 h-10 w-10 text-red-500" />
-          <p className="text-red-700">{error}</p>
+        <Card className="p-8 text-center">
+          <AlertBanner variant="error" message={error} className="text-left" />
           <Button className="mt-4" onClick={silentRefresh}>
             Retry
           </Button>
@@ -268,6 +305,19 @@ export default function PendingBookings() {
                     <MessageSquare className="h-4 w-4 mr-2" />
                     Message
                   </Button>
+
+                  {(b.status === "pending" ||
+                    b.status === "pending_confirmation") && (
+                    <Button
+                      variant="outline"
+                      className="border-red-300 text-red-600 hover:bg-red-50"
+                      disabled={rejectingId === b.booking_id}
+                      onClick={() => handleRejectBooking(b.booking_id)}
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      {rejectingId === b.booking_id ? "Rejecting…" : "Reject"}
+                    </Button>
+                  )}
                 </div>
               </div>
             </Card>

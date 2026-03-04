@@ -304,6 +304,7 @@ import { fetchAuthSession } from "aws-amplify/auth";
 import { createServiceOffering } from "../../api/serviceOffering";
 import { ServiceCategory, PricingType } from "../../constants/serviceEnum";
 import { useLocation } from "../../context/LocationContext";
+import AlertBanner from "../../components/UI/AlertBanner";
 
 const UPLOAD_IMAGE_URL =
   "https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/upload_image_URL";
@@ -458,40 +459,33 @@ export default function CreateServiceOffering({ onCancel, onSuccess }) {
       {/* Card */}
       <div className="card p-6 space-y-6">
         {error && (
-          <div className="rounded-xl bg-red-100 px-4 py-3 text-sm text-red-700">
-            {error}
-          </div>
+          <AlertBanner variant="error" message={error} />
         )}
 
         {locationError && (
-          <div className="rounded-xl bg-yellow-100 px-4 py-3 text-sm text-yellow-700">
-            {locationError}
-          </div>
+          <AlertBanner variant="warning" message={locationError} />
         )}
 
         {(locationLoading || addressLoading) && (
-          <div className="rounded-xl bg-blue-100 px-4 py-3 text-sm text-blue-700">
-            Getting your location...
-          </div>
+          <AlertBanner variant="info" message="Getting your location..." />
         )}
 
         {location && (
-          <div className="rounded-xl bg-green-100 px-4 py-3 text-sm text-green-700">
-            Location detected ({location.latitude.toFixed(4)},{" "}
-            {location.longitude.toFixed(4)})
-          </div>
+          <AlertBanner
+            variant="success"
+            message={`Location detected (${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)})`}
+          />
         )}
 
         {address && (
-          <div className="rounded-xl bg-slate-100 px-4 py-3 text-sm text-slate-700">
-            Detected address: {address.formatted || "Unavailable"}
-          </div>
+          <AlertBanner
+            variant="info"
+            message={`Detected address: ${address.formatted || "Unavailable"}`}
+          />
         )}
 
         {addressError && (
-          <div className="rounded-xl bg-yellow-100 px-4 py-3 text-sm text-yellow-700">
-            {addressError}
-          </div>
+          <AlertBanner variant="warning" message={addressError} />
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">

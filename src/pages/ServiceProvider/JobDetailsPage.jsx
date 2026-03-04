@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import Button from "../../components/UI/Button";
 import StarRating from "../../components/UI/StarRating";
+import AlertBanner from "../../components/UI/AlertBanner";
 import { API_BASE } from "../../api/config";
 import useWebSocket from "../../hooks/useWebSocket";
 
@@ -28,7 +29,7 @@ const statusStyles = {
   budget_change_pending: "bg-orange-50 text-orange-700 border-orange-200",
   pending_completion: "bg-emerald-50 text-emerald-700 border-emerald-200",
   completed: "bg-green-50 text-green-700 border-green-200",
-  cancelled: "bg-gray-50 text-gray-700 border-gray-200",
+  cancelled: "bg-white text-gray-700 border-gray-200",
 };
 
 const normalizeJobStatus = (status) => String(status || "").toLowerCase();
@@ -60,6 +61,7 @@ export default function JobDetailsPage() {
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewComment, setReviewComment] = useState("");
   const [submittingReview, setSubmittingReview] = useState(false);
+  const [notice, setNotice] = useState(null);
 
   // ─────────────────────────────────────
   // Load current user ID for WebSocket
@@ -109,15 +111,18 @@ export default function JobDetailsPage() {
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        alert(data.message || "Failed to start job");
+        setNotice({
+          variant: "error",
+          message: data.message || "Failed to start job",
+        });
         return;
       }
 
-      alert("Job started");
+      setNotice({ variant: "success", message: "Job started" });
       silentRefresh();
     } catch (err) {
       console.error(err);
-      alert("Failed to start job");
+      setNotice({ variant: "error", message: "Failed to start job" });
     }
   };
 
@@ -139,7 +144,10 @@ export default function JobDetailsPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.message || "Failed to load job");
+        setNotice({
+          variant: "error",
+          message: data.message || "Failed to load job",
+        });
         return;
       }
 
@@ -176,7 +184,7 @@ export default function JobDetailsPage() {
       }
     } catch (err) {
       console.error(err);
-      alert("Failed to load job details");
+      setNotice({ variant: "error", message: "Failed to load job details" });
     } finally {
       setLoading(false);
     }
@@ -199,12 +207,18 @@ export default function JobDetailsPage() {
     );
 
     if (!proposedFinalPrice || !priceChangeReason) {
-      alert("Please provide a price and a reason.");
+      setNotice({
+        variant: "warning",
+        message: "Please provide a price and a reason.",
+      });
       return;
     }
 
     if (Number(proposedFinalPrice) < currentFinalPrice) {
-      alert("Proposed price must be greater than or equal to current price.");
+      setNotice({
+        variant: "warning",
+        message: "Proposed price must be greater than or equal to current price.",
+      });
       return;
     }
 
@@ -232,18 +246,24 @@ export default function JobDetailsPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.message || "Failed to submit price change request");
+        setNotice({
+          variant: "error",
+          message: data.message || "Failed to submit price change request",
+        });
         return;
       }
 
-      alert("Price change request submitted. Waiting for customer approval.");
+      setNotice({
+        variant: "success",
+        message: "Price change request submitted. Waiting for customer approval.",
+      });
       setShowPriceChangeModal(false);
       setProposedFinalPrice("");
       setPriceChangeReason("");
       silentRefresh();
     } catch (err) {
       console.error(err);
-      alert("Something went wrong");
+      setNotice({ variant: "error", message: "Something went wrong" });
     } finally {
       setSubmittingPriceChange(false);
     }
@@ -251,12 +271,18 @@ export default function JobDetailsPage() {
 
   const handleSubmitApplication = async () => {
     if (!applicationMessage.trim()) {
-      alert("Please include a message for your application.");
+      setNotice({
+        variant: "warning",
+        message: "Please include a message for your application.",
+      });
       return;
     }
 
     if (applicationPrice && Number(applicationPrice) < 0) {
-      alert("Proposed price cannot be negative.");
+      setNotice({
+        variant: "warning",
+        message: "Proposed price cannot be negative.",
+      });
       return;
     }
 
@@ -283,18 +309,24 @@ export default function JobDetailsPage() {
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        alert(data.message || "Failed to submit application");
+        setNotice({
+          variant: "error",
+          message: data.message || "Failed to submit application",
+        });
         return;
       }
 
-      alert("Application submitted successfully.");
+      setNotice({
+        variant: "success",
+        message: "Application submitted successfully.",
+      });
       setShowApplyModal(false);
       setApplicationPrice("");
       setApplicationMessage("");
       silentRefresh();
     } catch (err) {
       console.error(err);
-      alert("Failed to submit application");
+      setNotice({ variant: "error", message: "Failed to submit application" });
     } finally {
       setSubmittingApplication(false);
     }
@@ -322,7 +354,10 @@ export default function JobDetailsPage() {
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        alert(data.message || "Failed to complete job");
+        setNotice({
+          variant: "error",
+          message: data.message || "Failed to complete job",
+        });
         return;
       }
 
@@ -331,11 +366,11 @@ export default function JobDetailsPage() {
         job_id: job.job_id,
       });
 
-      alert("Job marked as completed");
+      setNotice({ variant: "success", message: "Job marked as completed" });
       silentRefresh();
     } catch (err) {
       console.error(err);
-      alert("Failed to complete job");
+      setNotice({ variant: "error", message: "Failed to complete job" });
     }
   };
 
@@ -344,7 +379,10 @@ export default function JobDetailsPage() {
   // ─────────────────────────────────────
   const handleSubmitReview = async () => {
     if (reviewRating === 0) {
-      alert("Please select a star rating.");
+      setNotice({
+        variant: "warning",
+        message: "Please select a star rating.",
+      });
       return;
     }
 
@@ -371,18 +409,24 @@ export default function JobDetailsPage() {
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        alert(data.message || "Failed to submit review");
+        setNotice({
+          variant: "error",
+          message: data.message || "Failed to submit review",
+        });
         return;
       }
 
-      alert("Review submitted successfully!");
+      setNotice({
+        variant: "success",
+        message: "Review submitted successfully!",
+      });
       setShowReviewModal(false);
       setReviewRating(0);
       setReviewComment("");
       silentRefresh();
     } catch (err) {
       console.error(err);
-      alert("Failed to submit review");
+      setNotice({ variant: "error", message: "Failed to submit review" });
     } finally {
       setSubmittingReview(false);
     }
@@ -441,8 +485,13 @@ export default function JobDetailsPage() {
   const formattedStatus = String(job.status || "unknown").replaceAll("_", " ");
 
   return (
-    <div className="min-h-screen bg-slate-50 bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.10),_transparent_42%),radial-gradient(circle_at_top_right,_rgba(16,185,129,0.08),_transparent_38%)]">
+    <div className="min-h-screen bg-white">
       <div className="max-w-5xl mx-auto px-4 py-6 sm:py-8">
+        <AlertBanner
+          variant={notice?.variant}
+          message={notice?.message}
+          className="mb-4"
+        />
         {/* Back button */}
         <button
           onClick={() => navigate("/service-provider/jobs")}
@@ -478,7 +527,7 @@ export default function JobDetailsPage() {
           )}
 
           {job.category && (
-            <div className="mt-4 inline-flex items-center gap-1.5 text-sm text-slate-600 bg-slate-100 px-3 py-1 rounded-lg">
+            <div className="mt-4 inline-flex items-center gap-1.5 text-sm text-slate-600 bg-white px-3 py-1 rounded-lg">
               <Tag className="w-3.5 h-3.5" />
               {job.category}
             </div>
@@ -566,7 +615,7 @@ export default function JobDetailsPage() {
           {/* Location */}
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex items-center gap-2 text-sm font-medium text-slate-700 mb-2">
-              <span className="rounded-lg bg-slate-100 p-1.5">
+              <span className="rounded-lg bg-white p-1.5">
                 <MapPin className="w-4 h-4 text-slate-500" />
               </span>
               Location
@@ -588,7 +637,7 @@ export default function JobDetailsPage() {
           {/* Schedule */}
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex items-center gap-2 text-sm font-medium text-slate-700 mb-2">
-              <span className="rounded-lg bg-slate-100 p-1.5">
+              <span className="rounded-lg bg-white p-1.5">
                 <Calendar className="w-4 h-4 text-slate-500" />
               </span>
               Schedule
@@ -607,7 +656,7 @@ export default function JobDetailsPage() {
           {/* Budget */}
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex items-center gap-2 text-sm font-medium text-slate-700 mb-2">
-              <span className="rounded-lg bg-slate-100 p-1.5">
+              <span className="rounded-lg bg-white p-1.5">
                 <DollarSign className="w-4 h-4 text-slate-500" />
               </span>
               Budget
@@ -630,7 +679,7 @@ export default function JobDetailsPage() {
           {/* Customer */}
           <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="flex items-center gap-2 text-sm font-medium text-slate-700 mb-2">
-              <span className="rounded-lg bg-slate-100 p-1.5">
+              <span className="rounded-lg bg-white p-1.5">
                 <User className="w-4 h-4 text-slate-500" />
               </span>
               Customer
@@ -873,7 +922,7 @@ export default function JobDetailsPage() {
               </div>
               <button
                 onClick={() => setShowReviewModal(false)}
-                className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+                className="rounded-lg p-1 text-slate-400 hover:bg-white hover:text-slate-600"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -978,3 +1027,4 @@ export default function JobDetailsPage() {
     </div>
   );
 }
+

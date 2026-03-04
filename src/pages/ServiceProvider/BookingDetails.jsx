@@ -4,13 +4,13 @@ import { useNavigate, useParams } from "react-router-dom";
 import { API_BASE } from "../../api/config";
 import Card from "../../components/UI/Card";
 import Button from "../../components/UI/Button";
+import AlertBanner from "../../components/UI/AlertBanner";
 import {
   ArrowLeft,
   Calendar,
   Clock,
   MapPin,
   DollarSign,
-  AlertCircle,
   Mail,
   Phone,
   MessageSquare,
@@ -30,6 +30,7 @@ export default function BookingDetails() {
   const [error, setError] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [notice, setNotice] = useState(null);
 
   const statusColors = {
     pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
@@ -98,9 +99,98 @@ export default function BookingDetails() {
     try {
       const session = await fetchAuthSession();
       const idToken = session.tokens?.idToken?.toString();
+      if (!idToken) {
+        navigate("/service-provider/login", { replace: true });
+        return;
+      }
 
       const res = await fetch(
         `${API_BASE}/bookings/${bookingId}/accept`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${idToken}`,
+            "Content-Type": "application/json",
+          },
+        },
+      );
+
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        const errorCode = data?.error_code || data?.code;
+
+        if (res.status === 401) {
+          setNotice({
+            variant: "error",
+            message: "Session expired. Please log in again.",
+          });
+          navigate("/service-provider/login", { replace: true });
+          return;
+        }
+
+        if (res.status === 403) {
+          throw new Error("You are not allowed to accept this booking.");
+        }
+
+        if (res.status === 404 || errorCode === "BOOKING_NOT_FOUND") {
+          throw new Error("This booking no longer exists.");
+        }
+
+        if (
+          res.status === 409 ||
+          ["CONFLICT", "INVALID_STATE", "ALREADY_PROCESSED"].includes(
+            String(errorCode || "").toUpperCase(),
+          )
+        ) {
+          setNotice({
+            variant: "success",
+            message: "Booking already processed. Refreshing details.",
+          });
+          silentRefresh();
+          return;
+        }
+
+        if (res.status === 400 && errorCode === "INVALID_BOOKING_ID") {
+          throw new Error("Invalid booking ID. Please refresh and try again.");
+        }
+
+        throw new Error(data.message || "Failed to accept booking");
+      }
+
+      if (data?.job_id) {
+        navigate(`/service-provider/job/${data.job_id}`);
+      } else {
+        setNotice({
+          variant: "success",
+          message: "Booking accepted successfully",
+        });
+        silentRefresh();
+      }
+    } catch (err) {
+      console.error("[ACCEPT BOOKING ERROR]", err);
+      setNotice({
+        variant: "error",
+        message: err.message || "Error accepting booking",
+      });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // =====================================================
+  // DECLINE BOOKING (simple cancel)
+  // =====================================================
+  const handleDeclineBooking = async () => {
+    if (!window.confirm("Reject this booking?")) return;
+
+    setActionLoading(true);
+    try {
+      const session = await fetchAuthSession();
+      const idToken = session.tokens?.idToken?.toString();
+
+      const res = await fetch(
+        `${API_BASE}/service-provider/bookings/${bookingId}/cancel`,
         {
           method: "POST",
           headers: {
@@ -112,49 +202,19 @@ export default function BookingDetails() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.message || "Failed to accept booking");
+        throw new Error(data.message || "Failed to reject booking");
       }
 
-      alert("Booking accepted!");
-      navigate(`/service-provider/job/${data.job_id}`);
-    } catch (err) {
-      console.error("[ACCEPT BOOKING ERROR]", err);
-      alert(err.message || "Error accepting booking");
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  // =====================================================
-  // DECLINE BOOKING (simple cancel)
-  // =====================================================
-  const handleDeclineBooking = async () => {
-    if (!window.confirm("Decline this booking?")) return;
-
-    setActionLoading(true);
-    try {
-      const session = await fetchAuthSession();
-      const idToken = session.tokens?.idToken?.toString();
-
-      const res = await fetch(`${API_BASE}/booking/${bookingId}`, {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${idToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ status: "cancelled" }),
+      setNotice({
+        variant: "success",
+        message: "Booking rejected successfully",
       });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.message || "Failed to decline booking");
-      }
-
-      alert("Booking declined");
-      navigate("/service-provider/bookings");
+      silentRefresh();
     } catch (err) {
-      alert(err.message || "Error declining booking");
+      setNotice({
+        variant: "error",
+        message: err.message || "Error rejecting booking",
+      });
     } finally {
       setActionLoading(false);
     }
@@ -210,8 +270,7 @@ export default function BookingDetails() {
         </Button>
 
         <Card className="p-8 mt-6 text-center bg-red-50 border-red-200">
-          <AlertCircle className="mx-auto mb-3 h-10 w-10 text-red-500" />
-          <p className="text-red-700">{error}</p>
+          <AlertBanner variant="error" message={error} className="text-left" />
           <Button className="mt-4" onClick={silentRefresh}>
             Retry
           </Button>
@@ -227,6 +286,7 @@ export default function BookingDetails() {
   // =====================================================
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
+      <AlertBanner variant={notice?.variant} message={notice?.message} />
       <Button
         variant="outline"
         onClick={() => navigate("/service-provider/bookings")}
@@ -296,14 +356,18 @@ export default function BookingDetails() {
                   <Calendar className="h-5 w-5" />
                   <div>
                     <p className="font-medium">Date</p>
-                    <p className="text-sm">{formatDate(booking.scheduled_date)}</p>
+                    <p className="text-sm">
+                      {formatDate(booking.scheduled_date)}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 text-neutral-600">
                   <Clock className="h-5 w-5" />
                   <div>
                     <p className="font-medium">Time</p>
-                    <p className="text-sm">{formatTime(booking.scheduled_time)}</p>
+                    <p className="text-sm">
+                      {formatTime(booking.scheduled_time)}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -342,12 +406,16 @@ export default function BookingDetails() {
             <div className="text-center">
               <div className="flex items-center justify-center gap-1 text-3xl font-bold text-green-600">
                 <DollarSign className="h-6 w-6" />
-                {Number(booking.final_price ?? booking.estimated_price)?.toFixed(2) || "TBD"}
+                {Number(
+                  booking.final_price ?? booking.estimated_price,
+                )?.toFixed(2) || "TBD"}
               </div>
               {booking.final_price ? (
                 <span className="text-sm text-green-600">Final Price</span>
               ) : booking.estimated_price ? (
-                <span className="text-sm text-neutral-500">Estimated Price</span>
+                <span className="text-sm text-neutral-500">
+                  Estimated Price
+                </span>
               ) : null}
             </div>
           </Card>
@@ -375,15 +443,12 @@ export default function BookingDetails() {
                     onClick={handleDeclineBooking}
                   >
                     <X className="h-4 w-4" />
-                    Decline Booking
+                    Reject Booking
                   </Button>
                 </>
               )}
 
-              <Button
-                className="w-full gap-2"
-                onClick={handleMessageCustomer}
-              >
+              <Button className="w-full gap-2" onClick={handleMessageCustomer}>
                 <MessageSquare className="h-4 w-4" />
                 Message Customer
               </Button>

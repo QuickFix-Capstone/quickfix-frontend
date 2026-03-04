@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { confirmSignUp, resendSignUpCode } from "aws-amplify/auth";
 import { useNavigate, useLocation } from "react-router-dom";
+import AlertBanner from "../../components/UI/AlertBanner";
 
 export default function Verify() {
   const navigate = useNavigate();
@@ -55,7 +56,7 @@ export default function Verify() {
 
       <button onClick={resendCode}>Resend code</button>
 
-      {error && <p style={{ color: "red" }}>{error}</p>}
+      <AlertBanner variant="error" message={error} />
     </div>
   );
 }

@@ -9,6 +9,7 @@ import {
   AlertCircle,
   Image as ImageIcon,
 } from "lucide-react";
+import AlertBanner from "../../components/UI/AlertBanner";
 
 const ProviderDocuments = () => {
   const [loading, setLoading] = useState(true);
@@ -173,7 +174,11 @@ const ProviderDocuments = () => {
     );
 
   if (error)
-    return <div className="p-6 bg-red-50 border rounded-lg">{error}</div>;
+    return (
+      <div className="p-6">
+        <AlertBanner variant="error" message={error} />
+      </div>
+    );
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6">
