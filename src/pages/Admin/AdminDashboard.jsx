@@ -2,12 +2,16 @@ import { useState } from "react";
 import AdminServiceProviders from "./AllServiceProvider";
 import AdminMonitoringDashboard from "./AdminMonitoringDashboard";
 import AdminUnverifiedServiceProviders from "./UnverifiedServiceProvider";
+import AdminRefundRequests from "./Refunds/AdminRefundRequests";
+import AdminAnalytics from "./AdminAnalytics";
 import useOnlineUsers from "../../hooks/useOnlineUsers";
 
 const TABS = {
   ALL: "ALL",
   UNVERIFIED: "UNVERIFIED",
   SYSTEM: "SYSTEM",
+  REFUNDS: "REFUNDS",
+  ANALYTICS: "ANALYTICS",
 };
 
 export default function AdminDashboard() {
@@ -16,11 +20,10 @@ export default function AdminDashboard() {
 
   const tabStyle = (tab) =>
     `px-4 py-2 text-sm font-medium rounded-md transition-all whitespace-nowrap
-     ${
-       activeTab === tab
-         ? "bg-black text-white shadow-sm"
-         : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-     }`;
+     ${activeTab === tab
+      ? "bg-black text-white shadow-sm"
+      : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+    }`;
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6 bg-white min-h-screen">
@@ -65,10 +68,24 @@ export default function AdminDashboard() {
         </button>
 
         <button
+          className={tabStyle(TABS.ANALYTICS)}
+          onClick={() => setActiveTab(TABS.ANALYTICS)}
+        >
+          Analytics
+        </button>
+
+        <button
           className={tabStyle(TABS.SYSTEM)}
           onClick={() => setActiveTab(TABS.SYSTEM)}
         >
           System Health
+        </button>
+
+        <button
+          className={tabStyle(TABS.REFUNDS)}
+          onClick={() => setActiveTab(TABS.REFUNDS)}
+        >
+          Refund Requests
         </button>
       </div>
 
@@ -77,6 +94,8 @@ export default function AdminDashboard() {
         {activeTab === TABS.ALL && <AdminServiceProviders />}
         {activeTab === TABS.UNVERIFIED && <AdminUnverifiedServiceProviders />}
         {activeTab === TABS.SYSTEM && <AdminMonitoringDashboard />}
+        {activeTab === TABS.REFUNDS && <AdminRefundRequests />}
+        {activeTab === TABS.ANALYTICS && <AdminAnalytics />}
       </div>
     </div>
   );

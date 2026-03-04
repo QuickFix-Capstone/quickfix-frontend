@@ -5,14 +5,15 @@ import { useNavigate } from "react-router-dom";
 import Card from "../../components/UI/Card";
 import Button from "../../components/UI/Button";
 import UnreadBadge from "../../components/messaging/UnreadBadge";
-import ReviewModal from "../../components/reviews/ReviewModal";
+import ReviewForm from "./ReviewForm";
 import { getConversations } from "../../api/messaging";
 import { getMyReviews } from "../../api/reviews";
-import { getReviewsAboutMe } from "../../api/customerReviews";
+// import { getReviewsAboutMe } from "../../api/customerReviews";
 import ReviewCard from "./ReviewCard";
-import ProviderReviewCard from "./ProviderReviewCard";
-import useMessagingWebSocket from "../../hooks/useMessagingWebSocket";
-import { User, LogOut, Plus, Calendar, Settings, Upload, Briefcase, MessageSquare, TrendingUp, Clock, Star, Bell, ThumbsUp } from "lucide-react";
+// import ProviderReviewCard from "./ProviderReviewCard";
+// import useMessagingWebSocket from "../../hooks/useMessagingWebSocket";
+import { getPaymentHistory, getAuthHeaders } from "../../api/payments";
+import { User, LogOut, Plus, Calendar, Settings, Upload, Briefcase, MessageSquare, TrendingUp, Clock, Star, Bell, ThumbsUp, CreditCard } from "lucide-react";
 
 export default function CustomerDashboard() {
     const JOB_STATUS_WS_BASE = "wss://074y7xhv7f.execute-api.us-east-2.amazonaws.com/dev";
@@ -26,13 +27,14 @@ export default function CustomerDashboard() {
     const [myReviews, setMyReviews] = useState([]);
     const [reviewsAboutMe, setReviewsAboutMe] = useState([]);
     const [jobs, setJobs] = useState([]);
+    const [paidJobIds, setPaidJobIds] = useState(new Set());
     const [completionNotifications, setCompletionNotifications] = useState([]);
     const [showCompletedList, setShowCompletedList] = useState(false);
     const [showActiveList, setShowActiveList] = useState(false);
     const [showPendingList, setShowPendingList] = useState(false);
     const [showCancelledList, setShowCancelledList] = useState(false);
     const [showNotificationsMenu, setShowNotificationsMenu] = useState(false);
-    const [reviewModalOpen, setReviewModalOpen] = useState(false);
+
     const [selectedJobForReview, setSelectedJobForReview] = useState(null);
     const hasFetchedJobs = useRef(false);
     const notificationsMenuRef = useRef(null);
@@ -178,7 +180,26 @@ export default function CustomerDashboard() {
             }
         };
 
+        const fetchPayments = async () => {
+            try {
+                if (!auth.isAuthenticated) return;
+                const authHeaders = getAuthHeaders(auth.user);
+                const res = await getPaymentHistory(100, 0, authHeaders);
+                if (res && res.items) {
+                    const paidIds = new Set(
+                        res.items
+                            .filter((p) => ["PAID", "COMPLETED", "SUCCEEDED"].includes(String(p.status).toUpperCase()))
+                            .map((p) => String(p.job_id))
+                    );
+                    setPaidJobIds(paidIds);
+                }
+            } catch (error) {
+                console.error("Error fetching payments for dashboard:", error);
+            }
+        };
+
         fetchJobs();
+        fetchPayments();
     }, [auth.isAuthenticated, auth.user]);
 
     const wsToken = auth.user?.id_token || auth.user?.access_token;
@@ -292,6 +313,8 @@ export default function CustomerDashboard() {
         refreshUnreadCount();
     }, [refreshUnreadCount]);
 
+    const isMessagingWsConnected = false;
+    /*
     const { isConnected: isMessagingWsConnected } = useMessagingWebSocket({
         enabled: auth.isAuthenticated,
         userId: auth.user?.profile?.sub,
@@ -305,6 +328,7 @@ export default function CustomerDashboard() {
             refreshUnreadCount();
         },
     });
+    */
 
     useEffect(() => {
         if (isMessagingWsConnected) return undefined;
@@ -388,12 +412,14 @@ export default function CustomerDashboard() {
 
         const fetchReviewsAboutMe = async () => {
             try {
+                /*
                 const data = await getReviewsAboutMe({
                     sort: "newest",
                     limit: 10,
                     offset: 0
                 });
                 setReviewsAboutMe(data.reviews || []);
+                */
             } catch (error) {
                 console.error("Failed to fetch reviews about me:", error);
                 // Silently fail - endpoint might not be implemented yet
@@ -730,6 +756,25 @@ export default function CustomerDashboard() {
                             View Profile
                         </Button>
                     </Card>
+
+                    {/* Payment History Card */}
+                    <Card className="group cursor-pointer overflow-hidden border-0 bg-gradient-to-br from-gray-700 to-gray-800 p-6 text-white shadow-xl transition-all hover:shadow-2xl hover:scale-105">
+                        <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
+                            <CreditCard className="h-7 w-7" />
+                        </div>
+                        <h3 className="mb-2 text-xl font-bold">
+                            Payment History
+                        </h3>
+                        <p className="mb-4 text-sm text-gray-300">
+                            View your previous payments and receipts
+                        </p>
+                        <Button
+                            onClick={() => navigate("/customer/payment-history")}
+                            className="w-full bg-gray-900 text-white font-bold border-2 border-gray-600 shadow-lg hover:bg-black"
+                        >
+                            View History
+                        </Button>
+                    </Card>
                 </div>
 
                 {/* Activity Overview */}
@@ -949,6 +994,21 @@ export default function CustomerDashboard() {
                                                 >
                                                     View Details
                                                 </Button>
+                                                {String(job.payment_status).toUpperCase() === "PAID" || paidJobIds.has(String(job.job_id)) ? (
+                                                    <Button
+                                                        disabled
+                                                        className="bg-gray-400 text-white cursor-not-allowed"
+                                                    >
+                                                        Paid
+                                                    </Button>
+                                                ) : (
+                                                    <Button
+                                                        onClick={() => navigate(`/checkout/${job.job_id}`)}
+                                                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                                                    >
+                                                        Pay Now
+                                                    </Button>
+                                                )}
                                                 <Button
                                                     onClick={() => handleOpenReviewModal(job)}
                                                     className="bg-green-600 hover:bg-green-700 text-white"
@@ -1198,24 +1258,22 @@ export default function CustomerDashboard() {
                             </p>
                         </Card>
                     ) : (
-                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        {/* <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                             {reviewsAboutMe.slice(0, 3).map((review) => (
                                 <ProviderReviewCard key={review.review_id} review={review} />
                             ))}
-                        </div>
+                        </div> */}
                     )}
                 </div>
             </div>
 
             {/* Review Modal */}
             {selectedJobForReview && (
-                <ReviewModal
-                    isOpen={reviewModalOpen}
-                    onClose={() => {
-                        setReviewModalOpen(false);
+                <ReviewForm
+                    onCancel={() => {
                         setSelectedJobForReview(null);
                     }}
-                    job={selectedJobForReview}
+                    booking={selectedJobForReview}
                     onSubmit={handleSubmitReview}
                 />
             )}

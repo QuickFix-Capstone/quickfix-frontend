@@ -108,7 +108,6 @@ export default function Checkout() {
         );
     }
 
-    const paymentId = quote.payment_id ?? quote.paymentId;
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-neutral-50 p-6">
@@ -237,12 +236,6 @@ function Row({ label, value }) {
     );
 }
 
-function btnStyle(active) {
-    return `flex-1 rounded-xl px-4 py-3 font-semibold transition-all ${active
-        ? "border-2 border-neutral-900 bg-neutral-900 text-white"
-        : "border border-neutral-300 bg-white text-neutral-900 hover:border-neutral-400"
-        }`;
-}
 
 function logoButtonStyle(active) {
     return `p-6 rounded-xl border-2 transition-all cursor-pointer ${active

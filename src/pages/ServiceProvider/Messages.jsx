@@ -36,7 +36,7 @@ export default function ProviderMessages() {
   useEffect(() => {
     getCurrentUser()
       .then((u) => setCurrentUserId(u.userId))
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   const [conversations, setConversations] = useState([]);
@@ -108,16 +108,16 @@ export default function ProviderMessages() {
         const updated = prev.map((c) =>
           c.conversationId === data.conversationId
             ? {
-                ...c,
-                lastMessage: {
-                  preview: data.text?.substring(0, 100),
-                  timestamp: data.timestamp,
-                },
-                unreadCount:
-                  data.conversationId === activeConvIdRef.current
-                    ? 0
-                    : (c.unreadCount || 0) + 1,
-              }
+              ...c,
+              lastMessage: {
+                preview: data.text?.substring(0, 100),
+                timestamp: data.timestamp,
+              },
+              unreadCount:
+                data.conversationId === activeConvIdRef.current
+                  ? 0
+                  : (c.unreadCount || 0) + 1,
+            }
             : c
         );
         return updated.sort(
@@ -189,9 +189,9 @@ export default function ProviderMessages() {
           ws
             .markRead(conv.conversationId)
             .catch(() => httpMarkRead(conv.conversationId))
-            .catch(() => {});
+            .catch(() => { });
         } else {
-          httpMarkRead(conv.conversationId).catch(() => {});
+          httpMarkRead(conv.conversationId).catch(() => { });
         }
         setConversations((prev) =>
           prev.map((c) =>
@@ -232,12 +232,12 @@ export default function ProviderMessages() {
         const updated = prev.map((c) =>
           c.conversationId === selectedConversation.conversationId
             ? {
-                ...c,
-                lastMessage: {
-                  preview: text.substring(0, 100),
-                  timestamp: result.timestamp,
-                },
-              }
+              ...c,
+              lastMessage: {
+                preview: text.substring(0, 100),
+                timestamp: result.timestamp,
+              },
+            }
             : c
         );
         return updated.sort(
@@ -303,9 +303,8 @@ export default function ProviderMessages() {
       <div className="flex h-[calc(100vh-64px)] bg-white">
         {/* Sidebar */}
         <aside
-          className={`${
-            selectedConversation ? "hidden md:flex" : "flex"
-          } md:w-[340px] w-full flex-col border-r bg-white`}
+          className={`${selectedConversation ? "hidden md:flex" : "flex"
+            } md:w-[340px] w-full flex-col border-r bg-white`}
         >
           <div className="sticky top-0 z-10 bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-4">
             <div className="flex items-center justify-between">
@@ -340,9 +339,8 @@ export default function ProviderMessages() {
 
         {/* Chat Panel */}
         <main
-          className={`${
-            selectedConversation ? "flex" : "hidden md:flex"
-          } flex-1 flex-col`}
+          className={`${selectedConversation ? "flex" : "hidden md:flex"
+            } flex-1 flex-col`}
         >
           {selectedConversation ? (
             <>
