@@ -96,12 +96,15 @@ export default function AdminPayouts() {
     }, [tab]);
 
     const totalEligible = useMemo(
-        () => eligible.reduce((sum, r) => sum + Number(r.amount_cents || 0), 0),
+        () => eligible.reduce((sum, r) => sum + Number(r.owed_cents || 0), 0),
         [eligible]
     );
 
     async function onPay(provider_id) {
-        if (!window.confirm(`Pay out ${centsToCad(eligible.find(r => r.provider_id === provider_id)?.amount_cents)} to this provider?`)) return;
+        const row = eligible.find(r => r.provider_id === provider_id);
+        const providerName = row?.name || row?.provider_name || row?.business_name || provider_id;
+        const displayAmt = row?.owed_cents ? centsToCad(row.owed_cents) : "their outstanding earnings";
+        if (!window.confirm(`Pay out ${displayAmt} to ${providerName}?`)) return;
         setPayingId(provider_id);
         setError("");
         setSuccessMsg("");
@@ -147,8 +150,8 @@ export default function AdminPayouts() {
                 <button
                     onClick={() => setTab("eligible")}
                     className={`px-4 py-2 rounded-lg border text-sm font-semibold transition-colors ${tab === "eligible"
-                            ? "bg-gray-900 text-white border-gray-900"
-                            : "bg-white text-gray-700 hover:bg-gray-50"
+                        ? "bg-gray-900 text-white border-gray-900"
+                        : "bg-white text-gray-700 hover:bg-gray-50"
                         }`}
                 >
                     Ready to Pay
@@ -161,8 +164,8 @@ export default function AdminPayouts() {
                 <button
                     onClick={() => setTab("history")}
                     className={`px-4 py-2 rounded-lg border text-sm font-semibold transition-colors ${tab === "history"
-                            ? "bg-gray-900 text-white border-gray-900"
-                            : "bg-white text-gray-700 hover:bg-gray-50"
+                        ? "bg-gray-900 text-white border-gray-900"
+                        : "bg-white text-gray-700 hover:bg-gray-50"
                         }`}
                 >
                     History
@@ -227,16 +230,16 @@ export default function AdminPayouts() {
                                                 <MethodBadge method={row.method} />
                                             </td>
                                             <td className="p-3 text-gray-700">
-                                                {row.earning_count ?? "—"} earning{row.earning_count !== 1 ? "s" : ""}
+                                                {row.earning_count != null ? `${row.earning_count} earning${row.earning_count !== 1 ? "s" : ""}` : "—"}
                                             </td>
-                                            <td className="p-3 font-bold text-gray-900">{centsToCad(row.amount_cents)}</td>
+                                            <td className="p-3 font-bold text-gray-900">{centsToCad(row.owed_cents)}</td>
                                             <td className="p-3 pr-4 text-right">
                                                 <button
                                                     onClick={() => onPay(row.provider_id)}
                                                     disabled={payingId === row.provider_id}
                                                     className={`px-4 py-2 rounded-lg text-sm font-semibold text-white transition-opacity ${payingId === row.provider_id
-                                                            ? "bg-gray-400 cursor-not-allowed"
-                                                            : "bg-green-600 hover:bg-green-700"
+                                                        ? "bg-gray-400 cursor-not-allowed"
+                                                        : "bg-green-600 hover:bg-green-700"
                                                         }`}
                                                 >
                                                     {payingId === row.provider_id ? (

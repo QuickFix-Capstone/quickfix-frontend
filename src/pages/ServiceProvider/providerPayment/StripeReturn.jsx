@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { fetchAuthSession } from "aws-amplify/auth";
+import { API_BASE } from "../../../api/config";
 
 export default function StripeReturn() {
     const [message, setMessage] = useState("Verifying Stripe account...");
@@ -6,25 +8,28 @@ export default function StripeReturn() {
     useEffect(() => {
         const checkStatus = async () => {
             try {
-                const token = localStorage.getItem("token");
+                const session = await fetchAuthSession();
+                const idToken = session?.tokens?.idToken?.toString();
+                if (!idToken) throw new Error("Not authenticated");
 
                 const res = await fetch(
-                    `${import.meta.env.VITE_API_URL}/providers/stripe/connect/status`,
+                    `${API_BASE}/providers/stripe/connect/status`,
                     {
                         headers: {
-                            Authorization: `Bearer ${token}`,
+                            Authorization: `Bearer ${idToken}`,
                         },
                     }
                 );
 
                 const data = await res.json();
 
-                if (data.verified) {
+                if (data.status === "verified") {
                     setMessage("✅ Stripe account connected successfully!");
                 } else {
                     setMessage("⚠️ Stripe setup incomplete. Please try again.");
                 }
             } catch (err) {
+                console.error("Stripe status check failed:", err);
                 setMessage("❌ Error verifying Stripe connection.");
             }
         };

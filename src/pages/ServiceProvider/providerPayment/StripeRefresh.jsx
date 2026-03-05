@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { fetchAuthSession } from "aws-amplify/auth";
+import { API_BASE } from "../../../api/config";
 
 export default function StripeRefresh() {
     const [loading, setLoading] = useState(false);
@@ -6,22 +8,25 @@ export default function StripeRefresh() {
     const startStripeConnect = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem("token");
+            const session = await fetchAuthSession();
+            const idToken = session?.tokens?.idToken?.toString();
 
             const res = await fetch(
-                `${import.meta.env.VITE_API_URL}/providers/stripe/connect/start`,
+                `${API_BASE}/providers/stripe/connect/start`,
                 {
                     method: "POST",
                     headers: {
-                        Authorization: `Bearer ${token}`,
+                        Authorization: `Bearer ${idToken}`,
                     },
                 }
             );
 
             const data = await res.json();
-            window.location.href = data.url;
+            const url = data?.onboarding_url || data?.url;
+            if (!url) throw new Error("No onboarding URL received.");
+            window.location.href = url;
         } catch (err) {
-            alert("Error restarting Stripe setup.");
+            alert("Error restarting Stripe setup: " + (err.message || "Unknown error"));
         } finally {
             setLoading(false);
         }

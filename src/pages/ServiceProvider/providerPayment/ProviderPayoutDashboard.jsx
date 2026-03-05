@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { getProviderPayoutBalance, getProviderPayoutHistory } from "../../../api/payouts";
 
-function getAuthHeaders() {
-    // Prefer id_token — AWS Cognito JWT authorizer uses the ID token (contains sub, email, groups)
-    const token =
-        localStorage.getItem("quickfix_id_token") ||
-        localStorage.getItem("quickfix_access_token");
-    return token ? { Authorization: `Bearer ${token}` } : {};
+import { fetchAuthSession } from "aws-amplify/auth";
+
+async function getAuthHeaders() {
+    const session = await fetchAuthSession();
+    const idToken = session?.tokens?.idToken?.toString();
+    return idToken ? { Authorization: `Bearer ${idToken}` } : {};
 }
 
 function money(cents) {
@@ -69,9 +69,10 @@ export default function ProviderPayoutDashboard() {
         setLoading(true);
         setError("");
         try {
+            const authHeaders = await getAuthHeaders();
             const [b, h] = await Promise.all([
-                getProviderPayoutBalance(getAuthHeaders()),
-                getProviderPayoutHistory(20, 0, getAuthHeaders()),
+                getProviderPayoutBalance(authHeaders),
+                getProviderPayoutHistory(20, 0, authHeaders),
             ]);
             setBalance(b);
             setRows(h?.items || (Array.isArray(h) ? h : []));
@@ -149,19 +150,19 @@ export default function ProviderPayoutDashboard() {
             >
                 <BalanceCard
                     label="Net Owed"
-                    value={money(balance?.net_owed_cents)}
+                    value={money(balance?.balance?.owed_cents)}
                     loading={loading}
                     sub="Earnings ready for admin payout"
                 />
                 <BalanceCard
                     label="In Processing"
-                    value={money(balance?.in_payout_cents)}
+                    value={money(balance?.balance?.in_payout_cents)}
                     loading={loading}
                     sub="Currently queued in a payout"
                 />
                 <BalanceCard
                     label="Total Paid Out"
-                    value={money(balance?.paid_total_cents)}
+                    value={money(balance?.balance?.paid_total_cents)}
                     loading={loading}
                     sub="All completed payouts to date"
                 />

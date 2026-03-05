@@ -1,54 +1,52 @@
 // src/api/adminPayouts.js
-// Admin payout management — matches admin_payouts Lambda endpoints
-// Auth pattern copied from AdminProviderDetails.jsx (fetchAuthSession → idToken)
-
-import { fetchAuthSession } from "aws-amplify/auth";
 import { API_BASE } from "./config";
+import { fetchAuthSession } from "aws-amplify/auth";
 
-async function getAdminToken() {
+// Build Authorization header using current Cognito session
+async function getAdminAuthHeaders() {
     const session = await fetchAuthSession();
-    const token = session.tokens?.idToken?.toString();
-    if (!token) throw new Error("Not authenticated. Please log in as admin.");
-    return token;
+    const idToken = session?.tokens?.idToken?.toString();
+    if (!idToken) throw new Error("Missing auth token. Please login again.");
+    return { Authorization: `Bearer ${idToken}` };
 }
 
 async function api(path, { method = "GET", body } = {}) {
-    const token = await getAdminToken();
+    const authHeaders = await getAdminAuthHeaders();
+
     const res = await fetch(`${API_BASE}${path}`, {
         method,
         headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            ...authHeaders,
         },
         body: body ? JSON.stringify(body) : undefined,
     });
 
-    const data = await res.json().catch(() => ({}));
+    const text = await res.text();
+    let data = null;
+    try {
+        data = text ? JSON.parse(text) : null;
+    } catch {
+        data = text || null;
+    }
 
     if (!res.ok) {
-        // Surface detail field if present (e.g. from Lambda HttpError responses)
-        let message = data.message || data.error || `HTTP ${res.status}`;
-        if (data.detail) {
-            try {
-                const parsed = typeof data.detail === "object" ? data.detail : JSON.parse(data.detail);
-                const stripeMsg = parsed?.body?.error?.message || parsed?.error?.message;
-                if (stripeMsg) message = stripeMsg;
-            } catch {
-                // keep original message
-            }
-        }
-        throw new Error(message);
+        const msg =
+            (data && data.message) ||
+            (data && data.error) ||
+            (typeof data === "string" ? data : null) ||
+            `HTTP ${res.status}`;
+        throw new Error(msg);
     }
 
     return data;
 }
 
-// GET  /admin/payouts/eligible  → array of { provider_id, name, method, amount_cents, earning_count }
+// ✅ These must match your admin lambda routes
 export const getEligiblePayouts = () => api("/admin/payouts/eligible");
+export const getPayoutHistory = (limit = 50, offset = 0) =>
+    api(`/admin/payouts/history?limit=${limit}&offset=${offset}`);
 
-// POST /admin/payouts/pay       → { payout_id, provider_id, amount_cents, status }
+// POST /admin/payouts/pay  body: { provider_id }
 export const payProvider = (provider_id) =>
     api("/admin/payouts/pay", { method: "POST", body: { provider_id } });
-
-// GET  /admin/payouts/history   → array of provider_payouts rows
-export const getPayoutHistory = () => api("/admin/payouts/history");

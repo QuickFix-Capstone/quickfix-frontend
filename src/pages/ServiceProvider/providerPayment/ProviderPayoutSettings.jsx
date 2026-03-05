@@ -5,15 +5,14 @@ import {
     stripeConnectStart,
     stripeConnectStatus,
 } from "../../../api/payouts";
+import { fetchAuthSession } from "aws-amplify/auth";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
-function getAuthHeaders() {
-    // Prefer id_token — AWS Cognito JWT authorizer uses the ID token (contains sub, email, groups)
-    const token =
-        localStorage.getItem("quickfix_id_token") ||
-        localStorage.getItem("quickfix_access_token");
-    return token ? { Authorization: `Bearer ${token}` } : {};
+async function getAuthHeaders() {
+    const session = await fetchAuthSession();
+    const idToken = session?.tokens?.idToken?.toString();
+    return idToken ? { Authorization: `Bearer ${idToken}` } : {};
 }
 
 const BADGE = {
@@ -85,7 +84,8 @@ export default function ProviderPayoutSettings() {
         setLoading(true);
         setMsg(null);
         try {
-            const res = await getProviderPayoutMethod(getAuthHeaders());
+            const auth = await getAuthHeaders();
+            const res = await getProviderPayoutMethod(auth);
             // Lambda returns: { provider_id, payout_method: { method, paypal_email, stripe_account_id, status } }
             // payout_method is null/empty when the provider hasn't set one yet
             const pm = res?.payout_method || res; // fallback to root for safety
@@ -114,7 +114,8 @@ export default function ProviderPayoutSettings() {
     // silentRefresh — refreshes status/account id in background after save WITHOUT clearing msg
     async function silentRefresh() {
         try {
-            const res = await getProviderPayoutMethod(getAuthHeaders());
+            const auth = await getAuthHeaders();
+            const res = await getProviderPayoutMethod(auth);
             const pm = res?.payout_method || res;
             const vs = pm?.verification_status || pm?.status;
             if (vs) setVerificationStatus(vs.toUpperCase());
@@ -135,10 +136,10 @@ export default function ProviderPayoutSettings() {
                 }
                 await saveProviderPayoutMethod(
                     { method: "paypal", paypal_email: paypalEmail.trim() },
-                    getAuthHeaders()
+                    await getAuthHeaders()
                 );
             } else {
-                await saveProviderPayoutMethod({ method: "stripe_connect" }, getAuthHeaders());
+                await saveProviderPayoutMethod({ method: "stripe_connect" }, await getAuthHeaders());
             }
             // Set success FIRST, then silently refresh state in background
             setMsg({ type: "success", text: "✅ Payout method saved successfully." });
@@ -154,7 +155,7 @@ export default function ProviderPayoutSettings() {
         setConnectBusy(true);
         setMsg(null);
         try {
-            const res = await stripeConnectStart(getAuthHeaders());
+            const res = await stripeConnectStart(await getAuthHeaders());
             const url = res?.onboarding_url || res?.url;
             if (!url) throw new Error("Stripe onboarding link not received from backend.");
             window.open(url, "_blank", "noopener,noreferrer");
@@ -177,7 +178,7 @@ export default function ProviderPayoutSettings() {
     async function onCheckStripeStatus() {
         setMsg(null);
         try {
-            const res = await stripeConnectStatus(getAuthHeaders());
+            const res = await stripeConnectStatus(await getAuthHeaders());
             if (res?.stripe_account_id) setStripeAccountId(res.stripe_account_id);
             const vs = res?.verification_status || res?.status;
             if (vs) setVerificationStatus(vs.toUpperCase());
