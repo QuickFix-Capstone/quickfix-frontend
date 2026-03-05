@@ -25,7 +25,7 @@ export default function CustomerDashboard() {
     const [totalUnread, setTotalUnread] = useState(0);
     const [pendingReviews, setPendingReviews] = useState([]);
     const [myReviews, setMyReviews] = useState([]);
-    const [reviewsAboutMe, setReviewsAboutMe] = useState([]);
+    const [reviewsAboutMe] = useState([]);
     const [jobs, setJobs] = useState([]);
     const [paidJobIds, setPaidJobIds] = useState(new Set());
     const [completionNotifications, setCompletionNotifications] = useState([]);
@@ -106,6 +106,16 @@ export default function CustomerDashboard() {
     const cancelledJobs = useMemo(() => {
         return jobs.filter((job) => normalizeJobStatus(job.status) === "cancelled");
     }, [jobs]);
+
+    const averageMyRating = useMemo(() => {
+        if (!myReviews.length) return null;
+        const total = myReviews.reduce(
+            (sum, review) => sum + Number(review?.rating || 0),
+            0
+        );
+        const average = total / myReviews.length;
+        return Number.isFinite(average) ? average.toFixed(1) : null;
+    }, [myReviews]);
 
     useEffect(() => {
         if (!auth.isAuthenticated) {
@@ -436,7 +446,6 @@ export default function CustomerDashboard() {
             provider_id: job.provider_id || job.assigned_provider_id || job.providerId
         };
         setSelectedJobForReview(jobData);
-        setReviewModalOpen(true);
     };
 
     const handleLogout = async () => {
@@ -511,7 +520,7 @@ export default function CustomerDashboard() {
                     <div className="flex items-center justify-between">
                         <div>
                             <h1 className="text-4xl font-bold">
-                                Welcome back, {profile?.first_name || "Customer"}! 👋
+                                Welcome back, {profile?.first_name || "Customer"}! ⭐ {averageMyRating || "N/A"}
                             </h1>
                             <p className="mt-2 text-blue-100">
                                 Your personalized service management hub
