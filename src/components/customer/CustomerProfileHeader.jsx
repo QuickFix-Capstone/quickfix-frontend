@@ -3,12 +3,27 @@ import React from "react";
 import { User, Calendar } from "lucide-react";
 
 export default function CustomerProfileHeader({ profile, stats }) {
-    const memberSinceRaw = profile?.created_at || profile?.member_since || null;
-    const normalizedMemberSince = typeof memberSinceRaw === "string"
-        ? memberSinceRaw.replace(" ", "T")
-        : memberSinceRaw;
-    const parsedMemberSince = normalizedMemberSince ? new Date(normalizedMemberSince) : null;
-    const memberSince = parsedMemberSince && !Number.isNaN(parsedMemberSince.getTime())
+    const memberSinceRaw = profile?.created_at || profile?.createdAt || profile?.member_since || null;
+    const parseMemberSince = (value) => {
+        if (!value) return null;
+
+        const raw = String(value).trim();
+        const normalized = raw.includes("T") ? raw : raw.replace(" ", "T");
+        let parsed = new Date(normalized);
+
+        if (Number.isNaN(parsed.getTime())) {
+            const dateOnlyMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+            if (dateOnlyMatch) {
+                const [, year, month] = dateOnlyMatch;
+                parsed = new Date(Number(year), Number(month) - 1, 1);
+            }
+        }
+
+        return Number.isNaN(parsed.getTime()) ? null : parsed;
+    };
+
+    const parsedMemberSince = parseMemberSince(memberSinceRaw);
+    const memberSince = parsedMemberSince
         ? parsedMemberSince.toLocaleDateString("en-US", { month: "long", year: "numeric" })
         : "Unknown";
 

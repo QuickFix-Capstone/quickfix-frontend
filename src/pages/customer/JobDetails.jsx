@@ -4,6 +4,7 @@ import { useAuth } from "react-oidc-context";
 import { useNavigate, useParams } from "react-router-dom";
 import Card from "../../components/UI/Card";
 import Button from "../../components/UI/Button";
+import ReviewModal from "../../components/reviews/ReviewModal";
 import { API_BASE } from "../../api/config";
 import { cancelJob } from "../../api/jobs";
 import {
@@ -31,6 +32,8 @@ export default function JobDetails() {
     const [loading, setLoading] = useState(true);
     const [cancelling, setCancelling] = useState(false);
     const [confirmingComplete, setConfirmingComplete] = useState(false);
+    const [reviewModalOpen, setReviewModalOpen] = useState(false);
+    const [selectedJobForReview, setSelectedJobForReview] = useState(null);
 
     const normalizeJobStatus = (status) => {
         const value = (status || "").toLowerCase();
@@ -214,12 +217,62 @@ export default function JobDetails() {
             }
 
             alert("Job confirmed as completed!");
+            notifyJobCompletion(job_id);
             fetchJobDetails();
         } catch (err) {
             console.error(err);
             alert("Failed to confirm completion");
         } finally {
             setConfirmingComplete(false);
+        }
+    };
+
+    const handleOpenReviewModal = () => {
+        const providerId =
+            job?.provider_id || job?.assigned_provider_id || job?.provider?.provider_id;
+
+        if (!providerId) {
+            alert("Provider information is missing for this job.");
+            return;
+        }
+
+        setSelectedJobForReview({
+            job_id: job.job_id,
+            title: job.title,
+            provider_name: job.provider_name || job?.provider?.name,
+            provider_id: providerId,
+        });
+        setReviewModalOpen(true);
+    };
+
+    const handleSubmitReview = async (reviewData) => {
+        try {
+            const token = auth.user?.id_token || auth.user?.access_token;
+
+            const res = await fetch(`${API_BASE}/customer/reviews`, {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    job_id: reviewData.jobId,
+                    provider_id: reviewData.providerId,
+                    rating: reviewData.rating,
+                    comment: reviewData.comment || "No comment provided.",
+                }),
+            });
+
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                throw new Error(data.message || "Failed to submit review");
+            }
+
+            alert("Review submitted successfully!");
+        } catch (error) {
+            console.error("Error submitting review:", error);
+            alert(error.message || "Failed to submit review. Please try again.");
+            throw error;
         }
     };
 
@@ -500,15 +553,27 @@ export default function JobDetails() {
                             Both you and the service provider have confirmed this job as complete.
                         </p>
                         <Button
-                            disabled
-                            className="bg-yellow-500 text-white gap-2 opacity-70 cursor-not-allowed"
+                            onClick={handleOpenReviewModal}
+                            className="bg-green-600 hover:bg-green-700 text-white gap-2"
                         >
                             <Star className="h-4 w-4" />
-                            Add Review (Coming Soon)
+                            Add Review
                         </Button>
                     </Card>
                 )}
             </div>
+
+            {selectedJobForReview && (
+                <ReviewModal
+                    isOpen={reviewModalOpen}
+                    onClose={() => {
+                        setReviewModalOpen(false);
+                        setSelectedJobForReview(null);
+                    }}
+                    job={selectedJobForReview}
+                    onSubmit={handleSubmitReview}
+                />
+            )}
         </div>
     );
 }
