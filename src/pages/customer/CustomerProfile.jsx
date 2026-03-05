@@ -8,6 +8,7 @@ import ProviderReviewCard from "./ProviderReviewCard";
 import Card from "../../components/UI/Card";
 import Button from "../../components/UI/Button";
 import { getReviewsAboutMe } from "../../api/customerReviews";
+import { getMyReviews } from "../../api/reviews";
 import { API_BASE } from "../../api/config";
 import { Settings, ArrowLeft } from "lucide-react";
 
@@ -45,8 +46,8 @@ export default function CustomerProfile() {
             try {
                 const token = auth.user?.id_token || auth.user?.access_token;
 
-                const [profileResult, reviewsResult, jobsResult] = await Promise.allSettled([
-                    fetch("https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/customer", {
+                const [profileResult, reviewsResult, myReviewsResult, jobsResult] = await Promise.allSettled([
+                    fetch(`${API_BASE}/customer`, {
                         method: "GET",
                         headers: { Authorization: `Bearer ${token}` },
                     }),
@@ -55,6 +56,7 @@ export default function CustomerProfile() {
                         limit: 10,
                         offset: 0
                     }),
+                    getMyReviews(50),
                     fetch(`${API_BASE}/customer/jobs?limit=10&offset=0`, {
                         method: "GET",
                         cache: "no-store",
@@ -67,7 +69,17 @@ export default function CustomerProfile() {
 
                 if (profileResult.status === "fulfilled" && profileResult.value.ok) {
                     const profileData = await profileResult.value.json();
-                    setProfile(profileData.customer);
+                    const customer = profileData.customer || {};
+                    const authEpochSeconds =
+                        Number(auth.user?.profile?.auth_time) || Number(auth.user?.profile?.iat);
+                    const fallbackCreatedAt = Number.isFinite(authEpochSeconds) && authEpochSeconds > 0
+                        ? new Date(authEpochSeconds * 1000).toISOString()
+                        : null;
+
+                    setProfile({
+                        ...customer,
+                        created_at: customer.created_at || fallbackCreatedAt,
+                    });
                 }
 
                 const reviews = reviewsResult.status === "fulfilled"
@@ -75,8 +87,12 @@ export default function CustomerProfile() {
                     : [];
                 setReviewsAboutMe(reviews);
 
-                const avgRating = reviews.length > 0
-                    ? reviews.reduce((sum, r) => sum + Number(r.rating || 0), 0) / reviews.length
+                const myReviews = myReviewsResult.status === "fulfilled"
+                    ? myReviewsResult.value?.reviews || []
+                    : [];
+
+                const avgRating = myReviews.length > 0
+                    ? myReviews.reduce((sum, r) => sum + Number(r.rating || 0), 0) / myReviews.length
                     : 0;
 
                 let jobs = [];
@@ -104,7 +120,7 @@ export default function CustomerProfile() {
 
                 setStats({
                     avg_rating: avgRating,
-                    review_count: reviews.length,
+                    review_count: myReviews.length,
                     jobs_posted_6mo: jobsPosted6mo,
                     jobs_completed: jobsCompleted,
                     completion_rate: completionRate,
