@@ -320,6 +320,8 @@ export default function JobDetails() {
         return `${displayHour}:${minutes} ${ampm}`;
     };
 
+    const isPaid = String(job?.payment_status || "").toUpperCase() === "PAID";
+
     if (loading) {
         return (
             <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-neutral-50 to-neutral-100">
@@ -371,36 +373,46 @@ export default function JobDetails() {
                                 {(job.status || "unknown").replace("_", " ").toUpperCase()}
                             </span>
                         </div>
-                        {normalizeJobStatus(job.status) === "open" && (
-                            <div className="flex gap-2">
+                        <div className="flex gap-2">
+                            {!isPaid && (
                                 <Button
-                                    onClick={() => navigate(`/customer/jobs/${job_id}/edit`)}
-                                    variant="outline"
-                                    className="gap-2"
+                                    onClick={() => navigate(`/checkout/${job_id}`)}
+                                    className="bg-neutral-900 hover:bg-neutral-800"
                                 >
-                                    <Edit className="h-4 w-4" />
-                                    Edit
+                                    Pay Now
                                 </Button>
+                            )}
+                            {normalizeJobStatus(job.status) === "open" && (
+                                <>
+                                    <Button
+                                        onClick={() => navigate(`/customer/jobs/${job_id}/edit`)}
+                                        variant="outline"
+                                        className="gap-2"
+                                    >
+                                        <Edit className="h-4 w-4" />
+                                        Edit
+                                    </Button>
+                                    <Button
+                                        onClick={handleCancelJob}
+                                        disabled={cancelling}
+                                        variant="outline"
+                                        className="gap-2 border-red-300 text-red-600 hover:bg-red-50"
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                        Cancel Job
+                                    </Button>
+                                </>
+                            )}
+                            {normalizeJobStatus(job.status) === "in_progress" && (
                                 <Button
-                                    onClick={handleCancelJob}
-                                    disabled={cancelling}
-                                    variant="outline"
-                                    className="gap-2 border-red-300 text-red-600 hover:bg-red-50"
+                                    onClick={handleConfirmComplete}
+                                    disabled={confirmingComplete}
+                                    className="bg-green-600 hover:bg-green-700"
                                 >
-                                    <Trash2 className="h-4 w-4" />
-                                    Cancel Job
+                                    {confirmingComplete ? "Confirming..." : "Confirm Completion"}
                                 </Button>
-                            </div>
-                        )}
-                        {normalizeJobStatus(job.status) === "in_progress" && (
-                            <Button
-                                onClick={handleConfirmComplete}
-                                disabled={confirmingComplete}
-                                className="bg-green-600 hover:bg-green-700"
-                            >
-                                {confirmingComplete ? "Confirming..." : "Confirm Completion"}
-                            </Button>
-                        )}
+                            )}
+                        </div>
                     </div>
 
                     {/* Category Badge */}
