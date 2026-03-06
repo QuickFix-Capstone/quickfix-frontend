@@ -5,6 +5,7 @@ import AdminUnverifiedServiceProviders from "./UnverifiedServiceProvider";
 import AdminRefundRequests from "./Refunds/AdminRefundRequests";
 import AdminPayouts from "./AdminPayouts";
 import AdminAnalytics from "./AdminAnalytics";
+import AdminPaymentsAnalytics from "./AdminPaymentsAnalytics";
 import useOnlineUsers from "../../hooks/useOnlineUsers";
 
 const TABS = {
@@ -14,6 +15,7 @@ const TABS = {
   REFUNDS: "REFUNDS",
   PAYOUTS: "PAYOUTS",
   ANALYTICS: "ANALYTICS",
+  PAYMENTS: "PAYMENTS",
 };
 
 export default function AdminDashboard() {
@@ -96,6 +98,13 @@ export default function AdminDashboard() {
         >
           Payouts
         </button>
+
+        <button
+          className={tabStyle(TABS.PAYMENTS)}
+          onClick={() => setActiveTab(TABS.PAYMENTS)}
+        >
+          Payments Analytics
+        </button>
       </div>
 
       {/* ================= CONTENT ================= */}
@@ -106,6 +115,7 @@ export default function AdminDashboard() {
         {activeTab === TABS.REFUNDS && <AdminRefundRequests />}
         {activeTab === TABS.PAYOUTS && <AdminPayouts />}
         {activeTab === TABS.ANALYTICS && <AdminAnalytics />}
+        {activeTab === TABS.PAYMENTS && <AdminPaymentsAnalytics />}
       </div>
     </div>
   );
