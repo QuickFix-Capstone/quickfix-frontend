@@ -35,6 +35,9 @@ export default function AdminServiceProviderDetails() {
   const [previewDoc, setPreviewDoc] = useState(null);
   const [serviceOfferings, setServiceOfferings] = useState([]);
   const [approving, setApproving] = useState(false);
+  const [rejecting, setRejecting] = useState(false);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
   const [actionError, setActionError] = useState(null);
 
   /* ===================== LOAD PROVIDER DETAILS ===================== */
@@ -113,6 +116,47 @@ export default function AdminServiceProviderDetails() {
       setActionError(err.message);
     } finally {
       setApproving(false);
+    }
+  };
+
+  /* ===================== REJECT ===================== */
+  const handleReject = async () => {
+    if (!rejectReason.trim()) {
+      setActionError("A rejection reason is required.");
+      return;
+    }
+
+    try {
+      setRejecting(true);
+      setActionError(null);
+
+      const session = await fetchAuthSession();
+      const token = session.tokens?.idToken?.toString();
+      if (!token) throw new Error("Not authenticated");
+
+      const res = await fetch(`${API_BASE}/admin/reject-service-provider`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          provider_id,
+          action: "REJECT",
+          reason: rejectReason.trim(),
+        }),
+      });
+
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || "Rejection failed");
+
+      setShowRejectModal(false);
+      setRejectReason("");
+      await loadProviderDetails();
+    } catch (err) {
+      setActionError(err.message);
+    } finally {
+      setRejecting(false);
     }
   };
 
@@ -230,16 +274,34 @@ export default function AdminServiceProviderDetails() {
         />
       </div>
 
-      {/* Approve */}
+      {/* Actions */}
       {!isVerified && (
-        <div className="bg-white border rounded-xl p-6 flex justify-end">
-          <button
-            onClick={handleApprove}
-            disabled={!can_approve || approving}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg"
-          >
-            {approving ? "Verifying..." : "Verify"}
-          </button>
+        <div className="bg-white border rounded-xl p-6">
+          {actionError && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+              <p className="text-red-700 text-sm">{actionError}</p>
+            </div>
+          )}
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={() => {
+                setActionError(null);
+                setShowRejectModal(true);
+              }}
+              disabled={approving || rejecting}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition disabled:opacity-50"
+            >
+              Reject
+            </button>
+            <button
+              onClick={handleApprove}
+              disabled={!can_approve || approving || rejecting}
+              className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition disabled:opacity-50"
+            >
+              {approving ? "Verifying..." : "Verify"}
+            </button>
+          </div>
         </div>
       )}
 
@@ -308,6 +370,85 @@ export default function AdminServiceProviderDetails() {
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Reject Modal */}
+      {showRejectModal && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={() => {
+            setShowRejectModal(false);
+            setRejectReason("");
+            setActionError(null);
+          }}
+        >
+          <div
+            className="bg-white rounded-2xl max-w-lg w-full overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center p-5 border-b">
+              <h3 className="text-lg font-bold text-gray-900">
+                Reject {provider.business_name}
+              </h3>
+              <button
+                onClick={() => {
+                  setShowRejectModal(false);
+                  setRejectReason("");
+                  setActionError(null);
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <p className="text-sm text-gray-600">
+                Provider ID: <span className="font-mono text-gray-800">{provider.provider_id}</span>
+              </p>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Rejection Reason
+                </label>
+                <textarea
+                  placeholder="Enter the reason for rejecting this provider..."
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                  rows={4}
+                  className="w-full border-2 border-gray-200 rounded-lg p-3 text-sm focus:border-red-400 focus:outline-none resize-none"
+                />
+              </div>
+
+              {actionError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-red-700 text-sm">{actionError}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-3 p-5 border-t bg-gray-50">
+              <button
+                onClick={() => {
+                  setShowRejectModal(false);
+                  setRejectReason("");
+                  setActionError(null);
+                }}
+                disabled={rejecting}
+                className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleReject}
+                disabled={rejecting}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition disabled:opacity-50"
+              >
+                {rejecting ? "Rejecting..." : "Confirm Reject"}
+              </button>
+            </div>
           </div>
         </div>
       )}

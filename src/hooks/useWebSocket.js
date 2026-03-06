@@ -1,9 +1,14 @@
 import { useEffect, useRef } from "react";
 
-const WS_URL = "wss://074y7xhv7f.execute-api.us-east-2.amazonaws.com/dev";
+const WS_URL = "wss://074y7xhv7f.execute-api.us-east-2.amazonaws.com/dev/";
 
 export default function useWebSocket(userId, onMessage, token) {
   const wsRef = useRef(null);
+  const onMessageRef = useRef(onMessage);
+
+  useEffect(() => {
+    onMessageRef.current = onMessage;
+  }, [onMessage]);
 
   useEffect(() => {
     if (!userId) return;
@@ -18,9 +23,13 @@ export default function useWebSocket(userId, onMessage, token) {
     };
 
     ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      console.log("WS message:", data);
-      if (onMessage) onMessage(data);
+      try {
+        const data = JSON.parse(event.data);
+        console.log("WS message:", data);
+        if (onMessageRef.current) onMessageRef.current(data);
+      } catch (error) {
+        console.warn("Failed to parse WebSocket message:", error);
+      }
     };
 
     ws.onerror = (err) => {

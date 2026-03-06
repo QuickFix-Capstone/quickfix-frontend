@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { API_BASE } from "../../api/config";
 import Button from "../../components/UI/Button";
+import AlertBanner from "../../components/UI/AlertBanner";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const SYNC_STORAGE_KEY = "sp_calendar_sync_v1";
@@ -41,6 +42,7 @@ export default function ServiceProviderCalendar() {
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
   const [selectedDate, setSelectedDate] = useState(() => new Date());
+  const [notice, setNotice] = useState(null);
 
   const [syncPrefs, setSyncPrefs] = useState({
     google: false,
@@ -131,7 +133,10 @@ export default function ServiceProviderCalendar() {
     setSyncPrefs(next);
     localStorage.setItem(SYNC_STORAGE_KEY, JSON.stringify(next));
     if (connected) {
-      alert(`${provider[0].toUpperCase() + provider.slice(1)} sync connected (local setting).`);
+      setNotice({
+        variant: "success",
+        message: `${provider[0].toUpperCase() + provider.slice(1)} sync connected (local setting).`,
+      });
     }
   };
 
@@ -142,27 +147,47 @@ export default function ServiceProviderCalendar() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
-      <div className="mx-auto max-w-7xl px-4 py-6">
-        <div className="mb-4 flex items-center justify-between">
+    <div className="relative min-h-screen overflow-hidden bg-white">
+      <div className="pointer-events-none absolute right-0 top-10 h-[26rem] w-[26rem] rounded-full bg-indigo-300/30 blur-3xl" />
+
+      <div className="relative mx-auto max-w-7xl px-4 py-6">
+        <AlertBanner
+          variant={notice?.variant}
+          message={notice?.message}
+          className="mb-4"
+        />
+        <div className="mb-4 rounded-3xl border border-indigo-200 bg-gradient-to-r from-indigo-700 via-blue-700 to-cyan-600 p-6 text-white shadow-2xl">
+          <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Calendar & Availability</h1>
-            <p className="text-sm text-slate-600">
+            <p className="inline-flex rounded-full border border-white/30 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide">
+              Service Provider Calendar
+            </p>
+            <h1 className="mt-3 text-2xl font-bold">Calendar & Availability</h1>
+            <p className="text-sm text-blue-100">
               View booked appointments and manage your working schedule.
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={silentRefresh}>
+            <Button
+              className="border border-white/30 bg-white/10 text-white hover:bg-white/20"
+              variant="outline"
+              onClick={silentRefresh}
+            >
               Refresh
             </Button>
-            <Button variant="outline" onClick={() => navigate("/service-provider/dashboard")}>
+            <Button
+              className="border border-white/30 bg-white/10 text-white hover:bg-white/20"
+              variant="outline"
+              onClick={() => navigate("/service-provider/dashboard")}
+            >
               Back to Dashboard
             </Button>
           </div>
         </div>
+        </div>
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <div className="rounded-2xl border bg-white p-4 shadow-sm lg:col-span-2">
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm lg:col-span-2">
             <div className="mb-4 flex items-center justify-between">
               <div className="inline-flex items-center gap-2 text-slate-700">
                 <CalendarDays className="h-5 w-5 text-indigo-600" />
@@ -174,7 +199,7 @@ export default function ServiceProviderCalendar() {
                   onClick={() =>
                     setMonthCursor((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))
                   }
-                  className="rounded-lg border px-2 py-1 hover:bg-slate-50"
+                  className="rounded-lg border border-slate-300 px-2 py-1 hover:bg-slate-50"
                 >
                   <ChevronLeft className="h-4 w-4" />
                 </button>
@@ -184,7 +209,7 @@ export default function ServiceProviderCalendar() {
                   onClick={() =>
                     setMonthCursor((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))
                   }
-                  className="rounded-lg border px-2 py-1 hover:bg-slate-50"
+                  className="rounded-lg border border-slate-300 px-2 py-1 hover:bg-slate-50"
                 >
                   <ChevronRight className="h-4 w-4" />
                 </button>
@@ -230,7 +255,7 @@ export default function ServiceProviderCalendar() {
               })}
             </div>
 
-            <div className="mt-4 rounded-xl border bg-slate-50 p-3">
+            <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
               <p className="text-sm font-medium text-slate-800">
                 {selectedDate.toLocaleDateString("en-US", {
                   weekday: "long",
@@ -252,7 +277,7 @@ export default function ServiceProviderCalendar() {
                       key={item.booking_id}
                       type="button"
                       onClick={() => navigate(`/service-provider/bookings/${item.booking_id}`)}
-                      className="w-full rounded-lg border bg-white p-3 text-left hover:bg-slate-50"
+                      className="w-full rounded-lg border border-slate-200 bg-white p-3 text-left hover:bg-slate-50"
                     >
                       <p className="text-sm font-medium text-slate-900">
                         {item.service_description || `Booking #${item.booking_id}`}
@@ -268,7 +293,7 @@ export default function ServiceProviderCalendar() {
           </div>
 
           <div className="space-y-4">
-            <div className="rounded-2xl border bg-white p-4 shadow-sm">
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
               <div className="mb-3 inline-flex items-center gap-2 text-slate-700">
                 <Link2 className="h-5 w-5 text-indigo-600" />
                 <p className="font-semibold">External Calendar Sync</p>
@@ -278,7 +303,7 @@ export default function ServiceProviderCalendar() {
               </p>
 
               {["google", "outlook", "apple"].map((provider) => (
-                <div key={provider} className="mt-3 flex items-center justify-between rounded-lg border p-2">
+                <div key={provider} className="mt-3 flex items-center justify-between rounded-lg border border-slate-200 p-2">
                   <p className="text-sm font-medium capitalize">{provider} Calendar</p>
                   {syncPrefs[provider] ? (
                     <Button
@@ -310,3 +335,4 @@ export default function ServiceProviderCalendar() {
     </div>
   );
 }
+

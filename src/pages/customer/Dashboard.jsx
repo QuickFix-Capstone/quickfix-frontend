@@ -25,7 +25,7 @@ export default function CustomerDashboard() {
     const [totalUnread, setTotalUnread] = useState(0);
     const [pendingReviews, setPendingReviews] = useState([]);
     const [myReviews, setMyReviews] = useState([]);
-    const [reviewsAboutMe, setReviewsAboutMe] = useState([]);
+    const [reviewsAboutMe] = useState([]);
     const [jobs, setJobs] = useState([]);
     const [paidJobIds, setPaidJobIds] = useState(new Set());
     const [completionNotifications, setCompletionNotifications] = useState([]);
@@ -106,6 +106,16 @@ export default function CustomerDashboard() {
     const cancelledJobs = useMemo(() => {
         return jobs.filter((job) => normalizeJobStatus(job.status) === "cancelled");
     }, [jobs]);
+
+    const averageMyRating = useMemo(() => {
+        if (!myReviews.length) return null;
+        const total = myReviews.reduce(
+            (sum, review) => sum + Number(review?.rating || 0),
+            0
+        );
+        const average = total / myReviews.length;
+        return Number.isFinite(average) ? average.toFixed(1) : null;
+    }, [myReviews]);
 
     useEffect(() => {
         if (!auth.isAuthenticated) {
@@ -202,58 +212,88 @@ export default function CustomerDashboard() {
         fetchPayments();
     }, [auth.isAuthenticated, auth.user]);
 
+    const wsToken = auth.user?.id_token || auth.user?.access_token;
+
     useEffect(() => {
-        const userId = auth.user?.profile?.sub;
-        if (!auth.isAuthenticated || !userId) return;
+        if (!auth.isAuthenticated || !wsToken) return;
 
-        const ws = new WebSocket(
-            `${JOB_STATUS_WS_BASE}?user_id=${encodeURIComponent(userId)}`
-        );
-        wsRef.current = ws;
+        let ws = null;
+        let pingInterval = null;
+        const connectTimer = setTimeout(() => {
+            ws = new WebSocket(
+                `${JOB_STATUS_WS_BASE}?token=${encodeURIComponent(wsToken)}`
+            );
+            wsRef.current = ws;
 
-        ws.onmessage = (event) => {
-            try {
-                const message = JSON.parse(event.data);
-                const incomingJobId = message?.jobId || message?.job_id;
-                const incomingStatus = normalizeJobStatus(message?.newStatus || message?.status);
-
-                if (message?.type === "JOB_STATUS_CHANGED" && incomingJobId) {
-                    setJobs((prevJobs) =>
-                        prevJobs.map((job) =>
-                            String(job.job_id) === String(incomingJobId)
-                                ? { ...job, status: incomingStatus }
-                                : job
-                        )
-                    );
-
-                    if (incomingStatus === "completed") {
-                        setCompletionNotifications((prev) => {
-                            if (prev.some((n) => String(n.jobId) === String(incomingJobId))) {
-                                return prev;
-                            }
-                            return [
-                                { jobId: String(incomingJobId), receivedAt: Date.now() },
-                                ...prev,
-                            ].slice(0, 10);
-                        });
+            ws.onopen = () => {
+                // Send ping every 30s to keep connection alive
+                pingInterval = setInterval(() => {
+                    if (ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({ action: "ping" }));
                     }
-                }
-            } catch {
-                // Ignore non-JSON websocket events
-            }
-        };
+                }, 30000);
+            };
 
-        ws.onerror = () => {
-            ws.close();
-        };
+            ws.onmessage = (event) => {
+                try {
+                    const message = JSON.parse(event.data);
+                    // Ignore pong responses
+                    if (message?.type === "PONG") return;
+
+                    const incomingJobId = message?.jobId || message?.job_id;
+                    const incomingStatus = normalizeJobStatus(message?.newStatus || message?.status);
+
+                    if (message?.type === "JOB_STATUS_CHANGED" && incomingJobId) {
+                        setJobs((prevJobs) =>
+                            prevJobs.map((job) =>
+                                String(job.job_id) === String(incomingJobId)
+                                    ? { ...job, status: incomingStatus }
+                                    : job
+                            )
+                        );
+
+                        if (incomingStatus === "completed") {
+                            setCompletionNotifications((prev) => {
+                                if (prev.some((n) => String(n.jobId) === String(incomingJobId))) {
+                                    return prev;
+                                }
+                                return [
+                                    { jobId: String(incomingJobId), receivedAt: Date.now() },
+                                    ...prev,
+                                ].slice(0, 10);
+                            });
+                        }
+                    }
+                } catch {
+                    // Ignore non-JSON websocket events
+                }
+            };
+
+            ws.onerror = () => {
+                // Let the close event lifecycle happen naturally.
+            };
+        }, 0);
 
         return () => {
-            if (wsRef.current) {
-                wsRef.current.close();
+            clearTimeout(connectTimer);
+            clearInterval(pingInterval);
+            if (ws) {
+                ws.onopen = null;
+                ws.onmessage = null;
+                ws.onerror = null;
+                ws.onclose = null;
+                if (
+                    ws.readyState === WebSocket.OPEN ||
+                    ws.readyState === WebSocket.CONNECTING
+                ) {
+                    ws.close();
+                }
+            }
+            if (wsRef.current === ws) {
                 wsRef.current = null;
             }
         };
-    }, [auth.isAuthenticated, auth.user]);
+    }, [auth.isAuthenticated, wsToken]);
 
     const clearCompletionNotification = (jobId) => {
         setCompletionNotifications((prev) =>
@@ -406,7 +446,6 @@ export default function CustomerDashboard() {
             provider_id: job.provider_id || job.assigned_provider_id || job.providerId
         };
         setSelectedJobForReview(jobData);
-        setReviewModalOpen(true);
     };
 
     const handleLogout = async () => {
@@ -481,7 +520,7 @@ export default function CustomerDashboard() {
                     <div className="flex items-center justify-between">
                         <div>
                             <h1 className="text-4xl font-bold">
-                                Welcome back, {profile?.first_name || "Customer"}! 👋
+                                Welcome back, {profile?.first_name || "Customer"}! ⭐ {averageMyRating || "N/A"}
                             </h1>
                             <p className="mt-2 text-blue-100">
                                 Your personalized service management hub

@@ -3,6 +3,7 @@ import Card from "../../components/UI/Card";
 import Button from "../../components/UI/Button";
 import Input from "../../components/UI/Input";
 import Tag from "../../components/UI/Tag";
+import AlertBanner from "../../components/UI/AlertBanner";
 import {
   ChevronRight,
   MapPin,
@@ -235,9 +236,7 @@ export default function ServiceProviderHome() {
               </Button>
             </div>
           )}
-          {locationError && (
-            <p className="text-red-500 text-sm">{locationError}</p>
-          )}
+          <AlertBanner variant="warning" message={locationError} />
         </div>
       </Card>
 
@@ -290,7 +289,7 @@ export default function ServiceProviderHome() {
         </h2>
 
         {loading && <p className="text-neutral-500">Loading jobs…</p>}
-        {error && <p className="text-red-500">{error}</p>}
+        <AlertBanner variant="error" message={error} />
 
         <div className="grid gap-6 md:grid-cols-3">
           {filteredJobs.map((job) => (

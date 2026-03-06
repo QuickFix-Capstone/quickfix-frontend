@@ -1,9 +1,10 @@
 import { useState } from "react";
 import AdminServiceProviders from "./AllServiceProvider";
-import SystemHealth from "./SystemHealth";
+import AdminMonitoringDashboard from "./AdminMonitoringDashboard";
 import AdminUnverifiedServiceProviders from "./UnverifiedServiceProvider";
 import AdminRefundRequests from "./Refunds/AdminRefundRequests";
 import AdminPayouts from "./AdminPayouts";
+import AdminAnalytics from "./AdminAnalytics";
 import useOnlineUsers from "../../hooks/useOnlineUsers";
 
 const TABS = {
@@ -12,6 +13,7 @@ const TABS = {
   SYSTEM: "SYSTEM",
   REFUNDS: "REFUNDS",
   PAYOUTS: "PAYOUTS",
+  ANALYTICS: "ANALYTICS",
 };
 
 export default function AdminDashboard() {
@@ -68,6 +70,13 @@ export default function AdminDashboard() {
         </button>
 
         <button
+          className={tabStyle(TABS.ANALYTICS)}
+          onClick={() => setActiveTab(TABS.ANALYTICS)}
+        >
+          Analytics
+        </button>
+
+        <button
           className={tabStyle(TABS.SYSTEM)}
           onClick={() => setActiveTab(TABS.SYSTEM)}
         >
@@ -93,10 +102,12 @@ export default function AdminDashboard() {
       <div className="border border-gray-200 rounded-xl p-4">
         {activeTab === TABS.ALL && <AdminServiceProviders />}
         {activeTab === TABS.UNVERIFIED && <AdminUnverifiedServiceProviders />}
-        {activeTab === TABS.SYSTEM && <SystemHealth />}
+        {activeTab === TABS.SYSTEM && <AdminMonitoringDashboard />}
         {activeTab === TABS.REFUNDS && <AdminRefundRequests />}
         {activeTab === TABS.PAYOUTS && <AdminPayouts />}
+        {activeTab === TABS.ANALYTICS && <AdminAnalytics />}
       </div>
     </div>
   );
 }
+

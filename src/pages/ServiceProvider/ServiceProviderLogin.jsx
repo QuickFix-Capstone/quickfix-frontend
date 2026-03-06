@@ -145,6 +145,7 @@ import { useNavigate } from "react-router-dom";
 import AuthCard from "../../components/auth/AuthCard";
 import SocialAuthButtons from "../../components/auth/SocialAuthButtons";
 import AuthDivider from "../../components/auth/AuthDivider";
+import AlertBanner from "../../components/UI/AlertBanner";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -306,11 +307,7 @@ export default function Login() {
           </button>
 
           {/* Error */}
-          {error && (
-            <div className="mt-4 rounded-xl bg-red-100 px-4 py-3 text-sm text-red-700">
-              {error}
-            </div>
-          )}
+          <AlertBanner variant="error" message={error} className="mt-4" />
 
           {/* Divider */}
           <AuthDivider text="or sign in with" />

@@ -5,9 +5,8 @@ import { useNavigate } from "react-router-dom";
 
 import Card from "../../components/UI/Card";
 import Button from "../../components/UI/Button";
+import { API_BASE } from "../../api/config";
 import { User, Mail, Phone, MapPin, ArrowLeft } from "lucide-react";
-
-const API_BASE = "https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com";
 
 export default function EditProfile() {
     const auth = useAuth();

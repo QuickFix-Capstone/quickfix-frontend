@@ -67,7 +67,7 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-black to-gray-900">
+    <div className="min-h-screen flex items-center justify-center bg-white">
       <form
         onSubmit={handleLogin}
         className="w-full max-w-md bg-gray-950 border border-gray-800 rounded-xl p-8 shadow-xl"
@@ -109,3 +109,4 @@ export default function AdminLogin() {
     </div>
   );
 }
+

@@ -5,6 +5,7 @@ import ConversationList from "../../components/messaging/ConversationList";
 import MessageThread from "../../components/messaging/MessageThread";
 import MessageInput from "../../components/messaging/MessageInput";
 import NewMessageModal from "../../components/messaging/NewMessageModal";
+import AlertBanner from "../../components/UI/AlertBanner";
 import Button from "../../components/UI/Button";
 import useMessagingWebSocket from "../../hooks/useMessagingWebSocket";
 import {
@@ -299,7 +300,7 @@ export default function ProviderMessages() {
         createConversationFn={createConversation}
       />
 
-      <div className="flex h-[calc(100vh-64px)] bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+      <div className="flex h-[calc(100vh-64px)] bg-white">
         {/* Sidebar */}
         <aside
           className={`${selectedConversation ? "hidden md:flex" : "flex"
@@ -369,9 +370,7 @@ export default function ProviderMessages() {
               </div>
 
               {error && (
-                <div className="bg-red-50 text-red-700 text-sm px-4 py-2">
-                  {error}
-                </div>
+                <AlertBanner variant="error" message={error} className="mx-4 mt-3" />
               )}
 
               <MessageThread
@@ -408,3 +407,4 @@ export default function ProviderMessages() {
     </>
   );
 }
+

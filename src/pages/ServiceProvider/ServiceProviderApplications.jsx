@@ -3,6 +3,7 @@ import { fetchAuthSession } from "aws-amplify/auth";
 import { useNavigate } from "react-router-dom";
 import { Briefcase, Calendar, CheckCircle2, Clock3, Search, XCircle } from "lucide-react";
 import { API_BASE } from "../../api/config";
+import AlertBanner from "../../components/UI/AlertBanner";
 
 const statusStyles = {
   pending: "border-yellow-200 bg-yellow-50 text-yellow-700",
@@ -99,9 +100,11 @@ export default function ServiceProviderApplications() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
-      <div className="mx-auto max-w-6xl px-4 py-6">
-        <div className="rounded-2xl border bg-white p-4 shadow-sm">
+    <div className="relative min-h-screen overflow-hidden bg-white">
+      <div className="pointer-events-none absolute right-0 top-10 h-[26rem] w-[26rem] rounded-full bg-indigo-300/30 blur-3xl" />
+
+      <div className="relative mx-auto max-w-6xl px-4 py-6">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <h1 className="text-xl font-semibold text-slate-900">My Job Applications</h1>
@@ -120,7 +123,7 @@ export default function ServiceProviderApplications() {
               </button>
               <button
                 onClick={() => navigate("/service-provider/jobs")}
-                className="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+                className="rounded-lg bg-gradient-to-r from-indigo-600 to-cyan-500 px-3 py-2 text-sm font-medium text-white shadow transition hover:brightness-110"
               >
                 Browse Jobs
               </button>
@@ -156,13 +159,13 @@ export default function ServiceProviderApplications() {
           {loading ? (
             <div className="grid gap-3">
               {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-24 animate-pulse rounded-2xl border bg-slate-200/70" />
+                <div key={i} className="h-24 animate-pulse rounded-2xl border border-slate-200 bg-white" />
               ))}
             </div>
           ) : error ? (
             <div className="rounded-2xl border bg-white p-6 text-center">
               <p className="font-semibold text-red-600">Could not load applications</p>
-              <p className="mt-1 text-sm text-slate-600">{error}</p>
+              <AlertBanner variant="error" message={error} className="mt-3 text-left" />
             </div>
           ) : filtered.length === 0 ? (
             <div className="rounded-2xl border bg-white p-6 text-center">
@@ -257,3 +260,4 @@ export default function ServiceProviderApplications() {
     </div>
   );
 }
+

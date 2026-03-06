@@ -35,7 +35,7 @@ export default function AdminSetPassword() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-black to-gray-900">
+    <div className="min-h-screen flex items-center justify-center bg-white">
       <form
         onSubmit={handleSetPassword}
         className="bg-gray-950 p-8 rounded-xl shadow-xl w-full max-w-md border border-gray-800"
@@ -68,3 +68,4 @@ export default function AdminSetPassword() {
     </div>
   );
 }
+
