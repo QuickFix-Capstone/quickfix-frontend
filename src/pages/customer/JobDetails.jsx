@@ -32,6 +32,7 @@ export default function JobDetails() {
     const [loading, setLoading] = useState(true);
     const [cancelling, setCancelling] = useState(false);
     const [confirmingComplete, setConfirmingComplete] = useState(false);
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [reviewModalOpen, setReviewModalOpen] = useState(false);
     const [selectedJobForReview, setSelectedJobForReview] = useState(null);
 
@@ -192,9 +193,11 @@ export default function JobDetails() {
         }
     };
 
-    const handleConfirmComplete = async () => {
-        if (!confirm("Confirm that this job has been completed?")) return;
+    const handleConfirmComplete = () => {
+        setShowConfirmModal(true);
+    };
 
+    const handleConfirmCompleteSubmit = async () => {
         setConfirmingComplete(true);
         try {
             const token = auth.user?.id_token || auth.user?.access_token;
@@ -217,6 +220,7 @@ export default function JobDetails() {
             }
 
             alert("Job confirmed as completed!");
+            setShowConfirmModal(false);
             notifyJobCompletion(job_id);
             fetchJobDetails();
         } catch (err) {
@@ -562,6 +566,62 @@ export default function JobDetails() {
                     </Card>
                 )}
             </div>
+
+            {/* Confirm Completion Modal */}
+            {showConfirmModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+                    <Card className="mx-4 w-full max-w-md border-neutral-200 bg-white p-6 shadow-2xl">
+                        <div className="mb-4 flex items-center gap-3">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
+                                <CheckCircle className="h-5 w-5 text-green-600" />
+                            </div>
+                            <h3 className="text-xl font-semibold text-neutral-900">
+                                Confirm Job Completion
+                            </h3>
+                        </div>
+
+                        <p className="mb-4 text-sm text-neutral-600">
+                            Please review the final price before confirming this job as complete.
+                        </p>
+
+                        <div className="mb-6 rounded-lg border border-neutral-200 bg-neutral-50 p-4">
+                            <p className="mb-1 text-sm font-medium text-neutral-500">Final Price</p>
+                            {(job?.final_price != null || job?.budget?.final_price != null) ? (
+                                <p className="text-3xl font-bold text-green-600">
+                                    ${Number(job?.final_price ?? job?.budget?.final_price).toFixed(2)}
+                                </p>
+                            ) : (job?.budget?.min != null && job?.budget?.max != null) ? (
+                                <>
+                                    <p className="text-2xl font-bold text-neutral-800">
+                                        ${job.budget.min.toFixed(2)} – ${job.budget.max.toFixed(2)}
+                                    </p>
+                                    <p className="mt-1 text-xs text-neutral-500">Budget range (final price not set)</p>
+                                </>
+                            ) : (
+                                <p className="text-lg text-neutral-500">Not specified</p>
+                            )}
+                        </div>
+
+                        <div className="flex gap-3">
+                            <Button
+                                onClick={handleConfirmCompleteSubmit}
+                                disabled={confirmingComplete}
+                                className="flex-1 bg-green-600 text-white hover:bg-green-700"
+                            >
+                                {confirmingComplete ? "Confirming..." : "Confirm Completed"}
+                            </Button>
+                            <Button
+                                onClick={() => setShowConfirmModal(false)}
+                                disabled={confirmingComplete}
+                                variant="outline"
+                                className="flex-1"
+                            >
+                                Cancel
+                            </Button>
+                        </div>
+                    </Card>
+                </div>
+            )}
 
             {selectedJobForReview && (
                 <ReviewModal
