@@ -336,6 +336,20 @@ export default function JobDetailsPage() {
   // Complete job
   // ─────────────────────────────────────
   const handleCompleteJob = async () => {
+    const price =
+      job.final_price ??
+      job.budget?.final_price ??
+      job.budget?.max ??
+      job.budget?.min;
+
+    if (price == null || isNaN(Number(price)) || Number(price) < 0) {
+      setNotice({
+        variant: "error",
+        message: "No valid final price found for this job",
+      });
+      return;
+    }
+
     try {
       const session = await fetchAuthSession();
       const token = session.tokens.idToken.toString();
@@ -348,6 +362,9 @@ export default function JobDetailsPage() {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
+          body: JSON.stringify({
+            finalPrice: Number(price),
+          }),
         },
       );
 
@@ -661,14 +678,14 @@ export default function JobDetailsPage() {
               </span>
               Budget
             </div>
-            {finalPrice != null && (
-              <p className="text-lg font-semibold text-green-700">
-                ${Number(finalPrice).toFixed(2)}
-              </p>
-            )}
             {(job.budget?.min != null || job.budget?.max != null) && (
               <p className="text-sm text-slate-500 mt-1">
                 Range: ${job.budget?.min ?? "-"} - ${job.budget?.max ?? "-"}
+              </p>
+            )}
+            {finalPrice != null && (
+              <p className="text-sm text-slate-500 mt-1">
+                Final Price: ${Number(finalPrice).toFixed(2)}
               </p>
             )}
             {finalPrice == null && !job.budget?.min && !job.budget?.max && (
