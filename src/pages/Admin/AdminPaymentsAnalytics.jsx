@@ -636,7 +636,7 @@ export default function AdminPaymentsAnalytics() {
                             <BarChart
                                 data={refundReasons.map((r) => ({
                                     reason: r.reason_code || "unknown",
-                                    count: n0(r.refund_count),
+                                    count: n0(r.refund_count ?? r.count_requests),
                                 }))}
                             >
                                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -680,8 +680,8 @@ export default function AdminPaymentsAnalytics() {
                                     topCities.map((r, idx) => (
                                         <tr key={idx} className="hover:bg-gray-50 transition-colors">
                                             <td className="py-3 pr-4 font-medium text-gray-900">{r.city}</td>
-                                            <td className="py-3 pr-4 text-gray-700">{n0(r.paid_count)}</td>
-                                            <td className="py-3 pr-4 text-gray-700">{centsToCad(r.paid_revenue_cents)}</td>
+                                            <td className="py-3 pr-4 text-gray-700">{n0(r.paid_count ?? r.paid_payments)}</td>
+                                            <td className="py-3 pr-4 text-gray-700">{centsToCad(r.paid_revenue_cents ?? r.revenue_cents)}</td>
                                         </tr>
                                     ))
                                 )}
@@ -717,8 +717,8 @@ export default function AdminPaymentsAnalytics() {
                                                     ? String(r.provider_id).slice(0, 10) + "…"
                                                     : String(r.provider_id)}
                                             </td>
-                                            <td className="py-3 pr-4 text-gray-700">{n0(r.paid_count)}</td>
-                                            <td className="py-3 pr-4 text-gray-700">{centsToCad(r.paid_revenue_cents)}</td>
+                                            <td className="py-3 pr-4 text-gray-700">{n0(r.paid_count ?? r.paid_payments)}</td>
+                                            <td className="py-3 pr-4 text-gray-700">{centsToCad(r.paid_revenue_cents ?? r.revenue_cents)}</td>
                                         </tr>
                                     ))
                                 )}
@@ -732,7 +732,7 @@ export default function AdminPaymentsAnalytics() {
             <div className="space-y-4 pt-4">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h3 className="text-lg font-semibold text-gray-900">AI-Inspired Fraud Monitoring</h3>
+                        <h3 className="text-lg font-semibold text-gray-900">Fraud Monitoring &amp; Alerts</h3>
                         <p className="text-sm text-gray-600">
                             Behavioral risk detection using payment, refund, and job activity.
                         </p>
@@ -955,7 +955,7 @@ export default function AdminPaymentsAnalytics() {
 
             {/* Footer note */}
             <div className="text-xs text-gray-500">
-                QuickFix Payments Analytics — Real-time revenue insights, refund tracking, operational risk monitoring, and AI-inspired fraud detection for the QuickFix platform.
+                QuickFix Payments Analytics — Real-time revenue insights, refund tracking, operational risk monitoring, and fraud monitoring & alerts for the QuickFix platform.
             </div>
         </div>
     );
