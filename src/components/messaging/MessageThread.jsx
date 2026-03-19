@@ -90,21 +90,24 @@ export default function MessageThread({
                 >
                   {formatTimestamp(msg.timestamp)}
                 </p>
-                {isOwnMessage && (
-                  <p
-                    className={`mt-1 text-[11px] text-right ${
-                      msg.readAt || msg.status === "read"
-                        ? "text-blue-100"
-                        : "text-blue-200"
-                    }`}
-                  >
-                    {msg.readAt || msg.status === "read"
-                      ? "Read"
-                      : msg.deliveredAt || msg.status === "delivered"
-                        ? "Delivered"
-                        : "Sent"}
-                  </p>
-                )}
+                {isOwnMessage && (() => {
+                  const readBy = msg.readBy || [];
+                  const isRead = msg.readAt || msg.status === "read" || readBy.length > 1;
+                  const isDelivered = msg.deliveredAt || msg.status === "delivered";
+                  return (
+                    <p
+                      className={`mt-1 text-[11px] text-right ${
+                        isRead ? "text-blue-100" : "text-blue-200"
+                      }`}
+                    >
+                      {isRead
+                        ? "✓✓ Read"
+                        : isDelivered
+                          ? "✓ Delivered"
+                          : "✓ Sent"}
+                    </p>
+                  );
+                })()}
               </div>
             </div>
           );
