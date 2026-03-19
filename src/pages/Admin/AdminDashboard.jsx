@@ -77,7 +77,7 @@ export default function AdminDashboard() {
           className={tabStyle(TABS.ANALYTICS)}
           onClick={() => setActiveTab(TABS.ANALYTICS)}
         >
-          Analytics
+          Platform Analytics
         </button>
 
         <button
@@ -130,4 +130,3 @@ export default function AdminDashboard() {
     </div>
   );
 }
-
