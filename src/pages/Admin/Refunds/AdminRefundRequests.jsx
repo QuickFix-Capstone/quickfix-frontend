@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { fetchAuthSession } from "aws-amplify/auth";
-import { RefreshCw, AlertCircle, CheckCircle2, XCircle, Clock, FileSearch, Filter } from "lucide-react";
+import { RefreshCw, AlertCircle, CheckCircle2, XCircle, Clock, FileSearch, Filter, Eye, Phone, Ban } from "lucide-react";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod";
 
@@ -12,11 +12,29 @@ const STATUS_CONFIG = {
         icon: <Clock className="w-3.5 h-3.5" />,
         dot: "bg-amber-400",
     },
-    APPROVED: {
-        pill: "bg-emerald-50 text-emerald-700 border border-emerald-200",
-        row: "border-l-4 border-l-emerald-400",
+    UNDER_REVIEW: {
+        pill: "bg-blue-50 text-blue-700 border border-blue-200",
+        row: "border-l-4 border-l-blue-400",
+        icon: <Eye className="w-3.5 h-3.5" />,
+        dot: "bg-blue-400",
+    },
+    PROVIDER_CONTACTED: {
+        pill: "bg-purple-50 text-purple-700 border border-purple-200",
+        row: "border-l-4 border-l-purple-400",
+        icon: <Phone className="w-3.5 h-3.5" />,
+        dot: "bg-purple-400",
+    },
+    REFUNDED: {
+        pill: "bg-green-50 text-green-700 border border-green-200",
+        row: "border-l-4 border-l-green-400",
         icon: <CheckCircle2 className="w-3.5 h-3.5" />,
-        dot: "bg-emerald-400",
+        dot: "bg-green-400",
+    },
+    RESOLVED: {
+        pill: "bg-indigo-50 text-indigo-700 border border-indigo-200",
+        row: "border-l-4 border-l-indigo-400",
+        icon: <CheckCircle2 className="w-3.5 h-3.5" />,
+        dot: "bg-indigo-400",
     },
     REJECTED: {
         pill: "bg-red-50 text-red-700 border border-red-200",
@@ -107,14 +125,22 @@ export default function AdminRefundRequests() {
 
     const counts = {
         pending: allItems.filter(r => r.status?.toUpperCase() === "PENDING").length,
-        approved: allItems.filter(r => r.status?.toUpperCase() === "APPROVED").length,
+        underReview: allItems.filter(r => r.status?.toUpperCase() === "UNDER_REVIEW").length,
+        providerContacted: allItems.filter(r => r.status?.toUpperCase() === "PROVIDER_CONTACTED").length,
+        refunded: allItems.filter(r => r.status?.toUpperCase() === "REFUNDED").length,
+        resolved: allItems.filter(r => r.status?.toUpperCase() === "RESOLVED").length,
         rejected: allItems.filter(r => r.status?.toUpperCase() === "REJECTED").length,
     };
+
+    const activeCount = counts.pending + counts.underReview + counts.providerContacted;
 
     const FILTER_TABS = [
         { label: "All", value: "" },
         { label: "Pending", value: "PENDING" },
-        { label: "Approved", value: "APPROVED" },
+        { label: "Under Review", value: "UNDER_REVIEW" },
+        { label: "Provider Contacted", value: "PROVIDER_CONTACTED" },
+        { label: "Refunded", value: "REFUNDED" },
+        { label: "Resolved", value: "RESOLVED" },
         { label: "Rejected", value: "REJECTED" },
     ];
 
@@ -142,9 +168,12 @@ export default function AdminRefundRequests() {
             </div>
 
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <SummaryCard label="Pending Review" count={counts.pending} color="border-amber-200" icon={Clock} />
-                <SummaryCard label="Approved" count={counts.approved} color="border-emerald-200" icon={CheckCircle2} />
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                <SummaryCard label="Pending" count={counts.pending} color="border-amber-200" icon={Clock} />
+                <SummaryCard label="Under Review" count={counts.underReview} color="border-blue-200" icon={Eye} />
+                <SummaryCard label="Provider Contacted" count={counts.providerContacted} color="border-purple-200" icon={Phone} />
+                <SummaryCard label="Refunded" count={counts.refunded} color="border-green-200" icon={CheckCircle2} />
+                <SummaryCard label="Resolved" count={counts.resolved} color="border-indigo-200" icon={CheckCircle2} />
                 <SummaryCard label="Rejected" count={counts.rejected} color="border-red-200" icon={XCircle} />
             </div>
 
@@ -165,6 +194,11 @@ export default function AdminRefundRequests() {
                             {tab.value === "PENDING" && counts.pending > 0 && (
                                 <span className="ml-1.5 inline-flex h-4 w-5 items-center justify-center rounded-full bg-amber-400 text-[10px] font-bold text-white">
                                     {counts.pending}
+                                </span>
+                            )}
+                            {tab.value === "" && activeCount > 0 && (
+                                <span className="ml-1.5 inline-flex h-4 w-5 items-center justify-center rounded-full bg-blue-500 text-[10px] font-bold text-white">
+                                    {activeCount}
                                 </span>
                             )}
                         </button>

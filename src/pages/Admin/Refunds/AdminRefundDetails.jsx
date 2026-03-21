@@ -4,26 +4,47 @@ import { fetchAuthSession } from "aws-amplify/auth";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod";
 
+const btnBase = "px-4 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-60 transition-colors";
+const styles = {
+    green:  `${btnBase} bg-green-600 hover:bg-green-700`,
+    red:    `${btnBase} bg-red-600 hover:bg-red-700`,
+    blue:   `${btnBase} bg-blue-600 hover:bg-blue-700`,
+    indigo: `${btnBase} bg-indigo-600 hover:bg-indigo-700`,
+    amber:  `${btnBase} bg-amber-500 hover:bg-amber-600`,
+};
+
+const STATUS_CONFIG = {
+    PENDING:            { pill: "bg-amber-50 text-amber-700 border border-amber-200" },
+    UNDER_REVIEW:       { pill: "bg-blue-50 text-blue-700 border border-blue-200" },
+    PROVIDER_CONTACTED: { pill: "bg-purple-50 text-purple-700 border border-purple-200" },
+    REFUNDED:           { pill: "bg-green-50 text-green-700 border border-green-200" },
+    RESOLVED:           { pill: "bg-indigo-50 text-indigo-700 border border-indigo-200" },
+    REJECTED:           { pill: "bg-red-50 text-red-700 border border-red-200" },
+};
+
 const StatusPill = ({ status }) => {
     const s = String(status || "").toUpperCase();
-    const base = "inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold border";
-    if (s === "PENDING") return <span className={`${base} bg-amber-50 text-amber-700 border-amber-200`}>PENDING</span>;
-    if (s === "APPROVED") return <span className={`${base} bg-green-50 text-green-700 border-green-200`}>APPROVED</span>;
-    if (s === "REJECTED") return <span className={`${base} bg-red-50 text-red-700 border-red-200`}>REJECTED</span>;
-    return <span className={`${base} bg-neutral-100 text-neutral-700 border-neutral-200`}>{s || "UNKNOWN"}</span>;
+    const cfg = STATUS_CONFIG[s] || { pill: "bg-neutral-100 text-neutral-700" };
+    const label = s.replace(/_/g, " ") || "UNKNOWN";
+    return (
+        <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold border ${cfg.pill}`}>
+            {label}
+        </span>
+    );
 };
 
 export default function AdminRefundDetails() {
     const { refundRequestId } = useParams();
     const navigate = useNavigate();
 
-    const [loading, setLoading] = useState(true);
-    const [errMsg, setErrMsg] = useState("");
-    const [refund, setRefund] = useState(null);
+    const [loading, setLoading]     = useState(true);
+    const [errMsg, setErrMsg]       = useState("");
+    const [refund, setRefund]       = useState(null);
     const [attachments, setAttachments] = useState([]);
     const [adminNote, setAdminNote] = useState("");
     const [submitting, setSubmitting] = useState(false);
 
+    // ─── Auth ────────────────────────────────────────────────────────────────
     const getToken = async () => {
         const session = await fetchAuthSession();
         const token = session.tokens?.accessToken?.toString();
@@ -31,10 +52,31 @@ export default function AdminRefundDetails() {
         return token;
     };
 
+    // ─── Generic API caller ──────────────────────────────────────────────────
+    const callApi = async (url, body = null) => {
+        const token = await getToken();
+        const res = await fetch(url, {
+            method: "POST",
+            headers: { Authorization: token, "Content-Type": "application/json" },
+            body: body ? JSON.stringify(body) : null,
+        });
+        if (!res.ok) throw new Error(await res.text() || `HTTP ${res.status}`);
+        return res.json();
+    };
+
+    // ─── Load ────────────────────────────────────────────────────────────────
     const load = async () => {
         setLoading(true);
         setErrMsg("");
         try {
+            // --- TEMP DEBUG: remove after checking ---
+            const session = await fetchAuthSession();
+            console.log("accessToken:", session.tokens?.accessToken?.toString());
+            console.log("idToken:", session.tokens?.idToken?.toString());
+            console.log("accessToken payload:", session.tokens?.accessToken?.payload);
+            console.log("idToken payload:", session.tokens?.idToken?.payload);
+            // --- END DEBUG ---
+
             const token = await getToken();
             const res = await fetch(`${API_BASE}/admin/refunds/${refundRequestId}`, {
                 headers: { Authorization: token, "Content-Type": "application/json" },
@@ -58,28 +100,61 @@ export default function AdminRefundDetails() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [refundRequestId]);
 
-    const review = async (action) => {
-        if (!refund) return;
-        if (!window.confirm(action === "APPROVE" ? "Approve this refund request?" : "Reject this refund request?")) return;
-
+    // ─── Actions ─────────────────────────────────────────────────────────────
+    const withSubmit = (fn) => async () => {
         setSubmitting(true);
         try {
-            const token = await getToken();
-            const res = await fetch(`${API_BASE}/admin/refunds/${refundRequestId}/review`, {
-                method: "POST",
-                headers: { Authorization: token, "Content-Type": "application/json" },
-                body: JSON.stringify({ action, admin_note: adminNote?.trim() || "" }),
-            });
-            if (!res.ok) throw new Error(await res.text() || `HTTP ${res.status}`);
-            await load();
+            await fn();
         } catch (e) {
             console.error(e);
-            alert(e?.message || "Failed to submit decision.");
+            alert(e?.message || "Action failed. Please try again.");
         } finally {
             setSubmitting(false);
         }
     };
 
+    const moveToReview = withSubmit(async () => {
+        await callApi(`${API_BASE}/admin/refunds/${refundRequestId}/review`, {
+            action: "MOVE_TO_REVIEW",
+            admin_note: adminNote?.trim() || "",
+        });
+        await load();
+    });
+
+    const rejectRefund = withSubmit(async () => {
+        if (!window.confirm("Reject this refund request?")) return;
+        await callApi(`${API_BASE}/admin/refunds/${refundRequestId}/review`, {
+            action: "REJECT",
+            admin_note: adminNote?.trim() || "",
+        });
+        await load();
+    });
+
+    const markProviderContacted = withSubmit(async () => {
+        await callApi(`${API_BASE}/admin/refunds/${refundRequestId}/provider-contacted`, {
+            admin_note: adminNote?.trim() || "",
+        });
+        await load();
+    });
+
+    const resolveCase = withSubmit(async () => {
+        if (!window.confirm("Mark this case as Resolved?")) return;
+        await callApi(`${API_BASE}/admin/refunds/${refundRequestId}/resolve`, {
+            admin_note: adminNote?.trim() || "",
+            resolution_outcome: "FIXED",
+        });
+        await load();
+    });
+
+    const approveRefund = withSubmit(async () => {
+        if (!window.confirm("Approve this refund request?")) return;
+        await callApi(`${API_BASE}/admin/refunds/${refundRequestId}/approve`, {
+            admin_note: adminNote?.trim() || "",
+        });
+        await load();
+    });
+
+    // ─── Loading / Error states ──────────────────────────────────────────────
     if (loading) {
         return (
             <div className="flex items-center justify-center p-16">
@@ -110,7 +185,35 @@ export default function AdminRefundDetails() {
         );
     }
 
-    const isPending = String(refund.status).toUpperCase() === "PENDING";
+    const status = String(refund.status || "").toUpperCase();
+    const isTerminal = ["REFUNDED", "RESOLVED", "REJECTED"].includes(status);
+
+    // ─── Dynamic action buttons ──────────────────────────────────────────────
+    const ActionButtons = () => (
+        <div className="flex gap-2 flex-wrap">
+            {status === "PENDING" && (
+                <>
+                    <button disabled={submitting} onClick={rejectRefund}  className={styles.red}>Reject</button>
+                    <button disabled={submitting} onClick={moveToReview}  className={styles.blue}>{submitting ? "Saving…" : "Move to Review"}</button>
+                </>
+            )}
+            {status === "UNDER_REVIEW" && (
+                <>
+                    <button disabled={submitting} onClick={rejectRefund}           className={styles.red}>Reject</button>
+                    <button disabled={submitting} onClick={resolveCase}            className={styles.indigo}>Resolved</button>
+                    <button disabled={submitting} onClick={markProviderContacted}  className={styles.amber}>{submitting ? "Saving…" : "Provider Contacted"}</button>
+                    <button disabled={submitting} onClick={approveRefund}          className={styles.green}>Approve Refund</button>
+                </>
+            )}
+            {status === "PROVIDER_CONTACTED" && (
+                <>
+                    <button disabled={submitting} onClick={rejectRefund}  className={styles.red}>Reject</button>
+                    <button disabled={submitting} onClick={resolveCase}   className={styles.indigo}>Resolved</button>
+                    <button disabled={submitting} onClick={approveRefund} className={styles.green}>{submitting ? "Saving…" : "Approve Refund"}</button>
+                </>
+            )}
+        </div>
+    );
 
     return (
         <div className="p-6">
@@ -134,24 +237,7 @@ export default function AdminRefundDetails() {
                     </div>
                 </div>
 
-                {isPending && (
-                    <div className="flex shrink-0 gap-2">
-                        <button
-                            disabled={submitting}
-                            onClick={() => review("REJECT")}
-                            className="rounded-xl border border-neutral-200 bg-white px-5 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60"
-                        >
-                            Reject
-                        </button>
-                        <button
-                            disabled={submitting}
-                            onClick={() => review("APPROVE")}
-                            className="rounded-xl bg-green-600 px-5 py-2 text-sm font-semibold text-white hover:bg-green-700 disabled:opacity-60"
-                        >
-                            {submitting ? "Saving..." : "Approve"}
-                        </button>
-                    </div>
-                )}
+                {!isTerminal && <ActionButtons />}
             </div>
 
             {/* Body */}
@@ -177,9 +263,7 @@ export default function AdminRefundDetails() {
                                 {attachments.length}
                             </span>
                         </h2>
-                        <p className="mt-1 text-xs text-neutral-500">
-                            Click any image to open it in full size.
-                        </p>
+                        <p className="mt-1 text-xs text-neutral-500">Click any image to open it in full size.</p>
 
                         {attachments.length === 0 ? (
                             <p className="mt-4 text-sm text-neutral-500 italic">No attachments uploaded.</p>
@@ -212,31 +296,42 @@ export default function AdminRefundDetails() {
                     </div>
                 </div>
 
-                {/* Right: admin note + checklist */}
+                {/* Right: admin note + checklist + meta */}
                 <div className="space-y-4">
                     <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
                         <h2 className="text-sm font-semibold text-neutral-800">Admin note</h2>
                         <p className="mt-1 text-xs text-neutral-500">
-                            {isPending ? "Your note will be saved with the decision." : "Decision note (read-only)."}
+                            {isTerminal ? "Decision note (read-only)." : "Your note will be saved with the decision."}
                         </p>
                         <textarea
                             value={adminNote}
                             onChange={(e) => setAdminNote(e.target.value)}
                             rows={6}
-                            disabled={!isPending}
+                            disabled={isTerminal}
                             placeholder="Example: Approved — screenshots confirm incomplete work."
                             className="mt-3 w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-400 disabled:bg-neutral-50 disabled:text-neutral-500"
                         />
-                        {!isPending && (
+                        {isTerminal && (
                             <p className="mt-2 text-xs text-neutral-500">
-                                This request is already {String(refund.status).toLowerCase()}.
+                                This request is already <span className="font-medium">{status.replace(/_/g, " ").toLowerCase()}</span>.
                             </p>
                         )}
                     </div>
 
+                    {/* Workflow guide */}
                     <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5 text-sm text-blue-900">
-                        <p className="font-semibold">Review checklist</p>
-                        <ul className="mt-2 list-disc pl-5 space-y-1 text-sm">
+                        <p className="font-semibold">Workflow</p>
+                        <ol className="mt-2 list-decimal pl-5 space-y-1 text-sm">
+                            <li><span className="font-medium">PENDING</span> → Move to Review</li>
+                            <li><span className="font-medium">UNDER_REVIEW</span> → Provider Contacted / Approve / Resolved / Reject</li>
+                            <li><span className="font-medium">PROVIDER_CONTACTED</span> → Approve / Resolved / Reject</li>
+                        </ol>
+                    </div>
+
+                    {/* Review checklist */}
+                    <div className="rounded-2xl border border-neutral-200 bg-white p-5 text-sm text-neutral-700">
+                        <p className="font-semibold text-neutral-800">Review checklist</p>
+                        <ul className="mt-2 list-disc pl-5 space-y-1 text-sm text-neutral-600">
                             <li>Check explanation clarity and timeline</li>
                             <li>Verify attachments match the job/service</li>
                             <li>Confirm payment is eligible for refund</li>
@@ -244,6 +339,7 @@ export default function AdminRefundDetails() {
                         </ul>
                     </div>
 
+                    {/* Reviewed at / by */}
                     {refund.reviewed_at && (
                         <div className="rounded-2xl border border-neutral-200 bg-white p-5 text-xs text-neutral-500">
                             <p><span className="font-semibold text-neutral-700">Reviewed at:</span> {new Date(refund.reviewed_at).toLocaleString()}</p>
