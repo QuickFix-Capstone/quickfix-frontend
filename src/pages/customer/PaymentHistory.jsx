@@ -63,31 +63,76 @@ const PaymentMethodBadge = ({ method }) => {
     return <span className="text-sm text-neutral-500">{method || "Unknown"}</span>;
 };
 
-function RefundStatusBanner({ status, note }) {
+function RefundStatusBanner({ status, note, updatedAt }) {
     if (!status) return null;
+
     const s = String(status).toUpperCase();
-    const styles = {
-        PENDING: "border-yellow-200 bg-yellow-50 text-yellow-800",
-        APPROVED: "border-green-200 bg-green-50 text-green-800",
-        REJECTED: "border-red-200 bg-red-50 text-red-800",
+
+    const config = {
+        PENDING: {
+            box: "border-yellow-200 bg-yellow-50 text-yellow-800",
+            title: "⏳ Refund requested",
+            message:
+                "We received your refund request. Our team will review it shortly.",
+        },
+        UNDER_REVIEW: {
+            box: "border-blue-200 bg-blue-50 text-blue-800",
+            title: "👀 Under review",
+            message:
+                "Your refund request is currently being reviewed by our admin team. We may verify payment, job, and service details before making a decision.",
+        },
+        PROVIDER_CONTACTED: {
+            box: "border-purple-200 bg-purple-50 text-purple-800",
+            title: "📞 Provider contacted",
+            message:
+                "We have contacted the service provider regarding your refund request. The provider may contact you directly if more clarification is needed.",
+        },
+        REFUNDED: {
+            box: "border-green-200 bg-green-50 text-green-800",
+            title: "✅ Refund processed",
+            message:
+                "Your refund has been approved and processed. The amount will be returned to your original payment method. It may take a few business days to appear depending on your bank or payment provider.",
+        },
+        APPROVED: {
+            box: "border-green-200 bg-green-50 text-green-800",
+            title: "✅ Refund approved",
+            message:
+                "Your refund has been approved and is being processed to your original payment method.",
+        },
+        RESOLVED: {
+            box: "border-emerald-200 bg-emerald-50 text-emerald-800",
+            title: "✔ Refund case resolved",
+            message:
+                "Your refund case has been resolved. Please review the latest update below if any additional notes were provided.",
+        },
+        REJECTED: {
+            box: "border-red-200 bg-red-50 text-red-800",
+            title: "❌ Refund request rejected",
+            message:
+                "After review, your refund request was not approved. Please check the admin note below for more details.",
+        },
     };
-    const title = {
-        PENDING: "⏳ Refund requested",
-        APPROVED: "✅ Refund approved",
-        REJECTED: "❌ Refund rejected",
+
+    const current = config[s] || {
+        box: "border-neutral-200 bg-neutral-50 text-neutral-700",
+        title: "Refund update",
+        message: "There is a new update on your refund request.",
     };
-    const msg = {
-        PENDING: "Your request has been submitted and is waiting for admin review.",
-        APPROVED: "Your refund has been approved. It will be processed to your original payment method.",
-        REJECTED: "Your refund was rejected. Please call customer service at 416-XXX-7777.",
-    };
+
     return (
-        <div className={`mt-3 rounded-xl border px-4 py-3 text-sm ${styles[s] || "border-neutral-200 bg-neutral-50 text-neutral-700"}`}>
-            <div className="font-semibold">{title[s] || "Refund update"}</div>
-            <div className="mt-1">{msg[s] || ""}</div>
-            {s === "REJECTED" && note && (
-                <div className="mt-2 text-xs text-neutral-700">
-                    <span className="font-semibold">Admin note:</span> {note}
+        <div className={`mt-3 rounded-xl border px-4 py-3 text-sm ${current.box}`}>
+            <div className="font-semibold">{current.title}</div>
+            <div className="mt-1">{current.message}</div>
+
+            {updatedAt && (
+                <div className="mt-2 text-xs opacity-80">
+                    Last updated: {formatDate(updatedAt)}
+                </div>
+            )}
+
+            {note && (
+                <div className="mt-2 rounded-lg bg-white/60 px-3 py-2 text-xs text-neutral-700">
+                    <span className="font-semibold">Update:</span> {note}
                 </div>
             )}
         </div>
@@ -109,7 +154,13 @@ export default function PaymentHistory() {
 
     useEffect(() => {
         fetchHistory();
-    }, [offset]);
+
+        const interval = setInterval(() => {
+            fetchHistory();
+        }, 15000); // every 15 seconds
+
+        return () => clearInterval(interval);
+    }, [offset, auth.isAuthenticated, auth.isLoading]);
 
     async function fetchHistory() {
         try {
@@ -318,6 +369,7 @@ export default function PaymentHistory() {
                                                 <RefundStatusBanner
                                                     status={payment.refund_status}
                                                     note={payment.refund_admin_note}
+                                                    updatedAt={payment.refund_updated_at || payment.refund_requested_at}
                                                 />
                                             </div>
                                         </div>
@@ -339,7 +391,9 @@ export default function PaymentHistory() {
                                                 {/* Show refund badge if already requested (from API or optimistic local state) */}
                                                 {refundedIds.has(String(payment.payment_id)) || payment.refund_status ? (
                                                     <div className="w-full rounded-lg border border-orange-300 bg-orange-50 px-4 py-2 text-center text-sm font-semibold text-orange-700">
-                                                        ⏳ Refund Requested
+                                                        {payment.refund_status
+                                                            ? `Refund: ${String(payment.refund_status).replaceAll("_", " ")}`
+                                                            : "⏳ Refund Requested"}
                                                     </div>
                                                 ) : (
                                                     <button

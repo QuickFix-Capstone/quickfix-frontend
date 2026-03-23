@@ -84,7 +84,39 @@ export default function AdminRefundDetails() {
             if (!res.ok) throw new Error(await res.text() || `HTTP ${res.status}`);
             const data = await res.json();
             const rr = data?.refund_request;
-            setRefund(rr || null);
+            const prov = data?.provider || {};
+            const job  = data?.job  || {};
+
+            // Merge nested provider + job fields into a flat refund object
+            // so the cards can read refund.provider_name, refund.job_title, etc.
+            const merged = rr ? {
+                ...rr,
+                // provider fields
+                provider_name:          prov.name,
+                business_name:          prov.business_name,
+                provider_email:         prov.email,
+                provider_phone_number:  prov.phone_number,
+                provider_address_line:  prov.address_line,
+                provider_city:          prov.city,
+                provider_province:      prov.province,
+                provider_postal_code:   prov.postal_code,
+                verification_status:    prov.verification_status,
+                provider_is_active:     prov.is_active,
+                // job fields
+                job_title:      job.title,
+                job_category:   job.category,
+                job_description: job.description,
+                job_status:     job.status,
+                preferred_date: job.preferred_date,
+                preferred_time: job.preferred_time,
+                location_address: job.location_address,
+                location_city:  job.location_city,
+                location_state: job.location_state,
+                location_zip:   job.location_zip,
+                final_price:    job.final_price,
+            } : null;
+
+            setRefund(merged);
             setAttachments(data?.attachments || []);
             setAdminNote(rr?.admin_note || "");
         } catch (e) {
@@ -346,6 +378,92 @@ export default function AdminRefundDetails() {
                             {refund.reviewed_by && <p className="mt-1"><span className="font-semibold text-neutral-700">Reviewed by:</span> {refund.reviewed_by}</p>}
                         </div>
                     )}
+
+                    {/* Provider Details */}
+                    <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
+                        <h2 className="text-sm font-semibold text-neutral-800">Service Provider Details</h2>
+                        <div className="mt-3 space-y-2 text-sm text-neutral-700">
+                            <p>
+                                <span className="font-semibold text-neutral-800">Provider ID:</span>{" "}
+                                {refund.provider_id || "—"}
+                            </p>
+                            <p>
+                                <span className="font-semibold text-neutral-800">Name:</span>{" "}
+                                {refund.provider_name || "—"}
+                            </p>
+                            <p>
+                                <span className="font-semibold text-neutral-800">Business Name:</span>{" "}
+                                {refund.business_name || "—"}
+                            </p>
+                            <p>
+                                <span className="font-semibold text-neutral-800">Email:</span>{" "}
+                                {refund.provider_email || "—"}
+                            </p>
+                            <p>
+                                <span className="font-semibold text-neutral-800">Phone:</span>{" "}
+                                {refund.provider_phone_number || "—"}
+                            </p>
+                            <p>
+                                <span className="font-semibold text-neutral-800">Address:</span>{" "}
+                                {[refund.provider_address_line, refund.provider_city, refund.provider_province, refund.provider_postal_code]
+                                    .filter(Boolean)
+                                    .join(", ") || "—"}
+                            </p>
+                            <p>
+                                <span className="font-semibold text-neutral-800">Verification:</span>{" "}
+                                {refund.verification_status || "—"}
+                            </p>
+                            <p>
+                                <span className="font-semibold text-neutral-800">Active:</span>{" "}
+                                {refund.provider_is_active ? "Yes" : "No"}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Job Details */}
+                    <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
+                        <h2 className="text-sm font-semibold text-neutral-800">Job Details</h2>
+                        <div className="mt-3 space-y-2 text-sm text-neutral-700">
+                            <p>
+                                <span className="font-semibold text-neutral-800">Job ID:</span>{" "}
+                                {refund.job_id || "—"}
+                            </p>
+                            <p>
+                                <span className="font-semibold text-neutral-800">Title:</span>{" "}
+                                {refund.job_title || "—"}
+                            </p>
+                            <p>
+                                <span className="font-semibold text-neutral-800">Category:</span>{" "}
+                                {refund.job_category || "—"}
+                            </p>
+                            <p>
+                                <span className="font-semibold text-neutral-800">Description:</span>{" "}
+                                {refund.job_description || "—"}
+                            </p>
+                            <p>
+                                <span className="font-semibold text-neutral-800">Status:</span>{" "}
+                                {refund.job_status || "—"}
+                            </p>
+                            <p>
+                                <span className="font-semibold text-neutral-800">Preferred Date:</span>{" "}
+                                {refund.preferred_date || "—"}
+                            </p>
+                            <p>
+                                <span className="font-semibold text-neutral-800">Preferred Time:</span>{" "}
+                                {refund.preferred_time || "—"}
+                            </p>
+                            <p>
+                                <span className="font-semibold text-neutral-800">Location:</span>{" "}
+                                {[refund.location_address, refund.location_city, refund.location_state, refund.location_zip]
+                                    .filter(Boolean)
+                                    .join(", ") || "—"}
+                            </p>
+                            <p>
+                                <span className="font-semibold text-neutral-800">Final Price:</span>{" "}
+                                {refund.final_price ?? "—"}
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
