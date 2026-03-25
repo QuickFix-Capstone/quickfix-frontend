@@ -195,19 +195,20 @@ export default function Messages() {
         setLoadingMessages(false);
       }
 
-      // Mark conversation as read separately — don't let this fail the message load
-      try {
-        await markConversationAsRead(conversationId);
-        setConversations((prev) =>
-          prev.map((conv) =>
-            conv.conversationId === conversationId
-              ? { ...conv, unreadCount: 0 }
-              : conv,
-          ),
-        );
-      } catch {
-        // Read-receipt failure is non-critical; messages are already displayed
-      }
+      // Fire read-receipt in the background — don't let it delay message display
+      markConversationAsRead(conversationId)
+        .then(() => {
+          setConversations((prev) =>
+            prev.map((conv) =>
+              conv.conversationId === conversationId
+                ? { ...conv, unreadCount: 0 }
+                : conv,
+            ),
+          );
+        })
+        .catch(() => {
+          // Read-receipt failure is non-critical; messages are already displayed
+        });
     },
     [],
   );
@@ -407,22 +408,30 @@ export default function Messages() {
     selectedConversation?.conversationId,
   ]);
 
-  // Poll messages for the selected conversation every 5 seconds
+  // Poll messages for the selected conversation every 5 seconds ONLY if WebSocket is disconnected
   useEffect(() => {
     const convId = selectedConversation?.conversationId;
-    if (!convId) return;
+    if (!convId || isConnected) return;
 
     const poll = async () => {
       try {
         const data = await getMessages(convId, 100);
-        const fresh = data.messages || [];
+        const normalized = (data.messages || [])
+          .map((m) => normalizeMessagePayload(m))
+          .filter(Boolean);
+        const sorted = sortMessagesByTime(normalized);
+
         setMessages((prev) => {
-          if (fresh.length === prev.length) {
-            const lastFresh = fresh[fresh.length - 1];
+          if (sorted.length === prev.length) {
+            const lastSorted = sorted[sorted.length - 1];
             const lastPrev = prev[prev.length - 1];
-            if (lastFresh?.messageId === lastPrev?.messageId) return prev;
+            if (
+              String(lastSorted?.messageId) === String(lastPrev?.messageId)
+            ) {
+              return prev;
+            }
           }
-          return fresh;
+          return sorted;
         });
       } catch {
         // silently ignore polling errors
@@ -431,7 +440,7 @@ export default function Messages() {
 
     const interval = setInterval(poll, 5000);
     return () => clearInterval(interval);
-  }, [selectedConversation?.conversationId]);
+  }, [selectedConversation?.conversationId, isConnected]);
 
   function handleSelectConversation(conversation) {
     setSelectedConversation(conversation);

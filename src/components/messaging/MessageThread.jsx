@@ -13,10 +13,25 @@ export default function MessageThread({
   typingUsers = [],
 }) {
   const messagesEndRef = useRef(null);
+  const scrollContainerRef = useRef(null);
+  const prevMessagesCountRef = useRef(messages.length);
 
-  // Auto-scroll to bottom when new messages arrive
+  // Auto-scroll to bottom when NEW messages arrive
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const isAtBottom = 
+      container.scrollHeight - container.scrollTop <= container.clientHeight + 150;
+    const hasNewMessages = messages.length > prevMessagesCountRef.current;
+    
+    // Only auto-scroll if user is near bottom or it's their OWN new message
+    // (We can't easily tell "own" here without more logic, but "hasNewMessages" is a good start)
+    if (hasNewMessages && isAtBottom) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+    
+    prevMessagesCountRef.current = messages.length;
   }, [messages]);
 
   if (loading) {
@@ -49,7 +64,10 @@ export default function MessageThread({
   }
 
   return (
-    <div className="flex-1 overflow-y-auto bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-6">
+    <div 
+      ref={scrollContainerRef}
+      className="flex-1 overflow-y-auto bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-6"
+    >
       <div className="space-y-4 max-w-4xl mx-auto">
         {messages.map((msg) => {
           // Normalize sender ID (prevents mismatch bugs)
