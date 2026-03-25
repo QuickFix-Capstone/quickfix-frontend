@@ -1,16 +1,37 @@
 // src/pages/customer/PostJob.jsx
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useAuth } from "react-oidc-context";
 import { useNavigate } from "react-router-dom";
+import { useLocation as useUserLocation } from "../../context/LocationContext";
+import { createJob } from "../../api/jobs";
 import Card from "../../components/UI/Card";
 import Button from "../../components/UI/Button";
+import AlertBanner from "../../components/UI/AlertBanner";
 import JobImageUpload from "../../components/job/JobImageUpload";
 import { uploadJobImage } from "../../api/jobImages";
-import { ArrowLeft, Calendar, Clock, MapPin, FileText, DollarSign, Briefcase } from "lucide-react";
+import {
+    ArrowLeft,
+    Calendar,
+    Clock,
+    MapPin,
+    FileText,
+    DollarSign,
+    Briefcase,
+    Crosshair,
+} from "lucide-react";
 
 export default function PostJob() {
     const auth = useAuth();
     const navigate = useNavigate();
+    const {
+        location,
+        getLocation,
+        loading: locationLoading,
+        error: locationError,
+        address,
+        addressLoading,
+        addressError,
+    } = useUserLocation();
 
     const [formData, setFormData] = useState({
         title: "",
@@ -20,6 +41,8 @@ export default function PostJob() {
         location_city: "",
         location_state: "",
         location_zip: "",
+        location_lat: "",
+        location_lng: "",
         preferred_date: "",
         preferred_time: "",
         budget_min: "",
@@ -28,6 +51,7 @@ export default function PostJob() {
     const [submitting, setSubmitting] = useState(false);
     const [selectedImages, setSelectedImages] = useState([]);
     const [uploadingImages, setUploadingImages] = useState(false);
+    const [submitError, setSubmitError] = useState("");
 
     const categories = [
         "plumber",
@@ -40,6 +64,22 @@ export default function PostJob() {
         "other"
     ];
 
+    useEffect(() => {
+        if (!location) {
+            return;
+        }
+
+        setFormData((current) => ({
+            ...current,
+            location_lat: location.latitude.toFixed(6),
+            location_lng: location.longitude.toFixed(6),
+            location_address: current.location_address || address?.address_line || "",
+            location_city: current.location_city || address?.city || "",
+            location_state: current.location_state || address?.province || "",
+            location_zip: current.location_zip || address?.postal_code || "",
+        }));
+    }, [location, address]);
+
     const handleChange = (e) => {
         setFormData({
             ...formData,
@@ -50,10 +90,9 @@ export default function PostJob() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setSubmitting(true);
+        setSubmitError("");
 
         try {
-            const token = auth.user?.id_token || auth.user?.access_token;
-
             const jobData = {
                 title: formData.title,
                 description: formData.description,
@@ -62,68 +101,50 @@ export default function PostJob() {
                 location_city: formData.location_city,
                 location_state: formData.location_state,
                 location_zip: formData.location_zip,
+                location_lat: formData.location_lat,
+                location_lng: formData.location_lng,
                 preferred_date: formData.preferred_date,
                 preferred_time: formData.preferred_time,
-                budget_min: parseFloat(formData.budget_min),
-                budget_max: parseFloat(formData.budget_max),
+                budget_min: formData.budget_min,
+                budget_max: formData.budget_max,
             };
 
             console.log("Submitting job:", jobData);
 
-            const res = await fetch(
-                "https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/job",
-                {
-                    method: "POST",
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify(jobData),
+            const job = await createJob(auth, jobData);
+            console.log("Job posted successfully:", job);
+
+            const jobId = job?.job_id;
+
+            if (selectedImages.length > 0 && jobId) {
+                setUploadingImages(true);
+                console.log(`Uploading ${selectedImages.length} images for job ${jobId}...`);
+
+                try {
+                    const uploadPromises = selectedImages.map((file, index) =>
+                        uploadJobImage(jobId, file, auth, {
+                            order: index + 1,
+                            description: null
+                        })
+                    );
+
+                    await Promise.all(uploadPromises);
+                    console.log("All images uploaded successfully");
+                    alert(`Job posted successfully with ${selectedImages.length} image(s)! Service providers can now apply.`);
+                } catch (imageError) {
+                    console.error("Image upload failed:", imageError);
+                    alert("Job posted successfully, but some images failed to upload. You can add them later.");
+                } finally {
+                    setUploadingImages(false);
                 }
-            );
-
-            if (res.ok) {
-                const data = await res.json();
-                console.log("Job posted successfully:", data);
-
-                // Get job_id from the response (nested in job object)
-                const jobId = data.job?.job_id || data.job_id;
-
-                // Upload images if any were selected
-                if (selectedImages.length > 0) {
-                    setUploadingImages(true);
-                    console.log(`Uploading ${selectedImages.length} images for job ${jobId}...`);
-
-                    try {
-                        const uploadPromises = selectedImages.map((file, index) =>
-                            uploadJobImage(jobId, file, auth, {
-                                order: index + 1,
-                                description: null
-                            })
-                        );
-
-                        await Promise.all(uploadPromises);
-                        console.log("All images uploaded successfully");
-                        alert(`Job posted successfully with ${selectedImages.length} image(s)! Service providers can now apply.`);
-                    } catch (imageError) {
-                        console.error("Image upload failed:", imageError);
-                        alert("Job posted successfully, but some images failed to upload. You can add them later.");
-                    } finally {
-                        setUploadingImages(false);
-                    }
-                } else {
-                    alert("Job posted successfully! Service providers can now apply.");
-                }
-
-                navigate("/customer/jobs");
             } else {
-                const error = await res.text();
-                console.error("Job posting failed:", error);
-                alert("Failed to post job. Please try again.");
+                alert("Job posted successfully! Service providers can now apply.");
             }
+
+            navigate("/customer/jobs");
         } catch (err) {
             console.error("Error posting job:", err);
-            alert("Error posting job. Please try again.");
+            setSubmitError(err?.message || "Error posting job. Please try again.");
         } finally {
             setSubmitting(false);
         }
@@ -154,6 +175,10 @@ export default function PostJob() {
                 {/* Job Posting Form */}
                 <Card className="border-neutral-200 bg-white p-6 shadow-lg">
                     <form onSubmit={handleSubmit} className="space-y-6">
+                        {submitError ? (
+                            <AlertBanner variant="error" message={submitError} />
+                        ) : null}
+
                         {/* Job Title */}
                         <div>
                             <label className="mb-2 flex items-center gap-2 text-sm font-medium text-neutral-700">
@@ -174,13 +199,12 @@ export default function PostJob() {
                         {/* Category */}
                         <div>
                             <label className="mb-2 block text-sm font-medium text-neutral-700">
-                                Category *
+                                Category
                             </label>
                             <select
                                 name="category"
                                 value={formData.category}
                                 onChange={handleChange}
-                                required
                                 className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-2 text-neutral-900 focus:border-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900"
                             >
                                 <option value="">Select a category</option>
@@ -214,7 +238,7 @@ export default function PostJob() {
                             <div>
                                 <label className="mb-2 flex items-center gap-2 text-sm font-medium text-neutral-700">
                                     <Calendar className="h-4 w-4" />
-                                    Preferred Date *
+                                    Preferred Date
                                 </label>
                                 <input
                                     type="date"
@@ -222,32 +246,64 @@ export default function PostJob() {
                                     value={formData.preferred_date}
                                     onChange={handleChange}
                                     min={today}
-                                    required
                                     className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-2 text-neutral-900 focus:border-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900"
                                 />
                             </div>
                             <div>
                                 <label className="mb-2 flex items-center gap-2 text-sm font-medium text-neutral-700">
                                     <Clock className="h-4 w-4" />
-                                    Preferred Time *
+                                    Preferred Time
                                 </label>
                                 <input
                                     type="time"
                                     name="preferred_time"
                                     value={formData.preferred_time}
                                     onChange={handleChange}
-                                    required
                                     className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-2 text-neutral-900 focus:border-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900"
                                 />
                             </div>
                         </div>
 
                         {/* Location */}
-                        <div>
-                            <label className="mb-2 flex items-center gap-2 text-sm font-medium text-neutral-700">
-                                <MapPin className="h-4 w-4" />
-                                Job Location *
-                            </label>
+                        <div className="space-y-4">
+                            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                                <label className="flex items-center gap-2 text-sm font-medium text-neutral-700">
+                                    <MapPin className="h-4 w-4" />
+                                    Job Location *
+                                </label>
+                                <Button
+                                    type="button"
+                                    onClick={getLocation}
+                                    variant="outline"
+                                    disabled={locationLoading || addressLoading}
+                                    className="gap-2"
+                                >
+                                    <Crosshair className="h-4 w-4" />
+                                    {locationLoading || addressLoading ? "Getting Location..." : "Use Current Location"}
+                                </Button>
+                            </div>
+
+                            {formData.location_lat && formData.location_lng ? (
+                                <AlertBanner
+                                    variant="success"
+                                    message={`Coordinates ready: ${Number(formData.location_lat).toFixed(4)}, ${Number(formData.location_lng).toFixed(4)}`}
+                                />
+                            ) : null}
+
+                            {address?.formatted ? (
+                                <AlertBanner
+                                    variant="info"
+                                    message={`Detected address: ${address.formatted}`}
+                                />
+                            ) : null}
+
+                            {locationError || addressError ? (
+                                <AlertBanner
+                                    variant="warning"
+                                    message={locationError || addressError}
+                                />
+                            ) : null}
+
                             <input
                                 type="text"
                                 name="location_address"
@@ -262,7 +318,7 @@ export default function PostJob() {
                         <div className="grid gap-4 md:grid-cols-3">
                             <div>
                                 <label className="mb-2 block text-sm font-medium text-neutral-700">
-                                    City *
+                                    City
                                 </label>
                                 <input
                                     type="text"
@@ -270,13 +326,12 @@ export default function PostJob() {
                                     value={formData.location_city}
                                     onChange={handleChange}
                                     placeholder="Toronto"
-                                    required
                                     className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-2 text-neutral-900 placeholder-neutral-500 focus:border-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900"
                                 />
                             </div>
                             <div>
                                 <label className="mb-2 block text-sm font-medium text-neutral-700">
-                                    State/Province *
+                                    State/Province
                                 </label>
                                 <input
                                     type="text"
@@ -284,13 +339,12 @@ export default function PostJob() {
                                     value={formData.location_state}
                                     onChange={handleChange}
                                     placeholder="ON"
-                                    required
                                     className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-2 text-neutral-900 placeholder-neutral-500 focus:border-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900"
                                 />
                             </div>
                             <div>
                                 <label className="mb-2 block text-sm font-medium text-neutral-700">
-                                    Postal Code *
+                                    Postal Code
                                 </label>
                                 <input
                                     type="text"
@@ -298,17 +352,29 @@ export default function PostJob() {
                                     value={formData.location_zip}
                                     onChange={handleChange}
                                     placeholder="M5H 1J9"
-                                    required
                                     className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-2 text-neutral-900 placeholder-neutral-500 focus:border-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900"
                                 />
                             </div>
                         </div>
 
+                        <input
+                            type="hidden"
+                            name="location_lat"
+                            value={formData.location_lat}
+                            readOnly
+                        />
+                        <input
+                            type="hidden"
+                            name="location_lng"
+                            value={formData.location_lng}
+                            readOnly
+                        />
+
                         {/* Budget Range */}
                         <div>
                             <label className="mb-2 flex items-center gap-2 text-sm font-medium text-neutral-700">
                                 <DollarSign className="h-4 w-4" />
-                                Budget Range *
+                                Budget Range
                             </label>
                             <div className="grid gap-4 md:grid-cols-2">
                                 <div>
@@ -320,7 +386,6 @@ export default function PostJob() {
                                         placeholder="Minimum ($)"
                                         min="0"
                                         step="0.01"
-                                        required
                                         className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-2 text-neutral-900 placeholder-neutral-500 focus:border-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900"
                                     />
                                 </div>
@@ -333,7 +398,6 @@ export default function PostJob() {
                                         placeholder="Maximum ($)"
                                         min="0"
                                         step="0.01"
-                                        required
                                         className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-2 text-neutral-900 placeholder-neutral-500 focus:border-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900"
                                     />
                                 </div>

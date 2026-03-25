@@ -2,6 +2,18 @@ import { API_BASE } from "./config";
 
 const getAuthToken = (auth) => auth.user?.id_token || auth.user?.access_token;
 
+const normalizeOptionalString = (value) => {
+  if (value === null || value === undefined) return null;
+  const trimmed = String(value).trim();
+  return trimmed ? trimmed : null;
+};
+
+const normalizeOptionalNumber = (value) => {
+  if (value === null || value === undefined || value === "") return null;
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? numericValue : null;
+};
+
 const parseErrorMessage = async (response, fallback) => {
   try {
     const text = await response.text();
@@ -15,6 +27,53 @@ const parseErrorMessage = async (response, fallback) => {
   } catch {
     return fallback;
   }
+};
+
+export const createJob = async (auth, payload) => {
+  const token = getAuthToken(auth);
+  const locationLat = normalizeOptionalNumber(payload?.location_lat);
+  const locationLng = normalizeOptionalNumber(payload?.location_lng);
+  const hasCoordinatePair =
+    locationLat !== null &&
+    locationLng !== null;
+
+  if (!token) {
+    throw new Error("Authentication required. Please sign in again.");
+  }
+
+  const response = await fetch(`${API_BASE}/jobs`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      title: String(payload?.title ?? "").trim(),
+      description: String(payload?.description ?? "").trim(),
+      location_address: String(payload?.location_address ?? "").trim(),
+      category: normalizeOptionalString(payload?.category),
+      location_city: normalizeOptionalString(payload?.location_city),
+      location_state: normalizeOptionalString(payload?.location_state),
+      location_zip: normalizeOptionalString(payload?.location_zip),
+      location_lat: hasCoordinatePair ? locationLat : null,
+      location_lng: hasCoordinatePair ? locationLng : null,
+      preferred_date: normalizeOptionalString(payload?.preferred_date),
+      preferred_time: normalizeOptionalString(payload?.preferred_time),
+      budget_min: normalizeOptionalNumber(payload?.budget_min),
+      budget_max: normalizeOptionalNumber(payload?.budget_max),
+    }),
+  });
+
+  if (!response.ok) {
+    const errorMessage = await parseErrorMessage(
+      response,
+      "Failed to create job. Please try again."
+    );
+    throw new Error(errorMessage);
+  }
+
+  const data = await response.json();
+  return data?.job ?? data;
 };
 
 export const cancelJob = async (jobId, auth) => {
