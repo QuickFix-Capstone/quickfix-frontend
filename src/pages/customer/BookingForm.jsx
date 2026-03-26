@@ -5,7 +5,8 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useLocation as useUserLocation } from "../../context/LocationContext";
 import Card from "../../components/UI/Card";
 import Button from "../../components/UI/Button";
-import { ArrowLeft, Calendar, Clock, MapPin, FileText, DollarSign, Camera, Upload } from "lucide-react";
+import AlertBanner from "../../components/UI/AlertBanner";
+import { ArrowLeft, Calendar, Clock, MapPin, FileText, DollarSign, Camera, Upload, Crosshair } from "lucide-react";
 import FileInput from "../../components/UI/FileInput";
 import { uploadBookingImage } from "../../api/bookingImages";
 import { API_BASE } from "../../api/config";
@@ -14,7 +15,15 @@ export default function BookingForm() {
     const auth = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
-    const { location: userLocation, getLocation } = useUserLocation();
+    const {
+        location: userLocation,
+        getLocation,
+        loading: locationLoading,
+        error: locationError,
+        address,
+        addressLoading,
+        addressError,
+    } = useUserLocation();
     const service = location.state?.service;
 
     // Get user location on mount
@@ -31,12 +40,15 @@ export default function BookingForm() {
         service_city: "",
         service_state: "",
         service_postal_code: "",
+        service_lat: "",
+        service_lng: "",
         estimated_price: "",
         notes: "",
     });
     const [submitting, setSubmitting] = useState(false);
     const [selectedImages, setSelectedImages] = useState([]);
     const [uploadingImages, setUploadingImages] = useState(false);
+    const [submitError, setSubmitError] = useState("");
 
     if (!service) {
         return (
@@ -51,6 +63,22 @@ export default function BookingForm() {
         );
     }
 
+    useEffect(() => {
+        if (!userLocation) {
+            return;
+        }
+
+        setFormData((current) => ({
+            ...current,
+            service_lat: userLocation.latitude.toFixed(6),
+            service_lng: userLocation.longitude.toFixed(6),
+            service_address: current.service_address || address?.address_line || "",
+            service_city: current.service_city || address?.city || "",
+            service_state: current.service_state || address?.province || "",
+            service_postal_code: current.service_postal_code || address?.postal_code || "",
+        }));
+    }, [userLocation, address]);
+
     const handleChange = (e) => {
         setFormData({
             ...formData,
@@ -61,9 +89,16 @@ export default function BookingForm() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setSubmitting(true);
+        setSubmitError("");
 
         try {
             const token = auth.user?.id_token || auth.user?.access_token;
+            const parsedLat =
+                formData.service_lat === "" ? null : Number(formData.service_lat);
+            const parsedLng =
+                formData.service_lng === "" ? null : Number(formData.service_lng);
+            const hasCoordinatePair =
+                Number.isFinite(parsedLat) && Number.isFinite(parsedLng);
 
             const bookingData = {
                 provider_id: service.provider_id,
@@ -74,9 +109,14 @@ export default function BookingForm() {
                 service_address: formData.service_address,
                 service_city: formData.service_city,
                 service_state: formData.service_state,
-                service_postal_code: formData.service_postal_code || "RSH 139",
-                estimated_price: parseFloat(formData.estimated_price),
-                notes: formData.notes,
+                service_postal_code: formData.service_postal_code,
+                service_lat: hasCoordinatePair ? parsedLat : null,
+                service_lng: hasCoordinatePair ? parsedLng : null,
+                estimated_price:
+                    formData.estimated_price === ""
+                        ? null
+                        : Number(formData.estimated_price),
+                notes: formData.notes.trim() || null,
             };
 
             console.log("Submitting booking:", bookingData);
@@ -117,11 +157,11 @@ export default function BookingForm() {
             } else {
                 const error = await res.text();
                 console.error("Booking failed:", error);
-                alert("Failed to create booking. Please try again.");
+                setSubmitError("Failed to create booking. Please try again.");
             }
         } catch (err) {
             console.error("Error creating booking:", err);
-            alert("Error creating booking. Please try again.");
+            setSubmitError(err?.message || "Error creating booking. Please try again.");
         } finally {
             setSubmitting(false);
             setUploadingImages(false);
@@ -198,6 +238,10 @@ export default function BookingForm() {
                 {/* Booking Form */}
                 <Card className="border-neutral-200 bg-white p-6 shadow-lg">
                     <form onSubmit={handleSubmit} className="space-y-6">
+                        {submitError ? (
+                            <AlertBanner variant="error" message={submitError} />
+                        ) : null}
+
                         {/* Date & Time */}
                         <div className="grid gap-4 md:grid-cols-2">
                             <div>
@@ -235,7 +279,7 @@ export default function BookingForm() {
                         <div>
                             <label className="mb-2 flex items-center gap-2 text-sm font-medium text-neutral-700">
                                 <DollarSign className="h-4 w-4" />
-                                Estimated Price *
+                                Estimated Price
                             </label>
                             <input
                                 type="number"
@@ -245,7 +289,6 @@ export default function BookingForm() {
                                 placeholder="Enter your estimated price"
                                 min="0"
                                 step="0.01"
-                                required
                                 className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-2 text-neutral-900 placeholder-neutral-500 focus:border-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900"
                             />
                             <p className="mt-1 text-sm text-neutral-500">
@@ -255,11 +298,45 @@ export default function BookingForm() {
                         </div>
 
                         {/* Address */}
-                        <div>
-                            <label className="mb-2 flex items-center gap-2 text-sm font-medium text-neutral-700">
-                                <MapPin className="h-4 w-4" />
-                                Service Address *
-                            </label>
+                        <div className="space-y-4">
+                            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                                <label className="flex items-center gap-2 text-sm font-medium text-neutral-700">
+                                    <MapPin className="h-4 w-4" />
+                                    Service Address *
+                                </label>
+                                <Button
+                                    type="button"
+                                    onClick={getLocation}
+                                    variant="outline"
+                                    disabled={locationLoading || addressLoading}
+                                    className="gap-2"
+                                >
+                                    <Crosshair className="h-4 w-4" />
+                                    {locationLoading || addressLoading ? "Getting Location..." : "Use Current Location"}
+                                </Button>
+                            </div>
+
+                            {formData.service_lat && formData.service_lng ? (
+                                <AlertBanner
+                                    variant="success"
+                                    message="Current location captured for provider job context."
+                                />
+                            ) : null}
+
+                            {address?.formatted ? (
+                                <AlertBanner
+                                    variant="info"
+                                    message={`Detected address: ${address.formatted}`}
+                                />
+                            ) : null}
+
+                            {locationError || addressError ? (
+                                <AlertBanner
+                                    variant="warning"
+                                    message={locationError || addressError}
+                                />
+                            ) : null}
+
                             <input
                                 type="text"
                                 name="service_address"
@@ -314,6 +391,19 @@ export default function BookingForm() {
                                 />
                             </div>
                         </div>
+
+                        <input
+                            type="hidden"
+                            name="service_lat"
+                            value={formData.service_lat}
+                            readOnly
+                        />
+                        <input
+                            type="hidden"
+                            name="service_lng"
+                            value={formData.service_lng}
+                            readOnly
+                        />
 
                         {/* Notes */}
                         <div>
