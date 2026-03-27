@@ -32,6 +32,19 @@ const asNumber = (value) => {
     return Number.isFinite(parsed) ? parsed : 0;
 };
 
+const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
+    if (percent < 0.05) return null; // hide tiny slices
+    const RADIAN = Math.PI / 180;
+    const radius = innerRadius + (outerRadius - innerRadius) * 0.55;
+    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+    return (
+        <text x={x} y={y} fill="#fff" textAnchor="middle" dominantBaseline="central" fontSize={12} fontWeight={600}>
+            {`${(percent * 100).toFixed(1)}%`}
+        </text>
+    );
+};
+
 export default function AdminAnalytics() {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -286,6 +299,8 @@ export default function AdminAnalytics() {
                                 innerRadius={70}
                                 outerRadius={100}
                                 paddingAngle={2}
+                                label={renderCustomLabel}
+                                labelLine={false}
                             >
                                 {commitmentSplitData.map((slice, index) => (
                                     <Cell
@@ -347,6 +362,8 @@ export default function AdminAnalytics() {
                                             cx="50%"
                                             cy="50%"
                                             outerRadius={105}
+                                            label={renderCustomLabel}
+                                            labelLine={false}
                                         >
                                             {jobStatusData.map((entry, index) => (
                                                 <Cell
@@ -377,6 +394,8 @@ export default function AdminAnalytics() {
                                             cx="50%"
                                             cy="50%"
                                             outerRadius={105}
+                                            label={renderCustomLabel}
+                                            labelLine={false}
                                         >
                                             {bookingStatusData.map((entry, index) => (
                                                 <Cell
