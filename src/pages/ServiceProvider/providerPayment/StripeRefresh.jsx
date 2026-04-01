@@ -20,7 +20,7 @@ export default function StripeRefresh() {
 
             const data = await res.json();
             window.location.href = data.url;
-        } catch (err) {
+        } catch {
             alert("Error restarting Stripe setup.");
         } finally {
             setLoading(false);

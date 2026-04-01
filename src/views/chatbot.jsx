@@ -8,7 +8,7 @@ import React, {
   createContext,
   useContext,
 } from "react";
-import ReactDOM from "react-dom";
+import { createPortal } from "react-dom";
 import { useLocation } from "react-router-dom";
 import {
   X,
@@ -55,8 +55,7 @@ const getUserAuth = () => {
       token && typeof token === "string" && token.split(".").length === 3;
 
     if (!token || !isValidToken) {
-      console.log("🔓 No valid authentication token found for chatbot");
-      return {
+        return {
         isAuthenticated: false,
         token: null,
         role: "customer",
@@ -64,7 +63,6 @@ const getUserAuth = () => {
       };
     }
 
-    console.log("🔑 Valid authentication token found for chatbot");
 
     const userData = userDataStr ? JSON.parse(userDataStr) : {};
     const userGroupsFromStorage = userGroupsStr
@@ -81,18 +79,6 @@ const getUserAuth = () => {
         ...oidcProfileGroups,
       ]),
     ];
-
-    // Debug logging
-    console.log("🔍 Raw userGroupsStr:", userGroupsStr);
-    console.log("🔍 Cognito groups:", cognitoGroups);
-    console.log("🔍 OIDC profile groups:", oidcProfileGroups);
-    console.log("🔍 Combined userGroups:", userGroups);
-    console.log("🔍 Type of userGroups:", typeof userGroups);
-    console.log("🔍 Is Array:", Array.isArray(userGroups));
-    console.log(
-      "🔍 Includes ServiceProviders:",
-      userGroups.includes?.("ServiceProviders"),
-    );
 
     // Determine role from groups (same logic as backend)
     let role = "customer";
@@ -113,7 +99,6 @@ const getUserAuth = () => {
       role = "customer";
     }
 
-    console.log("🎯 Final assigned role:", role);
 
     return {
       isAuthenticated: true,
@@ -150,9 +135,6 @@ const sendChatMessage = async (
     // Only send token if it exists and is valid (non-empty string)
     if (token && typeof token === "string" && token.trim()) {
       headers["Authorization"] = `Bearer ${token}`;
-      console.log("🔐 Sending message with authentication token");
-    } else {
-      console.log("👤 Sending message as anonymous user");
     }
 
     const response = await fetch(`${API_ENDPOINT}/chatbot/message`, {
@@ -187,10 +169,6 @@ const sendChatMessage = async (
     const data = await response.json();
 
     // Log the verified role from backend
-    if (data.user_role) {
-      console.log("✅ Backend verified role:", data.user_role);
-      console.log("🔒 Authenticated:", data.is_authenticated);
-    }
 
     return data;
   } catch (error) {
@@ -631,7 +609,7 @@ const ChatbotPopup = ({ isOpen, onClose, userAuth }) => {
               type="text"
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
+              onKeyDown={handleKeyPress}
               placeholder="Type your message..."
               disabled={isLoading}
               className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 
@@ -698,7 +676,7 @@ export const ChatbotProvider = ({ children }) => {
     >
       {children}
       {!isAdminRoute &&
-        ReactDOM.createPortal(
+        createPortal(
           <>
             <ChatbotButton
               isOpen={isOpen}

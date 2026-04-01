@@ -24,7 +24,7 @@ export default function StripeReturn() {
                 } else {
                     setMessage("⚠️ Stripe setup incomplete. Please try again.");
                 }
-            } catch (err) {
+            } catch {
                 setMessage("❌ Error verifying Stripe connection.");
             }
         };
