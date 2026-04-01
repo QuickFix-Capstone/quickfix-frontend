@@ -3,12 +3,6 @@ import GhostButton from "../UI/GhostButton";
 import {
   ShieldCheck,
   HomeIcon,
-  Search,
-  PlusCircle,
-  MessageSquare,
-  CreditCard,
-  Briefcase,
-  Settings,
   User,
   LogOut,
 } from "lucide-react";
@@ -32,76 +26,14 @@ export default function TopNav({ currentUser, onLogout }) {
 
         <div className="flex-1" />
 
-        {/* NAV BUTTONS */}
+        {/* Public nav */}
         <div className="hidden md:flex items-center gap-2">
-          {/* Home - Always visible */}
           <GhostButton
             onClick={() => navigate("/")}
             className={isActive("/") ? "bg-neutral-100" : ""}
           >
             <HomeIcon className="h-4 w-4" /> Home
           </GhostButton>
-
-          {/* Show these only when logged in */}
-          {currentUser && (
-            <>
-              {/* Search */}
-              <GhostButton
-                onClick={() => navigate("/search")}
-                className={isActive("/search") ? "bg-neutral-100" : ""}
-              >
-                <Search className="h-4 w-4" /> Search
-              </GhostButton>
-
-              {/* POST JOB */}
-              <GhostButton
-                onClick={() => navigate("/service-provider/create-gig")}
-                className={
-                  isActive("/service-provider/create-gig") ? "bg-neutral-100" : ""
-                }
-              >
-                <PlusCircle className="h-4 w-4" /> Post Job
-              </GhostButton>
-
-              {/* PROVIDER */}
-              <GhostButton
-                onClick={() => navigate("/service-provider/service-offerings/9")}
-                className={
-                  location.pathname.startsWith(
-                    "/service-provider/service-offerings"
-                  )
-                    ? "bg-neutral-100"
-                    : ""
-                }
-              >
-                <Briefcase className="h-4 w-4" /> Provider
-              </GhostButton>
-
-              {/* Messages */}
-              <GhostButton
-                onClick={() => navigate("/messages")}
-                className={isActive("/messages") ? "bg-neutral-100" : ""}
-              >
-                <MessageSquare className="h-4 w-4" /> Messages
-              </GhostButton>
-
-              {/* Checkout */}
-              <GhostButton
-                onClick={() => navigate("/checkout")}
-                className={isActive("/checkout") ? "bg-neutral-100" : ""}
-              >
-                <CreditCard className="h-4 w-4" /> Checkout
-              </GhostButton>
-
-              {/* Admin */}
-              <GhostButton
-                onClick={() => navigate("/admin")}
-                className={isActive("/admin") ? "bg-neutral-100" : ""}
-              >
-                <Settings className="h-4 w-4" /> Admin
-              </GhostButton>
-            </>
-          )}
 
           <div className="ml-2 h-8 w-px bg-neutral-200" />
 
