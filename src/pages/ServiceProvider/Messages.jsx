@@ -143,9 +143,25 @@ export default function ProviderMessages() {
     });
 
     const unsubRead = ws.on("conversationRead", (data) => {
-      console.log(
-        `${data.readByUserId} read conversation ${data.conversationId}`,
-      );
+      const convId = data.conversationId;
+      const lastReadMessageId = data.lastReadMessageId;
+      const readAt = data.readAt || Date.now();
+
+      // Update messages in the active conversation to show "Read" status
+      if (convId === activeConvIdRef.current && currentUserId) {
+        setMessages((prev) =>
+          prev.map((msg) => {
+            const isOwnMessage = String(msg.senderId) === String(currentUserId);
+            const isBeforeOrAtRead =
+              !lastReadMessageId ||
+              Number(msg.messageId || msg.ts) <= Number(lastReadMessageId);
+            if (isOwnMessage && isBeforeOrAtRead && msg.status !== "read") {
+              return { ...msg, status: "read", readAt };
+            }
+            return msg;
+          }),
+        );
+      }
     });
 
     return () => {
@@ -181,8 +197,16 @@ export default function ProviderMessages() {
         } else {
           data = await httpGetMessages(conv.conversationId, INITIAL_MESSAGES_LIMIT);
         }
-        // API returns newest-first, reverse for chronological display
-        setMessages((data.messages || []).reverse());
+        // Derive read status from readBy array
+        const rawMessages = (data.messages || []).reverse();
+        const enrichedMessages = rawMessages.map((msg) => {
+          const readBy = msg.readBy || [];
+          if (!msg.status && readBy.length > 1) {
+            return { ...msg, status: "read" };
+          }
+          return msg;
+        });
+        setMessages(enrichedMessages);
 
         if (ws && isConnected) {
           // Do not block UI render on read receipts.
@@ -267,7 +291,13 @@ export default function ProviderMessages() {
     const poll = async () => {
       try {
         const data = await httpGetMessages(convId, INITIAL_MESSAGES_LIMIT);
-        const fresh = (data.messages || []).reverse();
+        const fresh = (data.messages || []).reverse().map((msg) => {
+          const readBy = msg.readBy || [];
+          if (!msg.status && readBy.length > 1) {
+            return { ...msg, status: "read" };
+          }
+          return msg;
+        });
         setMessages((prev) => {
           // Only update if there are actually new messages
           if (fresh.length === prev.length) {

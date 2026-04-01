@@ -63,6 +63,15 @@ function normalizeMessagePayload(event) {
 
   const text = payload.text || payload.content || "";
 
+  // Derive read status from the readBy array (backend now populates this)
+  const readBy = payload.readBy || payload.read_by || [];
+  let status = payload.status;
+  let readAt = payload.readAt || payload.read_at || null;
+  if (!status && readBy.length > 1) {
+    // readBy contains more than just the sender → someone else has read it
+    status = "read";
+  }
+
   return {
     ...payload,
     messageId:
@@ -75,8 +84,9 @@ function normalizeMessagePayload(event) {
       payload.senderName || payload.sender_name || payload.sender?.name || "User",
     text,
     timestamp,
-    status: payload.status,
-    readAt: payload.readAt || payload.read_at || null,
+    status,
+    readBy,
+    readAt,
     deliveredAt: payload.deliveredAt || payload.delivered_at || null,
   };
 }
@@ -102,10 +112,34 @@ export default function Messages() {
   const [searchParams, setSearchParams] = useSearchParams();
   const preselectConversationId = searchParams.get("conversationId");
   const hasAppliedPreselectRef = useRef(false);
-  const currentUserId = useMemo(
-    () => String(auth.user?.profile?.sub || ""),
-    [auth.user],
-  );
+
+  // Fetch the numeric customer_id from the profile API.
+  // Messages use this numeric ID as senderId, not the Cognito sub (UUID).
+  const [currentUserId, setCurrentUserId] = useState(null);
+
+  useEffect(() => {
+    if (!auth.isAuthenticated) return;
+    const token = auth.user?.id_token || auth.user?.access_token;
+    if (!token) return;
+
+    fetch("https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/customer", {
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        const id = data?.customer?.customer_id;
+        if (id) {
+          setCurrentUserId(String(id));
+        } else {
+          // Fallback to Cognito sub
+          setCurrentUserId(String(auth.user?.profile?.sub || ""));
+        }
+      })
+      .catch(() => {
+        setCurrentUserId(String(auth.user?.profile?.sub || ""));
+      });
+  }, [auth.isAuthenticated, auth.user]);
 
   const typingTimeoutRef = useRef(new Map());
 
@@ -154,22 +188,27 @@ export default function Messages() {
           normalizeMessagePayload(message),
         );
         setMessages(sortMessagesByTime(normalized.filter(Boolean)));
-
-        await markConversationAsRead(conversationId);
-
-        setConversations((prev) =>
-          prev.map((conv) =>
-            conv.conversationId === conversationId
-              ? { ...conv, unreadCount: 0 }
-              : conv,
-          ),
-        );
       } catch (err) {
         console.error("Failed to load messages:", err);
         setError("Failed to load messages. Please try again.");
       } finally {
         setLoadingMessages(false);
       }
+
+      // Fire read-receipt in the background — don't let it delay message display
+      markConversationAsRead(conversationId)
+        .then(() => {
+          setConversations((prev) =>
+            prev.map((conv) =>
+              conv.conversationId === conversationId
+                ? { ...conv, unreadCount: 0 }
+                : conv,
+            ),
+          );
+        })
+        .catch(() => {
+          // Read-receipt failure is non-critical; messages are already displayed
+        });
     },
     [],
   );
@@ -324,10 +363,10 @@ export default function Messages() {
 
         if (conversationId !== selectedConversation?.conversationId) return;
 
-        const readMessageId =
+        const lastReadMessageId =
+          incomingEvent?.lastReadMessageId ||
           payload?.messageId ||
-          incomingEvent?.messageId ||
-          incomingEvent?.lastReadMessageId;
+          incomingEvent?.messageId;
 
         const readAt =
           incomingEvent?.readAt ||
@@ -335,14 +374,18 @@ export default function Messages() {
           payload?.readAt ||
           Date.now();
 
-        if (!readMessageId) return;
-
+        // Mark all own messages as read (the other user read the conversation)
         setMessages((prev) =>
-          prev.map((msg) =>
-            String(msg.messageId) === String(readMessageId)
-              ? { ...msg, status: "read", readAt }
-              : msg,
-          ),
+          prev.map((msg) => {
+            const isOwnMessage = String(msg.senderId) === currentUserId;
+            const isBeforeOrAtRead =
+              !lastReadMessageId ||
+              Number(msg.messageId) <= Number(lastReadMessageId);
+            if (isOwnMessage && isBeforeOrAtRead && msg.status !== "read") {
+              return { ...msg, status: "read", readAt };
+            }
+            return msg;
+          }),
         );
       },
     });
@@ -365,22 +408,30 @@ export default function Messages() {
     selectedConversation?.conversationId,
   ]);
 
-  // Poll messages for the selected conversation every 5 seconds
+  // Poll messages for the selected conversation every 5 seconds ONLY if WebSocket is disconnected
   useEffect(() => {
     const convId = selectedConversation?.conversationId;
-    if (!convId) return;
+    if (!convId || isConnected) return;
 
     const poll = async () => {
       try {
         const data = await getMessages(convId, 100);
-        const fresh = data.messages || [];
+        const normalized = (data.messages || [])
+          .map((m) => normalizeMessagePayload(m))
+          .filter(Boolean);
+        const sorted = sortMessagesByTime(normalized);
+
         setMessages((prev) => {
-          if (fresh.length === prev.length) {
-            const lastFresh = fresh[fresh.length - 1];
+          if (sorted.length === prev.length) {
+            const lastSorted = sorted[sorted.length - 1];
             const lastPrev = prev[prev.length - 1];
-            if (lastFresh?.messageId === lastPrev?.messageId) return prev;
+            if (
+              String(lastSorted?.messageId) === String(lastPrev?.messageId)
+            ) {
+              return prev;
+            }
           }
-          return fresh;
+          return sorted;
         });
       } catch {
         // silently ignore polling errors
@@ -389,7 +440,7 @@ export default function Messages() {
 
     const interval = setInterval(poll, 5000);
     return () => clearInterval(interval);
-  }, [selectedConversation?.conversationId]);
+  }, [selectedConversation?.conversationId, isConnected]);
 
   function handleSelectConversation(conversation) {
     setSelectedConversation(conversation);

@@ -32,6 +32,19 @@ const asNumber = (value) => {
     return Number.isFinite(parsed) ? parsed : 0;
 };
 
+const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
+    if (percent < 0.05) return null; // hide tiny slices
+    const RADIAN = Math.PI / 180;
+    const radius = innerRadius + (outerRadius - innerRadius) * 0.55;
+    const x = cx + radius * Math.cos(-midAngle * RADIAN);
+    const y = cy + radius * Math.sin(-midAngle * RADIAN);
+    return (
+        <text x={x} y={y} fill="#fff" textAnchor="middle" dominantBaseline="central" fontSize={12} fontWeight={600}>
+            {`${(percent * 100).toFixed(1)}%`}
+        </text>
+    );
+};
+
 export default function AdminAnalytics() {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -99,6 +112,29 @@ export default function AdminAnalytics() {
         { entity: "Jobs", total: asNumber(metrics.jobs_total) },
         { entity: "Bookings", total: asNumber(metrics.bookings_total) },
         { entity: "Reviews", total: asNumber(metrics.reviews_total) },
+    ];
+
+    const totalUsers =
+        asNumber(metrics.customers_total) + asNumber(metrics.providers_total);
+    const userShareData = [
+        {
+            type: "Customers",
+            percentage:
+                totalUsers > 0
+                    ? Number(
+                          ((asNumber(metrics.customers_total) / totalUsers) * 100).toFixed(1),
+                      )
+                    : 0,
+        },
+        {
+            type: "Service Providers",
+            percentage:
+                totalUsers > 0
+                    ? Number(
+                          ((asNumber(metrics.providers_total) / totalUsers) * 100).toFixed(1),
+                      )
+                    : 0,
+        },
     ];
 
     const commitmentSplitData = [
@@ -211,20 +247,41 @@ export default function AdminAnalytics() {
             </div>
 
             {/* PHASE 1: CHARTS WITH V1 DATA */}
-            <HealthCard title="Entity Overview">
-                <p className="text-xs text-gray-500 mb-3">
-                    Side-by-side comparison of core platform entities
-                </p>
-                <ResponsiveContainer width="100%" height={290}>
-                    <BarChart data={entityOverviewData} layout="vertical">
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis type="number" allowDecimals={false} />
-                        <YAxis type="category" dataKey="entity" width={90} />
-                        <Tooltip />
-                        <Bar dataKey="total" fill="#111827" radius={[0, 6, 6, 0]} />
-                    </BarChart>
-                </ResponsiveContainer>
-            </HealthCard>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <HealthCard title="Entity Overview">
+                    <p className="text-xs text-gray-500 mb-3">
+                        Side-by-side comparison of core platform entities
+                    </p>
+                    <ResponsiveContainer width="100%" height={290}>
+                        <BarChart data={entityOverviewData} layout="vertical">
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis type="number" allowDecimals={false} />
+                            <YAxis type="category" dataKey="entity" width={90} />
+                            <Tooltip />
+                            <Bar dataKey="total" fill="#111827" radius={[0, 6, 6, 0]} />
+                        </BarChart>
+                    </ResponsiveContainer>
+                </HealthCard>
+
+                <HealthCard title="User Type Percentage">
+                    <p className="text-xs text-gray-500 mb-3">
+                        Percentage split between customers and service providers
+                    </p>
+                    <ResponsiveContainer width="100%" height={290}>
+                        <BarChart data={userShareData}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="type" />
+                            <YAxis domain={[0, 100]} tickFormatter={(value) => `${value}%`} />
+                            <Tooltip formatter={(value) => [`${value}%`, "Share"]} />
+                            <Bar
+                                dataKey="percentage"
+                                fill="#0f766e"
+                                radius={[6, 6, 0, 0]}
+                            />
+                        </BarChart>
+                    </ResponsiveContainer>
+                </HealthCard>
+            </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <HealthCard title="Commitment Split">
@@ -242,6 +299,8 @@ export default function AdminAnalytics() {
                                 innerRadius={70}
                                 outerRadius={100}
                                 paddingAngle={2}
+                                label={renderCustomLabel}
+                                labelLine={false}
                             >
                                 {commitmentSplitData.map((slice, index) => (
                                     <Cell
@@ -303,6 +362,8 @@ export default function AdminAnalytics() {
                                             cx="50%"
                                             cy="50%"
                                             outerRadius={105}
+                                            label={renderCustomLabel}
+                                            labelLine={false}
                                         >
                                             {jobStatusData.map((entry, index) => (
                                                 <Cell
@@ -333,6 +394,8 @@ export default function AdminAnalytics() {
                                             cx="50%"
                                             cy="50%"
                                             outerRadius={105}
+                                            label={renderCustomLabel}
+                                            labelLine={false}
                                         >
                                             {bookingStatusData.map((entry, index) => (
                                                 <Cell

@@ -233,6 +233,21 @@ export default function AdminPaymentsAnalytics() {
     const topCities = data?.leaderboards?.topCities || [];
     const topProviders = data?.leaderboards?.topProviders || [];
 
+    const fraud = data?.fraudMonitoring || {};
+    const fraudRiskScore = n0(fraud.riskScore);
+    const fraudAlerts = fraud.alerts || [];
+    const flaggedProviders = fraud.flaggedProviders || [];
+    const suspiciousCustomers = fraud.suspiciousCustomers || [];
+    const rapidPaymentCustomers = fraud.rapidPaymentCustomers || [];
+    const failedByGateway = fraud.failedByGateway || [];
+
+    const fraudSummaryCards = [
+        { label: "Flagged Providers", value: n0(fraud.flaggedProvidersCount) },
+        { label: "Suspicious Customers", value: n0(fraud.suspiciousCustomersCount) },
+        { label: "Rapid Payment Cases", value: n0(fraud.rapidPaymentCustomersCount) },
+        { label: "Completed Jobs at Risk", value: n0(fraud.completedPendingJobsCount) },
+    ];
+
     const filteredInsights = insights.filter((ins) =>
         insightFilter === "all" ? true : ins.type === insightFilter
     );
@@ -621,7 +636,7 @@ export default function AdminPaymentsAnalytics() {
                             <BarChart
                                 data={refundReasons.map((r) => ({
                                     reason: r.reason_code || "unknown",
-                                    count: n0(r.refund_count),
+                                    count: n0(r.refund_count ?? r.count_requests),
                                 }))}
                             >
                                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -665,8 +680,8 @@ export default function AdminPaymentsAnalytics() {
                                     topCities.map((r, idx) => (
                                         <tr key={idx} className="hover:bg-gray-50 transition-colors">
                                             <td className="py-3 pr-4 font-medium text-gray-900">{r.city}</td>
-                                            <td className="py-3 pr-4 text-gray-700">{n0(r.paid_count)}</td>
-                                            <td className="py-3 pr-4 text-gray-700">{centsToCad(r.paid_revenue_cents)}</td>
+                                            <td className="py-3 pr-4 text-gray-700">{n0(r.paid_count ?? r.paid_payments)}</td>
+                                            <td className="py-3 pr-4 text-gray-700">{centsToCad(r.paid_revenue_cents ?? r.revenue_cents)}</td>
                                         </tr>
                                     ))
                                 )}
@@ -702,8 +717,8 @@ export default function AdminPaymentsAnalytics() {
                                                     ? String(r.provider_id).slice(0, 10) + "…"
                                                     : String(r.provider_id)}
                                             </td>
-                                            <td className="py-3 pr-4 text-gray-700">{n0(r.paid_count)}</td>
-                                            <td className="py-3 pr-4 text-gray-700">{centsToCad(r.paid_revenue_cents)}</td>
+                                            <td className="py-3 pr-4 text-gray-700">{n0(r.paid_count ?? r.paid_payments)}</td>
+                                            <td className="py-3 pr-4 text-gray-700">{centsToCad(r.paid_revenue_cents ?? r.revenue_cents)}</td>
                                         </tr>
                                     ))
                                 )}
@@ -713,9 +728,234 @@ export default function AdminPaymentsAnalytics() {
                 </div>
             </div>
 
+            {/* Fraud Monitoring */}
+            <div className="space-y-4 pt-4">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h3 className="text-lg font-semibold text-gray-900">Fraud Monitoring &amp; Alerts</h3>
+                        <p className="text-sm text-gray-600">
+                            Behavioral risk detection using payment, refund, and job activity.
+                        </p>
+                    </div>
+
+                    <StatusPill
+                        type={
+                            fraudRiskScore >= 70
+                                ? "danger"
+                                : fraudRiskScore >= 40
+                                    ? "warning"
+                                    : "success"
+                        }
+                        text={`Risk Score: ${fraudRiskScore}/100`}
+                    />
+                </div>
+
+                {/* Fraud KPI cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+                    {fraudSummaryCards.map((item, idx) => (
+                        <StatCard
+                            key={idx}
+                            title={item.label}
+                            value={String(item.value)}
+                            subtitle="Fraud monitoring signal"
+                            icon={AlertTriangle}
+                            tone={
+                                fraudRiskScore >= 70
+                                    ? "danger"
+                                    : fraudRiskScore >= 40
+                                        ? "warning"
+                                        : "default"
+                            }
+                        />
+                    ))}
+                </div>
+
+                {/* Fraud alerts + gateway failures */}
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                    <div className="border border-gray-200 rounded-2xl p-4 bg-white">
+                        <div className="flex items-center justify-between">
+                            <h3 className="font-semibold text-gray-900">Fraud Alerts</h3>
+                            <p className="text-xs text-gray-500">Actionable risk indicators</p>
+                        </div>
+
+                        <div className="mt-4 space-y-3">
+                            {fraudAlerts.length === 0 ? (
+                                <div className="text-sm text-gray-600">No fraud alerts for this range.</div>
+                            ) : (
+                                fraudAlerts.map((alert, idx) => (
+                                    <InsightCard key={idx} insight={alert} />
+                                ))
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="border border-gray-200 rounded-2xl p-4 bg-white">
+                        <h3 className="font-semibold text-gray-900">Failed Payments by Gateway</h3>
+                        <p className="text-xs text-gray-500 mt-1">
+                            Helps identify payment-method-specific issues
+                        </p>
+
+                        <div className="h-64 mt-4">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart
+                                    data={failedByGateway.map((r) => ({
+                                        method: r.payment_method || "unknown",
+                                        failed: n0(r.failed_count),
+                                    }))}
+                                >
+                                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                                    <XAxis dataKey="method" tick={{ fontSize: 12 }} />
+                                    <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
+                                    <Tooltip />
+                                    <Bar dataKey="failed" radius={[8, 8, 0, 0]}>
+                                        {failedByGateway.map((_, i) => (
+                                            <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                                        ))}
+                                    </Bar>
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+
+                        {failedByGateway.length === 0 && (
+                            <p className="text-xs text-gray-500 text-center mt-2">No failed payment data.</p>
+                        )}
+                    </div>
+                </div>
+
+                {/* Fraud tables */}
+                <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+                    <div className="border border-gray-200 rounded-2xl p-4 bg-white">
+                        <h3 className="font-semibold text-gray-900">Flagged Providers</h3>
+                        <p className="text-xs text-gray-500 mt-1">
+                            Providers with abnormal refund behavior
+                        </p>
+
+                        <div className="mt-4 overflow-auto">
+                            <table className="min-w-full text-sm">
+                                <thead className="text-xs text-gray-500 border-b">
+                                    <tr>
+                                        <th className="text-left py-2 pr-4">Provider</th>
+                                        <th className="text-left py-2 pr-4">Refunds</th>
+                                        <th className="text-left py-2 pr-4">Payments</th>
+                                        <th className="text-left py-2 pr-4">Refund %</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y">
+                                    {flaggedProviders.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={4} className="py-3 text-gray-600">
+                                                No flagged providers.
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        flaggedProviders.map((r, idx) => (
+                                            <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                                                <td className="py-3 pr-4 font-medium text-gray-900">
+                                                    {String(r.provider_id).length > 12
+                                                        ? String(r.provider_id).slice(0, 12) + "…"
+                                                        : String(r.provider_id)}
+                                                </td>
+                                                <td className="py-3 pr-4 text-gray-700">{n0(r.refund_count)}</td>
+                                                <td className="py-3 pr-4 text-gray-700">{n0(r.payment_count)}</td>
+                                                <td className="py-3 pr-4">
+                                                    <StatusPill
+                                                        type={n0(r.refund_rate_percent) >= 30 ? "danger" : "warning"}
+                                                        text={`${n0(r.refund_rate_percent)}%`}
+                                                    />
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div className="border border-gray-200 rounded-2xl p-4 bg-white">
+                        <h3 className="font-semibold text-gray-900">Suspicious Customers</h3>
+                        <p className="text-xs text-gray-500 mt-1">
+                            Customers with unusually high pending payment concentration
+                        </p>
+
+                        <div className="mt-4 overflow-auto">
+                            <table className="min-w-full text-sm">
+                                <thead className="text-xs text-gray-500 border-b">
+                                    <tr>
+                                        <th className="text-left py-2 pr-4">Customer</th>
+                                        <th className="text-left py-2 pr-4">Pending</th>
+                                        <th className="text-left py-2 pr-4">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y">
+                                    {suspiciousCustomers.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={3} className="py-3 text-gray-600">
+                                                No suspicious customers.
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        suspiciousCustomers.map((r, idx) => (
+                                            <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                                                <td className="py-3 pr-4 font-medium text-gray-900">
+                                                    {r.customer_id}
+                                                </td>
+                                                <td className="py-3 pr-4 text-gray-700">
+                                                    {n0(r.pending_count)}
+                                                </td>
+                                                <td className="py-3 pr-4 text-gray-700">
+                                                    {centsToCad(r.pending_amount_cents)}
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div className="border border-gray-200 rounded-2xl p-4 bg-white">
+                        <h3 className="font-semibold text-gray-900">Rapid Payment Attempts</h3>
+                        <p className="text-xs text-gray-500 mt-1">
+                            Customers with clustered payment activity within 10 minutes
+                        </p>
+
+                        <div className="mt-4 overflow-auto">
+                            <table className="min-w-full text-sm">
+                                <thead className="text-xs text-gray-500 border-b">
+                                    <tr>
+                                        <th className="text-left py-2 pr-4">Customer</th>
+                                        <th className="text-left py-2 pr-4">Rapid Events</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y">
+                                    {rapidPaymentCustomers.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={2} className="py-3 text-gray-600">
+                                                No rapid payment anomalies.
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        rapidPaymentCustomers.map((r, idx) => (
+                                            <tr key={idx} className="hover:bg-gray-50 transition-colors">
+                                                <td className="py-3 pr-4 font-medium text-gray-900">
+                                                    {r.customer_id}
+                                                </td>
+                                                <td className="py-3 pr-4">
+                                                    <StatusPill type="info" text={String(n0(r.rapid_count))} />
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             {/* Footer note */}
             <div className="text-xs text-gray-500">
-                QuickFix Payments Analytics — Real-time revenue insights, refund tracking, and operational risk monitoring for the QuickFix platform.
+                QuickFix Payments Analytics — Real-time revenue insights, refund tracking, operational risk monitoring, and fraud monitoring & alerts for the QuickFix platform.
             </div>
         </div>
     );

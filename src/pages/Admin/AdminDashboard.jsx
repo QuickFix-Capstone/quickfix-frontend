@@ -6,6 +6,7 @@ import AdminRefundRequests from "./Refunds/AdminRefundRequests";
 import AdminPayouts from "./AdminPayouts";
 import AdminAnalytics from "./AdminAnalytics";
 import AdminPaymentsAnalytics from "./AdminPaymentsAnalytics";
+import AdminCustomerTransactions from "./AdminCustomerTransactions";
 import useOnlineUsers from "../../hooks/useOnlineUsers";
 
 const TABS = {
@@ -16,6 +17,7 @@ const TABS = {
   PAYOUTS: "PAYOUTS",
   ANALYTICS: "ANALYTICS",
   PAYMENTS: "PAYMENTS",
+  CUSTOMER_TXN: "CUSTOMER_TXN",
 };
 
 export default function AdminDashboard() {
@@ -75,7 +77,7 @@ export default function AdminDashboard() {
           className={tabStyle(TABS.ANALYTICS)}
           onClick={() => setActiveTab(TABS.ANALYTICS)}
         >
-          Analytics
+          Platform Analytics
         </button>
 
         <button
@@ -105,6 +107,13 @@ export default function AdminDashboard() {
         >
           Payments Analytics
         </button>
+
+        <button
+          className={tabStyle(TABS.CUSTOMER_TXN)}
+          onClick={() => setActiveTab(TABS.CUSTOMER_TXN)}
+        >
+          Customer Transactions
+        </button>
       </div>
 
       {/* ================= CONTENT ================= */}
@@ -116,8 +125,8 @@ export default function AdminDashboard() {
         {activeTab === TABS.PAYOUTS && <AdminPayouts />}
         {activeTab === TABS.ANALYTICS && <AdminAnalytics />}
         {activeTab === TABS.PAYMENTS && <AdminPaymentsAnalytics />}
+        {activeTab === TABS.CUSTOMER_TXN && <AdminCustomerTransactions />}
       </div>
     </div>
   );
 }
-
