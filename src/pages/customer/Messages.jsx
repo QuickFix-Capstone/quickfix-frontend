@@ -152,6 +152,7 @@ export default function Messages() {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [error, setError] = useState(null);
   const [showNewMessageModal, setShowNewMessageModal] = useState(false);
+  const selectedConversationId = selectedConversation?.conversationId ?? null;
 
   const loadConversations = useCallback(async () => {
     try {
@@ -218,11 +219,11 @@ export default function Messages() {
   }, [loadConversations]);
 
   useEffect(() => {
-    if (!selectedConversation?.conversationId) return;
+    if (!selectedConversationId) return;
 
-    loadMessagesForConversation(selectedConversation.conversationId);
+    loadMessagesForConversation(selectedConversationId);
     setTypingUsers([]);
-  }, [selectedConversation, loadMessagesForConversation]);
+  }, [selectedConversationId, loadMessagesForConversation]);
 
   useEffect(() => {
     if (!preselectConversationId || hasAppliedPreselectRef.current) return;
@@ -395,17 +396,12 @@ export default function Messages() {
 
     const interval = window.setInterval(() => {
       loadConversations();
-      if (selectedConversation?.conversationId) {
-        loadMessagesForConversation(selectedConversation.conversationId);
-      }
     }, 10000);
 
     return () => window.clearInterval(interval);
   }, [
     isConnected,
     loadConversations,
-    loadMessagesForConversation,
-    selectedConversation?.conversationId,
   ]);
 
   // Poll messages for the selected conversation every 5 seconds ONLY if WebSocket is disconnected
@@ -440,7 +436,7 @@ export default function Messages() {
 
     const interval = setInterval(poll, 5000);
     return () => clearInterval(interval);
-  }, [selectedConversation?.conversationId, isConnected]);
+  }, [selectedConversationId, isConnected]);
 
   function handleSelectConversation(conversation) {
     setSelectedConversation(conversation);
