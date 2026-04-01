@@ -1,11 +1,12 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useAuth } from "react-oidc-context";
 import { useNavigate, useParams } from "react-router-dom";
 import Card from "../../components/UI/Card";
 import Button from "../../components/UI/Button";
-import { ArrowLeft, Calendar, Clock, MapPin, DollarSign, User, FileText, MessageSquare, Camera } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, MapPin, DollarSign, User, FileText, MessageSquare } from "lucide-react";
 import { createConversation } from "../../api/messaging";
 import BookingImagesSection from "../../components/booking/BookingImagesSection";
+import { API_BASE } from "../../api/config";
 
 export default function BookingDetails() {
     const auth = useAuth();
@@ -51,42 +52,46 @@ export default function BookingDetails() {
         PEST_CONTROL: "bg-red-100 text-red-800",
     };
 
-    useEffect(() => {
-        if (!auth.isAuthenticated) {
-            navigate("/customer/login");
-            return;
-        }
+    const bookingEndpoint = `${API_BASE}/customer/bookings/${bookingId}`;
 
-        if (!bookingId) {
-            setError("No booking ID provided");
-            setLoading(false);
-            return;
-        }
+    const extractBookingFromResponse = (data) => {
+        if (!data || typeof data !== "object") return null;
+        if (data.booking) return data.booking;
+        if (data.data?.booking) return data.data.booking;
+        if (data.data?.booking_id) return data.data;
+        if (data.booking_id) return data;
+        return null;
+    };
 
-        fetchBookingDetails();
-    }, [auth.isAuthenticated, navigate, bookingId]);
+    const resolveBookingValue = (...values) =>
+        values.find((value) => value !== undefined && value !== null && value !== "");
 
-    const fetchBookingDetails = async () => {
+    const fetchBookingDetails = useCallback(async () => {
         setLoading(true);
         setError(null);
 
         try {
             const token = auth.user?.id_token || auth.user?.access_token;
 
-            const res = await fetch(
-                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/customer/bookings/${bookingId}`,
-                {
-                    method: "GET",
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
+            const res = await fetch(bookingEndpoint, {
+                method: "GET",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
 
             if (res.ok) {
                 const data = await res.json();
                 console.log("Booking details:", data);
-                setBooking(data.booking); // Extract the booking object from the response
+                const normalizedBooking = extractBookingFromResponse(data);
+
+                if (!normalizedBooking) {
+                    setError("Booking details response was invalid");
+                    setBooking(null);
+                    return;
+                }
+
+                setBooking(normalizedBooking);
             } else if (res.status === 404) {
                 setError("Booking not found");
             } else if (res.status === 403) {
@@ -100,7 +105,22 @@ export default function BookingDetails() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [auth.user, bookingEndpoint]);
+
+    useEffect(() => {
+        if (!auth.isAuthenticated) {
+            navigate("/customer/login");
+            return;
+        }
+
+        if (!bookingId) {
+            setError("No booking ID provided");
+            setLoading(false);
+            return;
+        }
+
+        fetchBookingDetails();
+    }, [auth.isAuthenticated, bookingId, fetchBookingDetails, navigate]);
 
     const formatDate = (dateString) => {
         const date = new Date(dateString);
@@ -128,20 +148,17 @@ export default function BookingDetails() {
 
         try {
             const token = auth.user?.id_token || auth.user?.access_token;
-            const res = await fetch(
-                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/customer/bookings/${bookingId}`,
-                {
-                    method: "PUT",
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        status: "cancelled",
-                        notes: "Booking cancelled by customer"
-                    }),
-                }
-            );
+            const res = await fetch(bookingEndpoint, {
+                method: "PUT",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    status: "cancelled",
+                    notes: "Booking cancelled by customer"
+                }),
+            });
 
             if (res.ok) {
                 alert("Booking cancelled successfully");
@@ -163,26 +180,23 @@ export default function BookingDetails() {
 
         try {
             const token = auth.user?.id_token || auth.user?.access_token;
-            const res = await fetch(
-                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/customer/bookings/${bookingId}`,
-                {
-                    method: "PUT",
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        scheduled_date: rescheduleData.scheduled_date,
-                        scheduled_time: rescheduleData.scheduled_time,
-                        notes: rescheduleData.notes || "Rescheduled by customer"
-                    }),
-                }
-            );
+            const res = await fetch(bookingEndpoint, {
+                method: "PUT",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    scheduled_date: rescheduleData.scheduled_date,
+                    scheduled_time: rescheduleData.scheduled_time,
+                    notes: rescheduleData.notes || "Rescheduled by customer"
+                }),
+            });
 
             const data = await res.json();
 
             if (res.ok) {
-                setBooking(data.booking);
+                setBooking(extractBookingFromResponse(data));
                 setShowRescheduleModal(false);
                 setRescheduleData({ scheduled_date: '', scheduled_time: '', notes: '' });
                 alert("Booking rescheduled successfully");
@@ -204,25 +218,22 @@ export default function BookingDetails() {
 
         try {
             const token = auth.user?.id_token || auth.user?.access_token;
-            const res = await fetch(
-                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/customer/bookings/${bookingId}`,
-                {
-                    method: "PUT",
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        ...addressData,
-                        notes: "Service address updated by customer"
-                    }),
-                }
-            );
+            const res = await fetch(bookingEndpoint, {
+                method: "PUT",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    ...addressData,
+                    notes: "Service address updated by customer"
+                }),
+            });
 
             const data = await res.json();
 
             if (res.ok) {
-                setBooking(data.booking);
+                setBooking(extractBookingFromResponse(data));
                 setShowAddressModal(false);
                 alert("Address updated successfully");
             } else {
@@ -241,25 +252,22 @@ export default function BookingDetails() {
 
         try {
             const token = auth.user?.id_token || auth.user?.access_token;
-            const res = await fetch(
-                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/customer/bookings/${bookingId}`,
-                {
-                    method: "PUT",
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        status: "pending_reschedule",
-                        notes: "Customer needs more time to decide"
-                    }),
-                }
-            );
+            const res = await fetch(bookingEndpoint, {
+                method: "PUT",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    status: "pending_reschedule",
+                    notes: "Customer needs more time to decide"
+                }),
+            });
 
             const data = await res.json();
 
             if (res.ok) {
-                setBooking(data.booking);
+                setBooking(extractBookingFromResponse(data));
                 alert("Status updated - you can reschedule when ready");
             } else {
                 alert(data.message || "Failed to update status");
@@ -275,7 +283,12 @@ export default function BookingDetails() {
 
         try {
             await createConversation(
-                booking.provider_id,
+                resolveBookingValue(
+                    booking.provider_id,
+                    booking.provider?.provider_id,
+                    booking.provider?.user_id,
+                    booking.provider?.id
+                ),
                 booking.service_offering_id || booking.booking_id
             );
             navigate("/customer/messages");
@@ -324,6 +337,30 @@ export default function BookingDetails() {
         return null;
     }
 
+    const serviceDescription = resolveBookingValue(booking.service?.description, booking.service_description, "Service booking");
+    const serviceCategory = resolveBookingValue(booking.service?.category, booking.service_category);
+    const statusLabel = booking.status?.replace("_", " ").toUpperCase() || "UNKNOWN";
+    const scheduledDate = resolveBookingValue(booking.schedule?.date, booking.scheduled_date);
+    const scheduledTime = resolveBookingValue(booking.schedule?.time, booking.scheduled_time);
+    const locationAddress = resolveBookingValue(booking.location?.address, booking.service_address);
+    const locationCity = resolveBookingValue(booking.location?.city, booking.service_city);
+    const locationState = resolveBookingValue(booking.location?.state, booking.service_state);
+    const locationPostalCode = resolveBookingValue(booking.location?.postal_code, booking.service_postal_code);
+    const providerName = resolveBookingValue(booking.provider?.name, booking.provider_name);
+    const displayPrice = resolveBookingValue(
+        booking.pricing?.final_price,
+        booking.final_price,
+        booking.pricing?.estimated_price,
+        booking.estimated_price
+    );
+    const hasFinalPrice = resolveBookingValue(booking.pricing?.final_price, booking.final_price) !== undefined;
+    const hasProvider = Boolean(resolveBookingValue(
+        booking.provider_id,
+        booking.provider?.provider_id,
+        booking.provider?.user_id,
+        booking.provider?.id
+    ));
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-neutral-50 to-neutral-100 p-6">
             <div className="mx-auto max-w-6xl space-y-6">
@@ -341,7 +378,7 @@ export default function BookingDetails() {
                     <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                         <div>
                             <h1 className="text-3xl font-bold text-neutral-900">
-                                {booking.service?.description || booking.service_description}
+                                {serviceDescription}
                             </h1>
                             <p className="mt-1 text-neutral-600">
                                 Booking ID: {booking.booking_id}
@@ -350,18 +387,18 @@ export default function BookingDetails() {
 
                         <div className="flex items-center gap-2">
                             <span
-                                className={`rounded-full px-3 py-1 text-sm font-medium ${categoryColors[booking.service?.category || booking.service_category] ||
+                                className={`rounded-full px-3 py-1 text-sm font-medium ${categoryColors[serviceCategory] ||
                                     "bg-neutral-100 text-neutral-800"
                                     }`}
                             >
-                                {(booking.service?.category || booking.service_category)?.replace("_", " ")}
+                                {serviceCategory?.replace("_", " ") || "UNCATEGORIZED"}
                             </span>
                             <span
                                 className={`rounded-full border px-3 py-1 text-sm font-medium ${statusColors[booking.status] ||
                                     "bg-neutral-100 text-neutral-800 border-neutral-200"
                                     }`}
                             >
-                                {booking.status?.replace("_", " ").toUpperCase()}
+                                {statusLabel}
                             </span>
                         </div>
                     </div>
@@ -380,14 +417,14 @@ export default function BookingDetails() {
                                         <Calendar className="h-5 w-5" />
                                         <div>
                                             <p className="font-medium">Date</p>
-                                            <p className="text-sm">{formatDate(booking.schedule?.date || booking.scheduled_date)}</p>
+                                            <p className="text-sm">{scheduledDate ? formatDate(scheduledDate) : "N/A"}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2 text-neutral-600">
                                         <Clock className="h-5 w-5" />
                                         <div>
                                             <p className="font-medium">Time</p>
-                                            <p className="text-sm">{formatTime(booking.schedule?.time || booking.scheduled_time)}</p>
+                                            <p className="text-sm">{scheduledTime ? formatTime(scheduledTime) : "N/A"}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -398,19 +435,19 @@ export default function BookingDetails() {
                                     <div>
                                         <p className="font-medium">Service Location</p>
                                         <p className="text-sm">
-                                            {booking.location?.address}<br />
-                                            {booking.location?.city}, {booking.location?.state} {booking.location?.postal_code}
+                                            {locationAddress || "Address not available"}<br />
+                                            {[locationCity, locationState].filter(Boolean).join(", ")} {locationPostalCode || ""}
                                         </p>
                                     </div>
                                 </div>
 
                                 {/* Provider */}
-                                {booking.provider?.name && (
+                                {providerName && (
                                     <div className="flex items-start gap-2 text-neutral-600">
                                         <User className="h-5 w-5 mt-1" />
                                         <div>
                                             <p className="font-medium">Service Provider</p>
-                                            <p className="text-sm">{booking.provider.name}</p>
+                                            <p className="text-sm">{providerName}</p>
                                         </div>
                                     </div>
                                 )}
@@ -447,12 +484,12 @@ export default function BookingDetails() {
                             <div className="text-center">
                                 <div className="flex items-center justify-center gap-1 text-3xl font-bold text-neutral-900">
                                     <DollarSign className="h-6 w-6" />
-                                    {(booking.pricing?.estimated_price || booking.estimated_price)?.toFixed(2) || (booking.pricing?.final_price || booking.final_price)?.toFixed(2)}
+                                    {typeof displayPrice === "number" ? displayPrice.toFixed(2) : "N/A"}
                                 </div>
-                                {(booking.pricing?.estimated_price || booking.estimated_price) && !(booking.pricing?.final_price || booking.final_price) && (
+                                {displayPrice !== undefined && displayPrice !== null && !hasFinalPrice && (
                                     <span className="text-sm text-neutral-500">Estimated Price</span>
                                 )}
-                                {(booking.pricing?.final_price || booking.final_price) && (
+                                {hasFinalPrice && (
                                     <span className="text-sm text-green-600">Final Price</span>
                                 )}
                             </div>
@@ -498,10 +535,10 @@ export default function BookingDetails() {
                                     <Button
                                         onClick={() => {
                                             setAddressData({
-                                                service_address: booking.location?.address || booking.service_address || '',
-                                                service_city: booking.location?.city || booking.service_city || '',
-                                                service_state: booking.location?.state || booking.service_state || '',
-                                                service_postal_code: booking.location?.postal_code || booking.service_postal_code || ''
+                                                service_address: locationAddress || '',
+                                                service_city: locationCity || '',
+                                                service_state: locationState || '',
+                                                service_postal_code: locationPostalCode || ''
                                             });
                                             setShowAddressModal(true);
                                         }}
@@ -527,6 +564,7 @@ export default function BookingDetails() {
 
                                 <Button
                                     onClick={handleMessageProvider}
+                                    disabled={!hasProvider}
                                     className="w-full gap-2"
                                 >
                                     <MessageSquare className="h-4 w-4" />

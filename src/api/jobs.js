@@ -73,7 +73,7 @@ export const createJob = async (auth, payload) => {
   }
 
   const data = await response.json();
-  return data?.job ?? data;
+  return data?.job ?? data?.data?.job ?? data?.data ?? data;
 };
 
 export const cancelJob = async (jobId, auth) => {

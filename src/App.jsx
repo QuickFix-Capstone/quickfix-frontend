@@ -295,6 +295,7 @@ export default function App() {
           <Route path="/customer/edit" element={<EditProfile />} />
           <Route path="/customer/services" element={<ServiceList />} />
           <Route path="/customer/bookings" element={<Bookings />} />
+          <Route path="/customer/bookings/:bookingId" element={<BookingDetails />} />
           <Route path="/customer/book" element={<BookingForm />} />
           <Route path="/customer/post-job" element={<PostJob />} />
           <Route path="/customer/jobs" element={<MyJobs />} />
@@ -433,4 +434,3 @@ export default function App() {
     </ChatbotProvider>
   );
 }
-
