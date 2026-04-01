@@ -139,14 +139,14 @@ export default function ServiceProviderHome() {
 
       if (
         hasLocationData &&
-        job.location?.latitude &&
-        job.location?.longitude
+        job.location?.lat &&
+        job.location?.lng
       ) {
         distance = calculateDistance(
           userLocation.latitude,
           userLocation.longitude,
-          job.location.latitude,
-          job.location.longitude,
+          job.location.lat,
+          job.location.lng,
         );
       }
 
@@ -181,17 +181,19 @@ export default function ServiceProviderHome() {
     });
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 space-y-10">
+    <div className="mx-auto max-w-7xl px-4 py-4 md:py-8 space-y-8 md:space-y-10">
       {/* 🌟 HERO */}
-      <Card className="p-8">
-        <h1 className="text-3xl font-bold mb-2">
+      <Card className="p-4 sm:p-6 md:p-8">
+        {/* mobile: smaller heading → desktop: large */}
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2">
           Find jobs that match your skills
         </h1>
-        <p className="text-neutral-600 mb-4">
+        <p className="text-neutral-600 mb-4 text-sm md:text-base">
           Browse live job requests from verified customers.
         </p>
 
-        <div className="flex gap-2">
+        {/* mobile: stack search + clear vertically → sm: side by side */}
+        <div className="flex flex-col sm:flex-row gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
             <Input
@@ -202,8 +204,10 @@ export default function ServiceProviderHome() {
             />
           </div>
 
+          {/* mobile: full-width button → sm: auto-width */}
           <Button
             variant="ghost"
+            className="w-full sm:w-auto min-h-[44px]"
             onClick={() => {
               setSearchTerm("");
               setSelectedCategory("");
@@ -291,7 +295,8 @@ export default function ServiceProviderHome() {
         {loading && <p className="text-neutral-500">Loading jobs…</p>}
         <AlertBanner variant="error" message={error} />
 
-        <div className="grid gap-6 md:grid-cols-3">
+        {/* mobile: 1-col → md: 2-col → lg: 3-col */}
+        <div className="grid gap-4 md:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
           {filteredJobs.map((job) => (
             <Card key={job.job_id} className="p-5 space-y-4">
               <h3 className="font-semibold text-lg">{job.title}</h3>
@@ -301,7 +306,9 @@ export default function ServiceProviderHome() {
                 <div>
                   <p>{formatFullAddress(job.location)}</p>
                   <p className="text-xs text-neutral-400">
-                    Distance unavailable
+                    {job.distance !== null
+                      ? `${job.distance.toFixed(1)} mi away`
+                      : "Distance unavailable"}
                   </p>
                 </div>
               </div>
@@ -310,12 +317,14 @@ export default function ServiceProviderHome() {
                 {job.description}
               </p>
 
-              <div className="flex justify-between items-center">
+              {/* mobile: stack budget + button → sm: side by side */}
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
                 <span className="text-sm">
                   ${job.budget?.min} – ${job.budget?.max}
                 </span>
                 <Button
                   size="sm"
+                  className="w-full sm:w-auto min-h-[44px]"
                   onClick={() =>
                     navigate(`/service-provider/job/${job.job_id}`)
                   }

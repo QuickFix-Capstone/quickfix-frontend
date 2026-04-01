@@ -519,19 +519,20 @@ export default function JobDetailsPage() {
         </button>
 
         {/* Header card */}
-        <div className="rounded-3xl border border-slate-200/80 bg-white/95 p-6 shadow-sm backdrop-blur mb-4">
-          <div className="flex items-start justify-between gap-4">
+        <div className="rounded-3xl border border-slate-200/80 bg-white/95 p-4 sm:p-6 shadow-sm backdrop-blur mb-4">
+          {/* mobile: stack title + badge → sm: side by side */}
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
             <div>
               <p className="text-sm text-slate-500">
                 Job #{job.job_id}
                 {job.booking_id && <> &middot; Booking #{job.booking_id}</>}
               </p>
-              <h1 className="text-2xl font-bold text-slate-900 mt-1 sm:text-3xl">
+              <h1 className="text-xl font-bold text-slate-900 mt-1 sm:text-2xl md:text-3xl">
                 {job.title || "Untitled Job"}
               </h1>
             </div>
             <span
-              className={`shrink-0 text-xs px-3 py-1 rounded-full border font-medium capitalize ${badge}`}
+              className={`self-start shrink-0 text-xs px-3 py-1 rounded-full border font-medium capitalize ${badge}`}
             >
               {formattedStatus}
             </span>
@@ -718,7 +719,8 @@ export default function JobDetailsPage() {
             <Briefcase className="w-4 h-4 text-slate-400" />
             Actions
           </h3>
-          <div className="flex flex-wrap gap-3">
+          {/* mobile: full-width buttons → sm: inline wrap */}
+          <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3">
             {job.status === "open" && !hasApplied && !job.is_assigned && (
               <Button
                 className="bg-blue-600 hover:bg-blue-700"

@@ -285,23 +285,26 @@ export default function BookingDetails() {
   // MAIN UI
   // =====================================================
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
+    <div className="px-4 py-4 sm:p-6 max-w-6xl mx-auto space-y-6">{/* mobile: tight padding → desktop: spacious */}
       <AlertBanner variant={notice?.variant} message={notice?.message} />
       <Button
         variant="outline"
+        className="min-h-[44px]"
         onClick={() => navigate("/service-provider/bookings")}
       >
         <ArrowLeft className="h-4 w-4 mr-2" />
         Back to Bookings
       </Button>
 
-      <div className="flex justify-between items-start">
+      {/* mobile: stack title + badge → sm: side by side */}
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
         <div>
-          <h1 className="text-3xl font-bold">{booking.service_description}</h1>
+          {/* mobile: smaller heading → desktop: large */}
+          <h1 className="text-xl sm:text-3xl font-bold">{booking.service_description}</h1>
           <p className="text-neutral-500 mt-1">Booking #{booking.booking_id}</p>
         </div>
         <span
-          className={`rounded-full border px-3 py-1 text-sm font-medium ${
+          className={`self-start rounded-full border px-3 py-1 text-sm font-medium ${
             statusColors[booking.status]
           }`}
         >

@@ -130,7 +130,8 @@ export default function Bookings() {
 function BookingCard({ booking }) {
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
-      <div className="flex justify-between items-start gap-2">
+      {/* mobile: stack name + badge → sm: side by side */}
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
         <div>
           <h2 className="font-semibold text-lg text-slate-900">
             {booking.first_name} {booking.last_name}
@@ -141,6 +142,7 @@ function BookingCard({ booking }) {
         <StatusBadge status={booking.status} />
       </div>
 
+      {/* mobile: 2-col → md: 4-col */}
       <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
         <Info label="Date" value={formatDate(booking.preferred_date)} />
         <Info label="Time" value={booking.preferred_time || "-"} />
@@ -151,11 +153,12 @@ function BookingCard({ booking }) {
         <Info label="Status" value={booking.status || "-"} />
       </div>
 
-      <div className="mt-4 flex gap-3">
-        <button className="rounded-lg bg-gradient-to-r from-indigo-600 to-cyan-500 px-4 py-2 text-sm font-medium text-white shadow transition hover:brightness-110">
+      {/* mobile: full-width stacked buttons → sm: inline */}
+      <div className="mt-4 flex flex-col sm:flex-row gap-3">
+        <button className="w-full sm:w-auto min-h-[44px] rounded-lg bg-gradient-to-r from-indigo-600 to-cyan-500 px-4 py-2 text-sm font-medium text-white shadow transition hover:brightness-110">
           View
         </button>
-        <button className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
+        <button className="w-full sm:w-auto min-h-[44px] rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
           Message
         </button>
       </div>

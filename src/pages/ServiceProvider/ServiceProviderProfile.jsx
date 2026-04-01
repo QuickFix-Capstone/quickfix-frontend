@@ -480,11 +480,12 @@ export default function ServiceProviderProfile() {
           </div>
 
           {/* ACTIONS */}
-          <div className="flex justify-end gap-3 pt-4">
+          {/* mobile: full-width stacked → sm: inline right-aligned */}
+          <div className="flex flex-col sm:flex-row sm:justify-end gap-3 pt-4">
             <button
               type="button"
               onClick={() => navigate(-1)}
-              className="rounded-lg border px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+              className="w-full sm:w-auto min-h-[44px] rounded-lg border px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
             >
               Cancel
             </button>
@@ -492,7 +493,7 @@ export default function ServiceProviderProfile() {
             <button
               type="submit"
               disabled={saving || !hasChanges}
-              className="rounded-lg bg-black px-5 py-2 text-sm font-medium text-white
+              className="w-full sm:w-auto min-h-[44px] rounded-lg bg-black px-5 py-2 text-sm font-medium text-white
                          hover:bg-gray-800 disabled:opacity-40"
             >
               {saving ? "Saving..." : "Save Changes"}

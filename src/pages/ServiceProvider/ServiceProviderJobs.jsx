@@ -135,7 +135,8 @@ export default function ProviderJobs() {
 
       <div className="sticky top-0 z-10 border-b border-slate-200 bg-white/90 backdrop-blur">
         <div className="mx-auto max-w-6xl px-4 py-4">
-          <div className="flex items-start justify-between gap-3">
+          {/* mobile: stack title + actions → sm: row */}
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
             <div>
               <div className="flex items-center gap-2 text-indigo-600">
                 <Briefcase className="h-5 w-5" />
@@ -146,10 +147,11 @@ export default function ProviderJobs() {
               </p>
             </div>
 
-            <div className="flex items-center gap-2">
+            {/* mobile: full-width buttons → sm: auto */}
+            <div className="flex gap-2">
               <button
                 onClick={silentRefresh}
-                className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 min-h-[44px] text-sm text-slate-700 hover:bg-slate-50"
                 disabled={refreshing}
                 title="Refresh"
               >
@@ -159,7 +161,7 @@ export default function ProviderJobs() {
 
               <button
                 onClick={() => navigate("/service-provider/dashboard")}
-                className="rounded-lg bg-gradient-to-r from-indigo-600 to-cyan-500 px-3 py-2 text-sm font-medium text-white shadow transition hover:brightness-110"
+                className="flex-1 sm:flex-none rounded-lg bg-gradient-to-r from-indigo-600 to-cyan-500 px-3 py-2 min-h-[44px] text-sm font-medium text-white shadow transition hover:brightness-110"
               >
                 Dashboard
               </button>

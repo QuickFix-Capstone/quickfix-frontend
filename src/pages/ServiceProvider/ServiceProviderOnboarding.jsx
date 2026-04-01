@@ -203,7 +203,8 @@ export default function ServiceProviderOnboarding() {
           <p className="mb-2 inline-flex rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-sky-700">
             Service Provider Setup
           </p>
-          <h1 className="text-3xl font-bold text-neutral-900">
+          {/* mobile: smaller heading → desktop: large */}
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-neutral-900">
             Build your professional profile
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-neutral-600">
