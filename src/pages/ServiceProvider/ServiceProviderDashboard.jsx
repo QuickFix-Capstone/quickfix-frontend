@@ -16,6 +16,7 @@ import OfferingCard from "../../components/UI/OfferingCards";
 import CreateServiceCard from "../../components/UI/CreateServiceCardStyle";
 import MyJobApplicationsWidget from "../../pages/ServiceProvider/MyJobApplicationWidget";
 import AlertBanner from "../../components/UI/AlertBanner";
+import ProviderReviews from "../../components/reviews/ProviderReviews";
 
 export default function ServiceProviderDashboard() {
   const [offerings, setOfferings] = useState([]);
@@ -27,7 +28,6 @@ export default function ServiceProviderDashboard() {
   const [toast, setToast] = useState("");
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
-
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -414,6 +414,8 @@ export default function ServiceProviderDashboard() {
             </div>
           ))}
         </div>
+
+        <ProviderReviews providerId={profile?.provider_id} />
       </div>
     </div>
   );
