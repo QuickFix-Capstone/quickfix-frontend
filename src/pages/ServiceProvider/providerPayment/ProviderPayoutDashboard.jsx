@@ -73,7 +73,7 @@ export default function ProviderPayoutDashboard() {
                 getProviderPayoutBalance(getAuthHeaders()),
                 getProviderPayoutHistory(20, 0, getAuthHeaders()),
             ]);
-            setBalance(b);
+            setBalance(b?.balance ?? b);
             setRows(h?.items || (Array.isArray(h) ? h : []));
         } catch (e) {
             setError(e.message || "Failed to load payouts.");
@@ -149,7 +149,7 @@ export default function ProviderPayoutDashboard() {
             >
                 <BalanceCard
                     label="Net Owed"
-                    value={money(balance?.net_owed_cents)}
+                    value={money(balance?.owed_cents)}
                     loading={loading}
                     sub="Earnings ready for admin payout"
                 />
