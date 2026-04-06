@@ -1,4 +1,10 @@
+import { fetchAuthSession } from "aws-amplify/auth";
 import { JOB_IMAGES_API_BASE } from "./config";
+
+async function getToken() {
+    const session = await fetchAuthSession();
+    return session.tokens?.idToken?.toString();
+}
 
 /**
  * Get S3 upload URL for job image
@@ -9,8 +15,8 @@ import { JOB_IMAGES_API_BASE } from "./config";
  * @param {Object} auth - Auth object from useAuth hook
  * @returns {Promise<Object>} Upload URL and metadata
  */
-export async function getUploadUrl(jobId, fileName, contentType, imageOrder, auth) {
-    const token = auth.user?.id_token || auth.user?.access_token;
+export async function getUploadUrl(jobId, fileName, contentType, imageOrder) {
+    const token = await getToken();
 
     console.log('Getting upload URL for job image:', { jobId, fileName, contentType, imageOrder });
 
@@ -84,8 +90,8 @@ export async function uploadToS3(uploadUrl, fields, file) {
  * @param {Object} auth - Auth object from useAuth hook
  * @returns {Promise<Object>} Saved image data
  */
-export async function saveImageMetadata(jobId, imageData, auth) {
-    const token = auth.user?.id_token || auth.user?.access_token;
+export async function saveImageMetadata(jobId, imageData) {
+    const token = await getToken();
 
     console.log('Saving job image metadata:', { jobId, imageData });
 
@@ -117,8 +123,8 @@ export async function saveImageMetadata(jobId, imageData, auth) {
  * @param {Object} auth - Auth object from useAuth hook
  * @returns {Promise<Array>} Array of image objects
  */
-export async function getJobImages(jobId, auth) {
-    const token = auth.user?.id_token || auth.user?.access_token;
+export async function getJobImages(jobId) {
+    const token = await getToken();
 
     console.log('=== GET JOB IMAGES DEBUG ===');
     console.log('Job ID:', jobId);
@@ -203,8 +209,8 @@ export async function getJobImages(jobId, auth) {
  * @param {Object} auth - Auth object from useAuth hook
  * @returns {Promise<Object>} Deletion result
  */
-export async function deleteJobImage(jobId, imageId, auth) {
-    const token = auth.user?.id_token || auth.user?.access_token;
+export async function deleteJobImage(jobId, imageId) {
+    const token = await getToken();
 
     const response = await fetch(`${JOB_IMAGES_API_BASE}/jobs/${jobId}/images/${imageId}`, {
         method: 'DELETE',
@@ -228,7 +234,7 @@ export async function deleteJobImage(jobId, imageId, auth) {
  * @param {Object} options - Upload options (order, description)
  * @returns {Promise<Object>} Complete upload result
  */
-export async function uploadJobImage(jobId, file, auth, options = {}) {
+export async function uploadJobImage(jobId, file, options = {}) {
     try {
         console.log('Starting job image upload workflow:', { jobId, fileName: file.name, fileSize: file.size, options });
 
@@ -237,8 +243,7 @@ export async function uploadJobImage(jobId, file, auth, options = {}) {
             jobId,
             file.name,
             file.type,
-            options.order || 1,
-            auth
+            options.order || 1
         );
 
         // Step 2: Upload to S3
@@ -253,7 +258,7 @@ export async function uploadJobImage(jobId, file, auth, options = {}) {
             description: options.description || null,
         };
 
-        const savedImage = await saveImageMetadata(jobId, imageMetadata, auth);
+        const savedImage = await saveImageMetadata(jobId, imageMetadata);
 
         console.log('Job image upload workflow completed:', savedImage);
         return savedImage;

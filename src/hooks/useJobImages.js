@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from 'react-oidc-context';
 import {
     getJobImages,
     uploadJobImage,
@@ -14,8 +13,6 @@ import { validateImageFiles } from '../utils/imageValidation';
  * @returns {Object} Hook state and methods
  */
 export function useJobImages(jobId, initialImages = null) {
-    const auth = useAuth();
-
     // State management
     const [images, setImages] = useState(initialImages || []);
     const [loading, setLoading] = useState(!initialImages);
@@ -25,13 +22,13 @@ export function useJobImages(jobId, initialImages = null) {
 
     // Fetch images for the job
     const fetchImages = useCallback(async () => {
-        if (!jobId || !auth.isAuthenticated) return;
+        if (!jobId) return;
 
         setLoading(true);
         setError(null);
 
         try {
-            const fetchedImages = await getJobImages(jobId, auth);
+            const fetchedImages = await getJobImages(jobId);
             setImages(fetchedImages);
         } catch (err) {
             console.error('Failed to fetch job images:', err);
@@ -49,7 +46,7 @@ export function useJobImages(jobId, initialImages = null) {
         } finally {
             setLoading(false);
         }
-    }, [jobId, auth]);
+    }, [jobId]);
 
     // Upload multiple images
     const uploadImages = useCallback(async (files, options = {}) => {
@@ -89,7 +86,7 @@ export function useJobImages(jobId, initialImages = null) {
                         ...options
                     };
 
-                    const result = await uploadJobImage(jobId, file, auth, uploadOptions);
+                    const result = await uploadJobImage(jobId, file, uploadOptions);
 
                     // Update progress
                     setUploadProgress(prev => ({
@@ -144,14 +141,14 @@ export function useJobImages(jobId, initialImages = null) {
         } finally {
             setUploading(false);
         }
-    }, [jobId, auth, images.length]);
+    }, [jobId, images.length]);
 
     // Delete an image
     const deleteImage = useCallback(async (imageId) => {
         if (!imageId) return;
 
         try {
-            await deleteJobImage(jobId, imageId, auth);
+            await deleteJobImage(jobId, imageId);
 
             // Remove from state
             setImages(prev => prev.filter(img => img.image_id !== imageId));
@@ -162,7 +159,7 @@ export function useJobImages(jobId, initialImages = null) {
             setError('Failed to delete image. Please try again.');
             return { success: false, error: err.message };
         }
-    }, [jobId, auth]);
+    }, [jobId]);
 
     // Clear error
     const clearError = useCallback(() => {
