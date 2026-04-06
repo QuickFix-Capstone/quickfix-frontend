@@ -3,7 +3,8 @@ import { useNavigate, useLocation } from "react-router-dom";
 import {
   ShieldCheck,
   HomeIcon,
-  PlusCircle,
+  Briefcase,
+  ClipboardList,
   User,
   LogOut,
   LayoutDashboard,
@@ -13,7 +14,7 @@ import {
   MessageCircle,
   Calendar,
   CalendarDays,
-  Wallet,
+  DollarSign,
 } from "lucide-react";
 import GhostButton from "../UI/GhostButton";
 
@@ -75,15 +76,15 @@ export default function TopNav({ currentUser, onLogout }) {
           />
 
           <NavItem
-            icon={PlusCircle}
-            label="Create Service"
-            path="/service-provider/create-service-offering"
+            icon={Briefcase}
+            label="Jobs"
+            path="/service-provider/jobs"
           />
 
           <NavItem
-            icon={MessageCircle}
-            label="Messages"
-            path="/service-provider/messages"
+            icon={ClipboardList}
+            label="Applications"
+            path="/service-provider/applications"
           />
 
           <NavItem
@@ -93,19 +94,19 @@ export default function TopNav({ currentUser, onLogout }) {
           />
 
           <NavItem
+            icon={MessageCircle}
+            label="Messages"
+            path="/service-provider/messages"
+          />
+
+          <NavItem
             icon={CalendarDays}
             label="Calendar"
             path="/service-provider/calendar"
           />
 
           <NavItem
-            icon={Wallet}
-            label="Payout Settings"
-            path="/service-provider/payout-settings"
-          />
-
-          <NavItem
-            icon={Wallet}
+            icon={DollarSign}
             label="Payouts"
             path="/service-provider/payouts"
           />
@@ -174,15 +175,15 @@ export default function TopNav({ currentUser, onLogout }) {
             />
 
             <NavItem
-              icon={PlusCircle}
-              label="Create Service"
-              path="/service-provider/create-service-offering"
+              icon={Briefcase}
+              label="Jobs"
+              path="/service-provider/jobs"
             />
 
             <NavItem
-              icon={MessageCircle}
-              label="Messages"
-              path="/service-provider/messages"
+              icon={ClipboardList}
+              label="Applications"
+              path="/service-provider/applications"
             />
 
             <NavItem
@@ -192,19 +193,19 @@ export default function TopNav({ currentUser, onLogout }) {
             />
 
             <NavItem
+              icon={MessageCircle}
+              label="Messages"
+              path="/service-provider/messages"
+            />
+
+            <NavItem
               icon={CalendarDays}
               label="Calendar"
               path="/service-provider/calendar"
             />
 
             <NavItem
-              icon={Wallet}
-              label="Payout Settings"
-              path="/service-provider/payout-settings"
-            />
-
-            <NavItem
-              icon={Wallet}
+              icon={DollarSign}
               label="Payouts"
               path="/service-provider/payouts"
             />
