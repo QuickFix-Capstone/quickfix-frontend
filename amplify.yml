@@ -21,3 +21,7 @@ applications:
           - '**/*'
       cache:
         paths: []
+      redirects:
+        - source: '</^[^.]+$|\.(?!(css|gif|ico|jpg|jpeg|js|png|txt|svg|woff|woff2|ttf|map|json)$)([^.]+$)>'
+          target: /index.html
+          status: '200'
