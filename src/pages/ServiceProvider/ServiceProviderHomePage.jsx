@@ -1,16 +1,15 @@
 import { useEffect, useState } from "react";
+import { fetchAuthSession } from "aws-amplify/auth";
 import Card from "../../components/UI/Card";
 import Button from "../../components/UI/Button";
 import Input from "../../components/UI/Input";
 import Tag from "../../components/UI/Tag";
 import AlertBanner from "../../components/UI/AlertBanner";
 import {
-  ChevronRight,
   MapPin,
-  Clock,
-  DollarSign,
   Search,
   Navigation,
+  Star,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useLocation as useUserLocation } from "../../context/LocationContext";
@@ -87,8 +86,12 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
 };
 
+const API_BASE = "https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod";
+
 export default function ServiceProviderHome() {
   const [jobs, setJobs] = useState([]);
+  const [jobImages, setJobImages] = useState({});
+  const [reviews, setReviews] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedRadius, setSelectedRadius] = useState(null);
@@ -114,7 +117,51 @@ export default function ServiceProviderHome() {
         if (!res.ok) throw new Error("Failed to load jobs");
 
         const data = await res.json();
-        setJobs(data.jobs || []);
+        const fetchedJobs = data.jobs || [];
+        setJobs(fetchedJobs);
+
+        // Fetch first image for each job in parallel
+        const session = await fetchAuthSession();
+        const token = session.tokens?.idToken?.toString();
+        if (token && fetchedJobs.length > 0) {
+          const imageResults = await Promise.allSettled(
+            fetchedJobs.map((job) =>
+              fetch(`${API_BASE}/jobs_image/${job.job_id}/images`, {
+                method: "GET",
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  "Content-Type": "application/json",
+                },
+              })
+                .then((r) => (r.ok ? r.json() : null))
+                .then((d) => {
+                  const imgs = Array.isArray(d?.images)
+                    ? d.images
+                    : Array.isArray(d)
+                      ? d
+                      : [];
+                  const img = imgs[0];
+                  const url =
+                    img?.url ||
+                    img?.image_url ||
+                    img?.signed_url ||
+                    img?.presigned_url ||
+                    img?.preview_url ||
+                    null;
+                  return { jobId: job.job_id, url };
+                })
+                .catch(() => ({ jobId: job.job_id, url: null }))
+            )
+          );
+
+          const imgMap = {};
+          imageResults.forEach((result) => {
+            if (result.status === "fulfilled" && result.value.url) {
+              imgMap[result.value.jobId] = result.value.url;
+            }
+          });
+          setJobImages(imgMap);
+        }
       } catch (err) {
         setError(err.message);
       } finally {
@@ -130,6 +177,34 @@ export default function ServiceProviderHome() {
       getLocation();
     }
   }, [userLocation, getLocation]);
+
+  useEffect(() => {
+    const fetchReviews = async () => {
+      try {
+        const session = JSON.parse(localStorage.getItem("userSession"));
+        const token = session?.idToken;
+        if (!token) return;
+
+        const res = await fetch(
+          `${API_BASE}/service_provider/reviews?sort=newest&limit=10&offset=0`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: token,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+        setReviews(Array.isArray(data.reviews) ? data.reviews : []);
+      } catch {
+        // silently fail
+      }
+    };
+
+    fetchReviews();
+  }, []);
 
   const hasLocationData = userLocation?.latitude && userLocation?.longitude;
 
@@ -298,7 +373,19 @@ export default function ServiceProviderHome() {
         {/* mobile: 1-col → md: 2-col → lg: 3-col */}
         <div className="grid gap-4 md:gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
           {filteredJobs.map((job) => (
-            <Card key={job.job_id} className="p-5 space-y-4">
+            <Card key={job.job_id} className="overflow-hidden p-0">
+              {jobImages[job.job_id] ? (
+                <img
+                  src={jobImages[job.job_id]}
+                  alt={job.title}
+                  className="w-full h-44 object-cover"
+                />
+              ) : (
+                <div className="w-full h-44 bg-neutral-100 flex items-center justify-center text-neutral-400 text-sm">
+                  No image
+                </div>
+              )}
+              <div className="p-5 space-y-4">
               <h3 className="font-semibold text-lg">{job.title}</h3>
 
               <div className="flex items-start gap-2 text-sm">
@@ -332,10 +419,38 @@ export default function ServiceProviderHome() {
                   View job
                 </Button>
               </div>
+              </div>
             </Card>
           ))}
         </div>
       </section>
+
+      {/* REVIEWS */}
+      {reviews.length > 0 && (
+        <section>
+          <h2 className="mb-4 text-lg font-semibold">Your reviews</h2>
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+            {reviews.map((review, i) => (
+              <Card key={review.review_id || i} className="p-5 space-y-2">
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: 5 }).map((_, idx) => (
+                    <Star
+                      key={idx}
+                      className={`h-4 w-4 ${idx < review.rating ? "fill-yellow-400 text-yellow-400" : "text-neutral-200"}`}
+                    />
+                  ))}
+                </div>
+                {review.comment && (
+                  <p className="text-sm text-neutral-600 line-clamp-3">{review.comment}</p>
+                )}
+                {review.customer_name && (
+                  <p className="text-xs text-neutral-400">{review.customer_name}</p>
+                )}
+              </Card>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
