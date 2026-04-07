@@ -7,7 +7,7 @@ import Button from "../../components/UI/Button";
 import UnreadBadge from "../../components/messaging/UnreadBadge";
 import ReviewForm from "./ReviewForm";
 import { getConversations } from "../../api/messaging";
-import { getMyReviews } from "../../api/reviews";
+import { createCustomerReview, getMyReviews } from "../../api/reviews";
 // import { getReviewsAboutMe } from "../../api/customerReviews";
 import ReviewCard from "./ReviewCard";
 // import ProviderReviewCard from "./ProviderReviewCard";
@@ -455,45 +455,30 @@ export default function CustomerDashboard() {
 
     const handleSubmitReview = async (reviewData) => {
         try {
-            const token = auth.user?.id_token || auth.user?.access_token;
-
             // Validate comment length
             if (reviewData.comment && reviewData.comment.length < 10) {
                 alert("Comment must be at least 10 characters");
                 throw new Error("Comment too short");
             }
 
-            const res = await fetch(
-                `https://kfvf20j7j9.execute-api.us-east-2.amazonaws.com/prod/customer/reviews`,
-                {
-                    method: "POST",
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        job_id: reviewData.jobId,
-                        provider_id: reviewData.providerId,
-                        rating: reviewData.rating,
-                        comment: reviewData.comment || "No comment provided.",
-                    }),
-                }
-            );
+            await createCustomerReview({
+                booking_id: reviewData.bookingId,
+                job_id: reviewData.jobId,
+                provider_id: reviewData.providerId,
+                rating: reviewData.rating,
+                comment: reviewData.comment || "No comment provided.",
+            });
 
-            const data = await res.json();
+            alert("Review submitted successfully!");
+            setSelectedJobForReview(null);
 
-            if (res.ok) {
-                alert("Review submitted successfully!");
-                // Try to refresh reviews, but don't fail if this errors
-                try {
-                    const reviewsData = await getMyReviews(10);
-                    setMyReviews(reviewsData.reviews || []);
-                } catch (refreshError) {
-                    console.warn("Could not refresh reviews list:", refreshError);
-                    // Review was submitted successfully, just couldn't refresh the list
-                }
-            } else {
-                throw new Error(data.message || "Failed to submit review");
+            // Try to refresh reviews, but don't fail if this errors
+            try {
+                const reviewsData = await getMyReviews(10);
+                setMyReviews(reviewsData.reviews || []);
+            } catch (refreshError) {
+                console.warn("Could not refresh reviews list:", refreshError);
+                // Review was submitted successfully, just couldn't refresh the list
             }
         } catch (error) {
             console.error("Error submitting review:", error);

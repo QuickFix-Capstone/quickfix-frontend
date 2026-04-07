@@ -17,8 +17,24 @@ export default function ReviewForm({ booking, onSubmit, onCancel, isSubmitting =
       return;
     }
 
+    if (!booking?.job_id && !booking?.booking_id) {
+      setError("This review is missing its job or booking reference");
+      return;
+    }
+
+    if (!booking?.provider_id) {
+      setError("Provider information is missing for this review");
+      return;
+    }
+
     setError("");
-    await onSubmit({ rating, comment: comment.trim() });
+    await onSubmit({
+      jobId: booking?.job_id ?? null,
+      bookingId: booking?.booking_id ?? null,
+      providerId: booking?.provider_id ?? booking?.provider?.provider_id ?? null,
+      rating,
+      comment: comment.trim(),
+    });
   };
 
   return (
@@ -29,7 +45,7 @@ export default function ReviewForm({ booking, onSubmit, onCancel, isSubmitting =
           <div>
             <h2 className="text-2xl font-bold text-neutral-900">Leave a Review</h2>
             <p className="mt-1 text-sm text-neutral-600">
-              How was your experience with {booking?.provider?.name || "this service provider"}?
+              How was your experience with {booking?.provider_name || booking?.provider?.name || "this service provider"}?
             </p>
           </div>
           <button
@@ -43,7 +59,7 @@ export default function ReviewForm({ booking, onSubmit, onCancel, isSubmitting =
         {/* Service Details */}
         <div className="mb-6 rounded-lg bg-neutral-50 p-4">
           <p className="text-sm font-semibold text-neutral-700">
-            {booking?.service_description || "Service"}
+            {booking?.service_description || booking?.title || "Service"}
           </p>
           <p className="mt-1 text-xs text-neutral-500">
             {booking?.scheduled_date && new Date(booking.scheduled_date).toLocaleDateString()}
