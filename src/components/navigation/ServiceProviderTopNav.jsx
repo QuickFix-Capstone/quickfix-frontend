@@ -15,6 +15,7 @@ import {
   Calendar,
   CalendarDays,
   DollarSign,
+  Settings,
 } from "lucide-react";
 import GhostButton from "../UI/GhostButton";
 
@@ -109,6 +110,12 @@ export default function TopNav({ currentUser, onLogout }) {
             icon={DollarSign}
             label="Payouts"
             path="/service-provider/payouts"
+          />
+
+          <NavItem
+            icon={Settings}
+            label="Payout Settings"
+            path="/service-provider/payout-settings"
           />
 
           <div className="mx-2 h-6 w-px bg-neutral-200" />
@@ -208,6 +215,12 @@ export default function TopNav({ currentUser, onLogout }) {
               icon={DollarSign}
               label="Payouts"
               path="/service-provider/payouts"
+            />
+
+            <NavItem
+              icon={Settings}
+              label="Payout Settings"
+              path="/service-provider/payout-settings"
             />
 
             <div className="my-2 h-px bg-neutral-200" />
